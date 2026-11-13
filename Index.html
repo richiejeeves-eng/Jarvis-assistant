@@ -1,0 +1,58 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JARVIS AI</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#080d18;color:#eaf2ff;font-family:Arial,sans-serif}
+header{padding:25px 20px;border-bottom:1px solid #263750}
+h1{letter-spacing:5px;color:#65baff;margin:0}
+small{color:#8296b0}
+main{padding:20px;max-width:600px;margin:auto}
+.card{background:#111d30;border:1px solid #263b57;border-radius:15px;padding:18px;margin:16px 0}
+.status{color:#65e6ad}
+button{background:#237cbd;color:white;border:0;padding:13px;border-radius:9px}
+input{width:100%;padding:14px;background:#081323;border:1px solid #34506d;color:white;border-radius:9px;margin:12px 0}
+#response{color:#9fcfff;white-space:pre-wrap}
+nav{display:flex;justify-content:space-around;padding:18px}
+</style>
+</head>
+<body>
+<header>
+<h1>JARVIS</h1>
+<small>PERSONAL AI SYSTEM · VERSION 0.1</small>
+</header>
+<main>
+<div class="card">
+<h2>System status</h2>
+<p class="status">● INTERFACE ONLINE</p>
+<small>Waiting for your instructions.</small>
+</div>
+<div class="card">
+<h3>Command centre</h3>
+<input id="command" placeholder="Give JARVIS an instruction...">
+<button onclick="send()">Send command</button>
+<p id="response"></p>
+</div>
+<div class="card">
+<h3>Core systems</h3>
+<p>AI brain — Not connected</p>
+<p>Memory — Not connected</p>
+<p>Automation — Not connected</p>
+<p>Browser agent — Not connected</p>
+</div>
+</main>
+<nav><small>JARVIS · PERSONAL ASSISTANT</small></nav>
+<script>
+function send(){
+const value=document.getElementById('command').value;
+document.getElementById('response').textContent=
+value ? "Command received: "+value+
+"\nAI connection not yet configured." : "Enter a command first.";
+}
+</script>
+</body>
+</html>
