@@ -48,6 +48,13 @@ nav{display:flex;justify-content:space-around;padding:18px}
 </main>
 <nav><small>JARVIS · PERSONAL ASSISTANT</small></nav>
 <script>
+const SUPABASE_URL = aelsipdtezvhjkwsshqx
+const SUPABASE_KEY = eu-west-1
+
+const db = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
 function send(){
 const value=document.getElementById('command').value;
 document.getElementById('response').textContent=
