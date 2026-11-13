@@ -55,7 +55,24 @@ const db = window.supabase.createClient(
   SUPABASE_URL,
   SUPABASE_KEY
 );
-function send(){
+async function send(){
+  const input = document.getElementById("command");
+  const message = input.value.trim();
+
+  if(!message) return;
+
+  const { error } = await db
+    .from("memories")
+    .insert([{ content: message, category: "jarvis" }]);
+
+  if(error){
+    alert("Memory error: " + error.message);
+    return;
+  }
+
+  alert("JARVIS saved: " + message);
+  input.value = "";
+}
 const value=document.getElementById('command').value;
 document.getElementById('response').textContent=
 value ? "Command received: "+value+
