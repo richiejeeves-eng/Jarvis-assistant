@@ -7,68 +7,88 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box}
-body{margin:0;background:#080d18;color:#eaf2ff;font-family:Arial,sans-serif}
-header{padding:25px 20px;border-bottom:1px solid #263750}
-h1{letter-spacing:5px;color:#65baff;margin:0}
+html,body{height:100%}
+body{margin:0;background:#080d18;color:#eaf2ff;font-family:Arial,sans-serif;display:flex;flex-direction:column;height:100dvh}
+header{padding:14px 20px;border-bottom:1px solid #263750}
+h1{letter-spacing:5px;color:#65baff;margin:0;font-size:22px}
 small{color:#8296b0}
-main{padding:20px;max-width:600px;margin:auto}
-.card{background:#111d30;border:1px solid #263b57;border-radius:15px;padding:18px;margin:16px 0}
-.status{color:#65e6ad}
-button{background:#237cbd;color:white;border:0;padding:13px;border-radius:9px;margin:4px 4px 4px 0}
-input{width:100%;padding:14px;background:#081323;border:1px solid #34506d;color:white;border-radius:9px;margin:8px 0}
-#response,#authstatus{color:#9fcfff;white-space:pre-wrap}
-nav{display:flex;justify-content:space-around;padding:18px}
+#account{background:#111d30;border:1px solid #263b57;border-radius:12px;padding:10px 14px;margin:8px 12px}
+#account summary{color:#65e6ad;cursor:pointer}
+button{background:#237cbd;color:white;border:0;padding:12px 14px;border-radius:9px;margin:4px 4px 4px 0}
+input{width:100%;padding:13px;background:#081323;border:1px solid #34506d;color:white;border-radius:9px;margin:6px 0}
+#chat{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
+.msg{max-width:85%;padding:10px 14px;border-radius:14px;white-space:pre-wrap;line-height:1.4;word-wrap:break-word}
+.user{align-self:flex-end;background:#237cbd;color:white}
+.bot{align-self:flex-start;background:#111d30;border:1px solid #263b57;color:#9fcfff}
+.note{align-self:flex-start;color:#65e6ad;font-size:13px}
+#tools{padding:0 12px}
+#bar{display:flex;gap:8px;padding:10px 12px;border-top:1px solid #263750}
+#bar input{flex:1;margin:0}
+#bar button{margin:0}
 </style>
 </head>
 <body>
 <header>
 <h1>JARVIS</h1>
-<small>PERSONAL AI SYSTEM · VERSION 0.4</small>
+<small>VERSION 0.5 · AI and memory connected</small>
 </header>
-<main>
-<div class="card">
-<h2>System status</h2>
-<p class="status">● INTERFACE ONLINE</p>
-<small>Waiting for your instructions.</small>
-</div>
-<div class="card">
-<h3>Account</h3>
+
+<details id="account" open>
+<summary id="authstatus">Checking...</summary>
 <input id="email" type="email" placeholder="Email">
 <input id="password" type="password" placeholder="Password (6+ characters)">
 <button onclick="signUp()">Sign up</button>
 <button onclick="signIn()">Sign in</button>
 <button onclick="signOut()">Sign out</button>
-<p id="authstatus">Checking...</p>
-</div>
-<div class="card">
-<h3>Command centre</h3>
-<input id="command" placeholder="Ask JARVIS or type a note...">
-<button onclick="send()">Send command</button>
-<button onclick="remember()">Remember this</button>
+</details>
+
+<div id="chat"></div>
+
+<div id="tools">
 <button onclick="showMemories()">Show memories</button>
-<p id="response"></p>
+<button onclick="clearChat()">Clear chat</button>
 </div>
-<div class="card">
-<h3>Core systems</h3>
-<p>AI brain — Connected (Gemini)</p>
-<p>Memory — Connected</p>
-<p>Automation — Not connected</p>
-<p>Browser agent — Not connected</p>
+
+<div id="bar">
+<input id="command" placeholder="Message JARVIS...">
+<button id="sendbtn" onclick="send()">Send</button>
 </div>
-</main>
-<nav><small>JARVIS · PERSONAL ASSISTANT</small></nav>
+
 <script>
 const SUPABASE_URL = "https://aelsipdtezvhjkwsshqx.supabase.co";
 const SUPABASE_KEY = "sb_publishable_JbN0kUdtX6d5J8bWAPbz4w_syw2aG4K";
 
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+let history = [];
+
 function showStatus(text) {
   document.getElementById("authstatus").textContent = text;
 }
 
-function showOutput(text) {
-  document.getElementById("response").textContent = text;
+function addMessage(text, who) {
+  const chat = document.getElementById("chat");
+  const div = document.createElement("div");
+  div.className = "msg " + who;
+  div.textContent = text;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+  return div;
+}
+
+function addNote(text) {
+  const chat = document.getElementById("chat");
+  const div = document.createElement("div");
+  div.className = "note";
+  div.textContent = text;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function clearChat() {
+  document.getElementById("chat").textContent = "";
+  history = [];
+  addMessage("Chat cleared. How can I help?", "bot");
 }
 
 async function signUp() {
@@ -116,17 +136,20 @@ async function signOut() {
 }
 
 db.auth.onAuthStateChange((event, session) => {
+  const account = document.getElementById("account");
   if (session) {
-    showStatus("Signed in as " + session.user.email);
+    showStatus("● Signed in as " + session.user.email);
+    account.open = false;
   } else {
-    showStatus("Not signed in.");
+    showStatus("Not signed in. Tap to sign in.");
+    account.open = true;
   }
 });
 
 async function requireSession() {
   const { data } = await db.auth.getSession();
   if (!data.session) {
-    showOutput("Please sign in first.");
+    addMessage("Please sign in first (tap the Account bar at the top).", "bot");
     return false;
   }
   return true;
@@ -134,20 +157,24 @@ async function requireSession() {
 
 async function send() {
   const input = document.getElementById("command");
+  const button = document.getElementById("sendbtn");
   const message = input.value.trim();
 
-  if (!message) {
-    showOutput("Enter a command first.");
-    return;
-  }
+  if (!message) return;
 
   if (!(await requireSession())) return;
 
-  showOutput("JARVIS is thinking...");
+  addMessage(message, "user");
+  input.value = "";
+  button.disabled = true;
+
+  const thinking = addMessage("JARVIS is thinking...", "bot");
 
   const { data, error } = await db.functions.invoke("jarvis-brain", {
-    body: { message: message }
+    body: { message: message, history: history.slice(-10) }
   });
+
+  button.disabled = false;
 
   if (error) {
     let detail = error.message;
@@ -155,36 +182,21 @@ async function send() {
       const body = await error.context.json();
       if (body && body.error) detail = body.error;
     } catch (e) {}
-    showOutput("AI error: " + detail);
+    thinking.textContent = "AI error: " + detail;
     return;
   }
 
-  showOutput(data.reply);
-  input.value = "";
-}
+  thinking.textContent = data.reply;
 
-async function remember() {
-  const input = document.getElementById("command");
-  const message = input.value.trim();
+  history.push({ role: "user", text: message });
+  history.push({ role: "model", text: data.reply });
+  history = history.slice(-10);
 
-  if (!message) {
-    showOutput("Type something to remember first.");
-    return;
+  if (data.saved) {
+    addNote("💾 Saved to memory: " + data.saved);
   }
 
-  if (!(await requireSession())) return;
-
-  const { error } = await db
-    .from("memories")
-    .insert([{ content: message, category: "jarvis" }]);
-
-  if (error) {
-    showOutput("Memory error: " + error.message);
-    return;
-  }
-
-  showOutput("Saved to memory: " + message);
-  input.value = "";
+  document.getElementById("chat").scrollTop = document.getElementById("chat").scrollHeight;
 }
 
 async function showMemories() {
@@ -197,19 +209,27 @@ async function showMemories() {
     .limit(10);
 
   if (error) {
-    showOutput("Memory error: " + error.message);
+    addMessage("Memory error: " + error.message, "bot");
     return;
   }
 
   if (data.length === 0) {
-    showOutput("JARVIS memory is empty.");
+    addMessage("JARVIS memory is empty.", "bot");
     return;
   }
 
-  showOutput("JARVIS REMEMBERS:\n\n" + data
+  addMessage("JARVIS REMEMBERS:\n\n" + data
     .map(item => "• " + item.content)
-    .join("\n"));
+    .join("\n"), "bot");
 }
+
+document.getElementById("command").addEventListener("keydown", function (e) {
+  if (e.key === "Enter") {
+    send();
+  }
+});
+
+addMessage("JARVIS online. How can I help?", "bot");
 </script>
 </body>
 </html>
