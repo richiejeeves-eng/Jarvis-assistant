@@ -14,22 +14,31 @@ small{color:#8296b0}
 main{padding:20px;max-width:600px;margin:auto}
 .card{background:#111d30;border:1px solid #263b57;border-radius:15px;padding:18px;margin:16px 0}
 .status{color:#65e6ad}
-button{background:#237cbd;color:white;border:0;padding:13px;border-radius:9px}
-input{width:100%;padding:14px;background:#081323;border:1px solid #34506d;color:white;border-radius:9px;margin:12px 0}
-#response{color:#9fcfff;white-space:pre-wrap}
+button{background:#237cbd;color:white;border:0;padding:13px;border-radius:9px;margin:4px 4px 4px 0}
+input{width:100%;padding:14px;background:#081323;border:1px solid #34506d;color:white;border-radius:9px;margin:8px 0}
+#response,#authstatus{color:#9fcfff;white-space:pre-wrap}
 nav{display:flex;justify-content:space-around;padding:18px}
 </style>
 </head>
 <body>
 <header>
 <h1>JARVIS</h1>
-<small>PERSONAL AI SYSTEM · VERSION 0.1</small>
+<small>PERSONAL AI SYSTEM · VERSION 0.2</small>
 </header>
 <main>
 <div class="card">
 <h2>System status</h2>
 <p class="status">● INTERFACE ONLINE</p>
 <small>Waiting for your instructions.</small>
+</div>
+<div class="card">
+<h3>Account</h3>
+<input id="email" type="email" placeholder="Email">
+<input id="password" type="password" placeholder="Password (6+ characters)">
+<button onclick="signUp()">Sign up</button>
+<button onclick="signIn()">Sign in</button>
+<button onclick="signOut()">Sign out</button>
+<p id="authstatus">Checking...</p>
 </div>
 <div class="card">
 <h3>Command centre</h3>
@@ -52,6 +61,62 @@ const SUPABASE_KEY = "sb_publishable_JbN0kUdtX6d5J8bWAPbz4w_syw2aG4K";
 
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+function showStatus(text) {
+  document.getElementById("authstatus").textContent = text;
+}
+
+async function signUp() {
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+
+  if (!email || password.length < 6) {
+    showStatus("Enter an email and a password of at least 6 characters.");
+    return;
+  }
+
+  const { error } = await db.auth.signUp({
+    email: email,
+    password: password,
+    options: { emailRedirectTo: window.location.origin + window.location.pathname }
+  });
+
+  if (error) {
+    showStatus("Sign up error: " + error.message);
+    return;
+  }
+
+  showStatus("Check your email and tap the confirmation link, then come back here and tap Sign in.");
+}
+
+async function signIn() {
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+
+  const { error } = await db.auth.signInWithPassword({
+    email: email,
+    password: password
+  });
+
+  if (error) {
+    showStatus("Sign in error: " + error.message);
+    return;
+  }
+
+  document.getElementById("password").value = "";
+}
+
+async function signOut() {
+  await db.auth.signOut();
+}
+
+db.auth.onAuthStateChange((event, session) => {
+  if (session) {
+    showStatus("Signed in as " + session.user.email);
+  } else {
+    showStatus("Not signed in.");
+  }
+});
+
 async function send() {
   const input = document.getElementById("command");
   const output = document.getElementById("response");
@@ -59,6 +124,13 @@ async function send() {
 
   if (!message) {
     output.textContent = "Enter a command first.";
+    return;
+  }
+
+  const { data: sessionData } = await db.auth.getSession();
+
+  if (!sessionData.session) {
+    output.textContent = "Please sign in first.";
     return;
   }
 
