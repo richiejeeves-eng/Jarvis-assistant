@@ -1,11 +1,10 @@
-
 <!DOCTYPE html>
 <html lang="en">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>JARVIS AI</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#080d18;color:#eaf2ff;font-family:Arial,sans-serif}
@@ -48,59 +47,32 @@ nav{display:flex;justify-content:space-around;padding:18px}
 </main>
 <nav><small>JARVIS · PERSONAL ASSISTANT</small></nav>
 <script>
-const SUPABASE_URL = aelsipdtezvhjkwsshqx
-const SUPABASE_KEY = eu-west-1
+const SUPABASE_URL = "https://aelsipdtezvhjkwsshqx.supabase.co";
+const SUPABASE_KEY = "sb_publishable_JbN0kUdtX6d5J8bWAPbz4w_syw2aG4K";
 
-const db = window.supabase.createClient(
-  SUPABASE_URL,
-  SUPABASE_KEY
-);
-async function send(){const { data, error } = await db
-  .from("memories")
-  .select("content, category")
-  .limit(10);
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-if (error) {
-  alert("Memory error: " + error.message);
-  return;
-}
-
-if (data.length === 0) {
-  alert("JARVIS memory is empty.");
-  return;
-}
-
-const memories = data
-  .map(item => item.content)
-  .join("\n\n");
-
-alert("JARVIS REMEMBERS:\n\n" + memories);)
-
-}
-
-{
-
-const input = document.getElementById("command");
+async function send() {
+  const input = document.getElementById("command");
+  const output = document.getElementById("response");
   const message = input.value.trim();
 
-  if(!message) return;
+  if (!message) {
+    output.textContent = "Enter a command first.";
+    return;
+  }
 
   const { error } = await db
     .from("memories")
     .insert([{ content: message, category: "jarvis" }]);
 
-  if(error){
-    alert("Memory error: " + error.message);
+  if (error) {
+    output.textContent = "Memory error: " + error.message;
     return;
   }
 
-  alert("JARVIS saved: " + message);
+  output.textContent = "Saved to memory: " + message + "\nAI connection not yet configured.";
   input.value = "";
-}
-const value=document.getElementById('command').value;
-document.getElementById('response').textContent=
-value ? "Command received: "+value+
-"\nAI connection not yet configured." : "Enter a command first.";
 }
 </script>
 </body>
