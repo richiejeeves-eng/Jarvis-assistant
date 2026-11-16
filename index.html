@@ -55,7 +55,8 @@ const db = window.supabase.createClient(
   SUPABASE_URL,
   SUPABASE_KEY
 );
-async function send(){const { data, error } = await db
+async function send(){
+const { data, error } = await db
   .from("memories")
   .select("content, category")
   .limit(10);
