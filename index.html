@@ -55,7 +55,7 @@ const db = window.supabase.createClient(
   SUPABASE_URL,
   SUPABASE_KEY
 );
-async function send(const { data, error } = await db
+async function send(){const { data, error } = await db
   .from("memories")
   .select("content, category")
   .limit(10);
@@ -74,10 +74,13 @@ const memories = data
   .map(item => item.content)
   .join("\n\n");
 
-alert("JARVIS REMEMBERS:\n\n" + memories);){
+alert("JARVIS REMEMBERS:\n\n" + memories);)
 
-  
-  const input = document.getElementById("command");
+}
+
+{
+
+const input = document.getElementById("command");
   const message = input.value.trim();
 
   if(!message) return;
