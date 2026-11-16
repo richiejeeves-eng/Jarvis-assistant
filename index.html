@@ -21,6 +21,9 @@ input{width:100%;padding:13px;background:#081323;border:1px solid #34506d;color:
 .user{align-self:flex-end;background:#237cbd;color:white}
 .bot{align-self:flex-start;background:#111d30;border:1px solid #263b57;color:#9fcfff}
 .note{align-self:flex-start;color:#65e6ad;font-size:13px}
+.taskrow{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:8px 0}
+.taskrow button{padding:6px 12px;margin:0}
+.done{text-decoration:line-through;opacity:0.5}
 #tools{padding:0 12px}
 #bar{display:flex;gap:8px;padding:10px 12px;border-top:1px solid #263750}
 #bar input{flex:1;margin:0}
@@ -30,7 +33,7 @@ input{width:100%;padding:13px;background:#081323;border:1px solid #34506d;color:
 <body>
 <header>
 <h1>JARVIS</h1>
-<small>VERSION 0.5 · AI and memory connected</small>
+<small>VERSION 0.6 · AI, memory and tasks connected</small>
 </header>
 
 <details id="account" open>
@@ -46,6 +49,7 @@ input{width:100%;padding:13px;background:#081323;border:1px solid #34506d;color:
 
 <div id="tools">
 <button onclick="showMemories()">Show memories</button>
+<button onclick="showTasks()">Show tasks</button>
 <button onclick="clearChat()">Clear chat</button>
 </div>
 
@@ -66,13 +70,18 @@ function showStatus(text) {
   document.getElementById("authstatus").textContent = text;
 }
 
+function scrollChat() {
+  const chat = document.getElementById("chat");
+  chat.scrollTop = chat.scrollHeight;
+}
+
 function addMessage(text, who) {
   const chat = document.getElementById("chat");
   const div = document.createElement("div");
   div.className = "msg " + who;
   div.textContent = text;
   chat.appendChild(div);
-  chat.scrollTop = chat.scrollHeight;
+  scrollChat();
   return div;
 }
 
@@ -82,7 +91,7 @@ function addNote(text) {
   div.className = "note";
   div.textContent = text;
   chat.appendChild(div);
-  chat.scrollTop = chat.scrollHeight;
+  scrollChat();
 }
 
 function clearChat() {
@@ -171,7 +180,12 @@ async function send() {
   const thinking = addMessage("JARVIS is thinking...", "bot");
 
   const { data, error } = await db.functions.invoke("jarvis-brain", {
-    body: { message: message, history: history.slice(-10) }
+    body: {
+      message: message,
+      history: history.slice(-10),
+      now: new Date().toString(),
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+    }
   });
 
   button.disabled = false;
@@ -196,7 +210,11 @@ async function send() {
     addNote("💾 Saved to memory: " + data.saved);
   }
 
-  document.getElementById("chat").scrollTop = document.getElementById("chat").scrollHeight;
+  if (data.task) {
+    addNote("✅ Task added: " + data.task + " (tap Show tasks to see it)");
+  }
+
+  scrollChat();
 }
 
 async function showMemories() {
@@ -221,6 +239,64 @@ async function showMemories() {
   addMessage("JARVIS REMEMBERS:\n\n" + data
     .map(item => "• " + item.content)
     .join("\n"), "bot");
+}
+
+async function showTasks() {
+  if (!(await requireSession())) return;
+
+  const { data, error } = await db
+    .from("tasks")
+    .select("id, title, due_at")
+    .eq("status", "pending")
+    .order("due_at", { ascending: true, nullsFirst: false })
+    .limit(20);
+
+  if (error) {
+    addMessage("Task error: " + error.message, "bot");
+    return;
+  }
+
+  if (data.length === 0) {
+    addMessage("No pending tasks.", "bot");
+    return;
+  }
+
+  const box = addMessage("YOUR TASKS", "bot");
+
+  data.forEach(function (task) {
+    const row = document.createElement("div");
+    row.className = "taskrow";
+
+    const label = document.createElement("span");
+    let text = "• " + task.title;
+    if (task.due_at) {
+      text += "\n   due " + new Date(task.due_at).toLocaleString();
+    }
+    label.textContent = text;
+
+    const doneButton = document.createElement("button");
+    doneButton.textContent = "Done";
+    doneButton.onclick = async function () {
+      const { error: updateError } = await db
+        .from("tasks")
+        .update({ status: "done" })
+        .eq("id", task.id);
+
+      if (updateError) {
+        addMessage("Task error: " + updateError.message, "bot");
+        return;
+      }
+
+      label.className = "done";
+      doneButton.remove();
+    };
+
+    row.appendChild(label);
+    row.appendChild(doneButton);
+    box.appendChild(row);
+  });
+
+  scrollChat();
 }
 
 document.getElementById("command").addEventListener("keydown", function (e) {
