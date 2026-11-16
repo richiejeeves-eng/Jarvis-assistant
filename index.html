@@ -55,7 +55,28 @@ const db = window.supabase.createClient(
   SUPABASE_URL,
   SUPABASE_KEY
 );
-async function send(){
+async function send(){const { data, error } = await db
+  .from("memories")
+  .select("content, category")
+  .limit(10);
+
+if (error) {
+  alert("Memory error: " + error.message);
+  return;
+}
+
+if (data.length === 0) {
+  alert("JARVIS memory is empty.");
+  return;
+}
+
+const memories = data
+  .map(item => item.content)
+  .join("\n\n");
+
+alert("JARVIS REMEMBERS:\n\n" + memories);
+
+}
   const input = document.getElementById("command");
   const message = input.value.trim();
 
