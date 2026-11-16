@@ -23,7 +23,7 @@ nav{display:flex;justify-content:space-around;padding:18px}
 <body>
 <header>
 <h1>JARVIS</h1>
-<small>PERSONAL AI SYSTEM · VERSION 0.3</small>
+<small>PERSONAL AI SYSTEM · VERSION 0.4</small>
 </header>
 <main>
 <div class="card">
@@ -42,15 +42,16 @@ nav{display:flex;justify-content:space-around;padding:18px}
 </div>
 <div class="card">
 <h3>Command centre</h3>
-<input id="command" placeholder="Give JARVIS an instruction...">
+<input id="command" placeholder="Ask JARVIS or type a note...">
 <button onclick="send()">Send command</button>
+<button onclick="remember()">Remember this</button>
 <button onclick="showMemories()">Show memories</button>
 <p id="response"></p>
 </div>
 <div class="card">
 <h3>Core systems</h3>
-<p>AI brain — Not connected</p>
-<p>Memory — Not connected</p>
+<p>AI brain — Connected (Gemini)</p>
+<p>Memory — Connected</p>
 <p>Automation — Not connected</p>
 <p>Browser agent — Not connected</p>
 </div>
@@ -64,6 +65,10 @@ const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 function showStatus(text) {
   document.getElementById("authstatus").textContent = text;
+}
+
+function showOutput(text) {
+  document.getElementById("response").textContent = text;
 }
 
 async function signUp() {
@@ -118,45 +123,72 @@ db.auth.onAuthStateChange((event, session) => {
   }
 });
 
+async function requireSession() {
+  const { data } = await db.auth.getSession();
+  if (!data.session) {
+    showOutput("Please sign in first.");
+    return false;
+  }
+  return true;
+}
+
 async function send() {
   const input = document.getElementById("command");
-  const output = document.getElementById("response");
   const message = input.value.trim();
 
   if (!message) {
-    output.textContent = "Enter a command first.";
+    showOutput("Enter a command first.");
     return;
   }
 
-  const { data: sessionData } = await db.auth.getSession();
+  if (!(await requireSession())) return;
 
-  if (!sessionData.session) {
-    output.textContent = "Please sign in first.";
+  showOutput("JARVIS is thinking...");
+
+  const { data, error } = await db.functions.invoke("jarvis-brain", {
+    body: { message: message }
+  });
+
+  if (error) {
+    let detail = error.message;
+    try {
+      const body = await error.context.json();
+      if (body && body.error) detail = body.error;
+    } catch (e) {}
+    showOutput("AI error: " + detail);
     return;
   }
+
+  showOutput(data.reply);
+  input.value = "";
+}
+
+async function remember() {
+  const input = document.getElementById("command");
+  const message = input.value.trim();
+
+  if (!message) {
+    showOutput("Type something to remember first.");
+    return;
+  }
+
+  if (!(await requireSession())) return;
 
   const { error } = await db
     .from("memories")
     .insert([{ content: message, category: "jarvis" }]);
 
   if (error) {
-    output.textContent = "Memory error: " + error.message;
+    showOutput("Memory error: " + error.message);
     return;
   }
 
-  output.textContent = "Saved to memory: " + message + "\nAI connection not yet configured.";
+  showOutput("Saved to memory: " + message);
   input.value = "";
 }
 
 async function showMemories() {
-  const output = document.getElementById("response");
-
-  const { data: sessionData } = await db.auth.getSession();
-
-  if (!sessionData.session) {
-    output.textContent = "Please sign in first.";
-    return;
-  }
+  if (!(await requireSession())) return;
 
   const { data, error } = await db
     .from("memories")
@@ -165,20 +197,18 @@ async function showMemories() {
     .limit(10);
 
   if (error) {
-    output.textContent = "Memory error: " + error.message;
+    showOutput("Memory error: " + error.message);
     return;
   }
 
   if (data.length === 0) {
-    output.textContent = "JARVIS memory is empty.";
+    showOutput("JARVIS memory is empty.");
     return;
   }
 
-  const lines = data.map(function (item, index) {
-    return (index + 1) + ". " + item.content.trim() + "  [" + item.category + "]";
-  });
-
-  output.textContent = "JARVIS REMEMBERS:\n\n" + lines.join("\n");
+  showOutput("JARVIS REMEMBERS:\n\n" + data
+    .map(item => "• " + item.content)
+    .join("\n"));
 }
 </script>
 </body>
