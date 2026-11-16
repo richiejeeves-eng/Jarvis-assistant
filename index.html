@@ -23,7 +23,7 @@ nav{display:flex;justify-content:space-around;padding:18px}
 <body>
 <header>
 <h1>JARVIS</h1>
-<small>PERSONAL AI SYSTEM · VERSION 0.2</small>
+<small>PERSONAL AI SYSTEM · VERSION 0.3</small>
 </header>
 <main>
 <div class="card">
@@ -44,6 +44,7 @@ nav{display:flex;justify-content:space-around;padding:18px}
 <h3>Command centre</h3>
 <input id="command" placeholder="Give JARVIS an instruction...">
 <button onclick="send()">Send command</button>
+<button onclick="showMemories()">Show memories</button>
 <p id="response"></p>
 </div>
 <div class="card">
@@ -145,6 +146,39 @@ async function send() {
 
   output.textContent = "Saved to memory: " + message + "\nAI connection not yet configured.";
   input.value = "";
+}
+
+async function showMemories() {
+  const output = document.getElementById("response");
+
+  const { data: sessionData } = await db.auth.getSession();
+
+  if (!sessionData.session) {
+    output.textContent = "Please sign in first.";
+    return;
+  }
+
+  const { data, error } = await db
+    .from("memories")
+    .select("content, category, created_at")
+    .order("created_at", { ascending: false })
+    .limit(10);
+
+  if (error) {
+    output.textContent = "Memory error: " + error.message;
+    return;
+  }
+
+  if (data.length === 0) {
+    output.textContent = "JARVIS memory is empty.";
+    return;
+  }
+
+  const lines = data.map(function (item, index) {
+    return (index + 1) + ". " + item.content.trim() + "  [" + item.category + "]";
+  });
+
+  output.textContent = "JARVIS REMEMBERS:\n\n" + lines.join("\n");
 }
 </script>
 </body>
