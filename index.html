@@ -23,7 +23,7 @@ input{width:100%;padding:13px;background:#081323;border:1px solid #34506d;color:
 .bot{align-self:flex-start;background:#111d30;border:1px solid #263b57;color:#9fcfff}
 .note{align-self:flex-start;color:#65e6ad;font-size:13px}
 .taskrow{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:8px 0}
-.taskrow button{padding:6px 12px;margin:0}
+.taskrow button{padding:6px 12px;margin:0 0 0 4px}
 .done{text-decoration:line-through;opacity:0.5}
 #tools{padding:0 12px}
 #bar{display:flex;gap:8px;padding:10px 12px;border-top:1px solid #263750}
@@ -34,7 +34,7 @@ input{width:100%;padding:13px;background:#081323;border:1px solid #34506d;color:
 <body>
 <header>
 <h1>JARVIS</h1>
-<small>VERSION 0.7 · AI, memory, tasks and alerts</small>
+<small>VERSION 0.8 · AI, memory, tasks, alerts</small>
 </header>
 
 <details id="account" open>
@@ -44,6 +44,8 @@ input{width:100%;padding:13px;background:#081323;border:1px solid #34506d;color:
 <button onclick="signUp()">Sign up</button>
 <button onclick="signIn()">Sign in</button>
 <button onclick="signOut()">Sign out</button>
+<button onclick="forgotPassword()">Forgot password</button>
+<button id="setpw" style="display:none" onclick="setNewPassword()">Set new password</button>
 </details>
 
 <div id="alerts" onclick="showTasks()"></div>
@@ -62,5 +64,7 @@ input{width:100%;padding:13px;background:#081323;border:1px solid #34506d;color:
 </div>
 
 <script src="app.js"></script>
+<script src="auth.js"></script>
+<script src="lists.js"></script>
 </body>
 </html>
