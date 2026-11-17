@@ -33,6 +33,13 @@ function addNote(text) {
   scrollChat();
 }
 
+function makeButton(text, handler) {
+  const button = document.createElement("button");
+  button.textContent = text;
+  button.onclick = handler;
+  return button;
+}
+
 function clearChat() {
   document.getElementById("chat").textContent = "";
   history = [];
@@ -119,8 +126,58 @@ async function signOut() {
   await db.auth.signOut();
 }
 
+async function forgotPassword() {
+  const email = document.getElementById("email").value.trim();
+
+  if (!email) {
+    showStatus("Type your email above first, then tap Forgot password.");
+    return;
+  }
+
+  const { error } = await db.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin + window.location.pathname
+  });
+
+  if (error) {
+    showStatus("Reset error: " + error.message);
+    return;
+  }
+
+  showStatus("If that email has an account, a reset link is on its way. Tap it, then follow the steps here.");
+}
+
+async function setNewPassword() {
+  const password = document.getElementById("password").value;
+
+  if (password.length < 6) {
+    showStatus("Type a new password of at least 6 characters in the password box.");
+    return;
+  }
+
+  const { error } = await db.auth.updateUser({ password: password });
+
+  if (error) {
+    showStatus("Password error: " + error.message);
+    return;
+  }
+
+  document.getElementById("password").value = "";
+  const setButton = document.getElementById("setpw");
+  if (setButton) setButton.style.display = "none";
+  showStatus("● Password updated. You are signed in.");
+}
+
 db.auth.onAuthStateChange((event, session) => {
   const account = document.getElementById("account");
+
+  if (event === "PASSWORD_RECOVERY") {
+    account.open = true;
+    const setButton = document.getElementById("setpw");
+    if (setButton) setButton.style.display = "inline-block";
+    showStatus("Type a new password in the password box, then tap Set new password.");
+    return;
+  }
+
   if (session) {
     showStatus("● Signed in as " + session.user.email);
     account.open = false;
@@ -199,90 +256,9 @@ async function showMemories() {
 
   const { data, error } = await db
     .from("memories")
-    .select("content, category, created_at")
+    .select("id, content, category, created_at")
     .order("created_at", { ascending: false })
     .limit(10);
 
   if (error) {
-    addMessage("Memory error: " + error.message, "bot");
-    return;
-  }
-
-  if (data.length === 0) {
-    addMessage("JARVIS memory is empty.", "bot");
-    return;
-  }
-
-  addMessage("JARVIS REMEMBERS:\n\n" + data
-    .map(item => "• " + item.content)
-    .join("\n"), "bot");
-}
-
-async function showTasks() {
-  if (!(await requireSession())) return;
-
-  const { data, error } = await db
-    .from("tasks")
-    .select("id, title, due_at")
-    .eq("status", "pending")
-    .order("due_at", { ascending: true, nullsFirst: false })
-    .limit(20);
-
-  if (error) {
-    addMessage("Task error: " + error.message, "bot");
-    return;
-  }
-
-  if (data.length === 0) {
-    addMessage("No pending tasks.", "bot");
-    return;
-  }
-
-  const box = addMessage("YOUR TASKS", "bot");
-
-  data.forEach(function (task) {
-    const row = document.createElement("div");
-    row.className = "taskrow";
-
-    const label = document.createElement("span");
-    let text = "• " + task.title;
-    if (task.due_at) {
-      text += "\n   due " + new Date(task.due_at).toLocaleString();
-    }
-    label.textContent = text;
-
-    const doneButton = document.createElement("button");
-    doneButton.textContent = "Done";
-    doneButton.onclick = async function () {
-      const { error: updateError } = await db
-        .from("tasks")
-        .update({ status: "done" })
-        .eq("id", task.id);
-
-      if (updateError) {
-        addMessage("Task error: " + updateError.message, "bot");
-        return;
-      }
-
-      label.className = "done";
-      doneButton.remove();
-      checkAlerts();
-    };
-
-    row.appendChild(label);
-    row.appendChild(doneButton);
-    box.appendChild(row);
-  });
-
-  scrollChat();
-}
-
-document.getElementById("command").addEventListener("keydown", function (e) {
-  if (e.key === "Enter") {
-    send();
-  }
-});
-
-setInterval(checkAlerts, 60000);
-
-addMessage("JARVIS online. How can I help?", "bot");
+    addMessage("Memory error: " + error.message,
