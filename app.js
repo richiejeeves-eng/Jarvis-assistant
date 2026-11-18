@@ -220,7 +220,8 @@ function addFeedbackControls(messageElement, messageId, conversationId) {
   const correction = makeButton("✎ Correct", function () {
     const text = window.prompt("What should JEEVES have said instead?");
     if (text && text.trim()) {
-      submitFeedback(controls, messageId, conversationId, "correction", null, text.trim());
+      const remember = window.confirm("Save this correction as a lasting JEEVES response preference? Choose OK only if it should guide future conversations.");
+      submitFeedback(controls, messageId, conversationId, "correction", null, text.trim(), remember);
     }
   });
   controls.append(helpful, unhelpful, correction);
@@ -228,7 +229,7 @@ function addFeedbackControls(messageElement, messageId, conversationId) {
   messageElement.insertAdjacentElement("afterend", controls);
 }
 
-async function submitFeedback(controls, messageId, conversationId, feedbackType, rating, correction) {
+async function submitFeedback(controls, messageId, conversationId, feedbackType, rating, correction, rememberAsPreference) {
   if (controls.dataset.submitted === "true" || controls.dataset.saving === "true") return;
   controls.dataset.saving = "true";
   const { error } = await db.from("assistant_feedback").insert({
@@ -236,7 +237,8 @@ async function submitFeedback(controls, messageId, conversationId, feedbackType,
     assistant_message_id: messageId,
     feedback_type: feedbackType,
     rating: rating,
-    correction: correction
+    correction: correction,
+    remember_as_preference: rememberAsPreference === true
   });
 
   controls.dataset.saving = "false";
@@ -250,7 +252,7 @@ async function submitFeedback(controls, messageId, conversationId, feedbackType,
     button.disabled = true;
   });
   const confirmation = document.createElement("span");
-  confirmation.textContent = "Feedback saved";
+  confirmation.textContent = rememberAsPreference === true ? "Feedback and lasting preference saved" : "Feedback saved";
   controls.appendChild(confirmation);
 }
 
