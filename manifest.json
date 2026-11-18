@@ -1,1 +1,17 @@
-{"name":"Jeeves","short_name":"Jeeves","start_url":"./","scope":"./","display":"standalone","background_color":"#080d18","theme_color":"#080d18","icons":[{"src":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMAAAADAAgMAAAAvsoSUAAAADFBMVEUIDRhluv8jfL0AAABd/mXWAAAAiUlEQVR42u3XwQpAQBSF4WNiY++9bMjjWQ8PMe/jERQWSlFqSNzyn52aL3XqzkUi5Jkkknz06VpyV9/wS5BK0tREnc1bUSsAALh1zRySlbvHuadWAMDSiI7dNqhDoCUAAAAAGF1ZJ5uKWgEAwJef0lJR0RIAYHNE119dWgIAAACAyZXlPC0R8koWQ4MOwB2pnu4AAAAASUVORK5CYII=","sizes":"192x192","type":"image/png","purpose":"any"},{"src":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIAAgMAAACJFjxpAAAADFBMVEUIDRhluv8jfL0AAABd/mXWAAABYklEQVR42u3aQQ2DMBiAUUZqYSbmB/Sgp5hAxUxgggskZZeVsgEJ77tAEwgv/Me2qiRJkiRJ0t17LDfx4A+387U++w8AAAAAAAAAnA4I6eLdHfPRaAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABJoeSlJvO5cTACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIDvFW1Y9B/rdAMjZ5PCCAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADSNh3v33OM3wgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAuCwilLz4bIwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA+E2bNix6IwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD4Q6vj/a9oBAAAAAAADcESJIkSZIkTVaaDyItY7E0AAAAAElFTkSuQmCC","sizes":"512x512","type":"image/png","purpose":"any"}]}
+{
+  "name": "Jeeves",
+  "short_name": "Jeeves",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#080d18",
+  "theme_color": "#080d18",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
