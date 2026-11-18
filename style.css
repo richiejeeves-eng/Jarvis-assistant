@@ -1,0 +1,27 @@
+:root{--bg:#080d18;--text:#eaf2ff;--accent:#65baff;--muted:#8296b0;--card:#111d30;--border:#263b57;--line:#263750;--btn:#237cbd;--btntext:#ffffff;--input:#081323;--inputborder:#34506d;--bot:#9fcfff;--ok:#65e6ad;--alertbg:#3a2a10;--alertborder:#a06a1c;--alerttext:#ffd9a0;--mic:#2f4660}
+[data-theme="green"]{--bg:#0b1a14;--text:#f1ecd9;--accent:#d4af37;--muted:#9aa58f;--card:#13281f;--border:#2c4a3a;--line:#25402f;--btn:#b8922a;--btntext:#101810;--input:#0a1611;--inputborder:#3b5a49;--bot:#e6d9a8;--ok:#8fd9a8;--mic:#3a5a48}
+[data-theme="light"]{--bg:#f4efe4;--text:#1d2530;--accent:#7a4b12;--muted:#6b6558;--card:#fffaf0;--border:#d8cdb5;--line:#d8cdb5;--btn:#7a4b12;--btntext:#ffffff;--input:#ffffff;--inputborder:#cbbf9f;--bot:#3b3322;--ok:#2d7a4a;--alertbg:#fde9c4;--alertborder:#d09a3a;--alerttext:#5a3a00;--mic:#9a7b4a}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,sans-serif;display:flex;flex-direction:column;height:100dvh}
+header{padding:14px 20px;border-bottom:1px solid var(--line)}
+h1{letter-spacing:5px;color:var(--accent);margin:0;font-size:22px}
+small{color:var(--muted)}
+#account{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px 14px;margin:8px 12px}
+#account summary{color:var(--ok);cursor:pointer}
+#alerts{display:none;margin:0 12px 4px 12px;padding:10px 14px;border-radius:12px;background:var(--alertbg);border:1px solid var(--alertborder);color:var(--alerttext);white-space:pre-wrap;line-height:1.4;cursor:pointer}
+button{background:var(--btn);color:var(--btntext);border:0;padding:12px 14px;border-radius:9px;margin:4px 4px 4px 0}
+input{width:100%;padding:13px;background:var(--input);border:1px solid var(--inputborder);color:var(--text);border-radius:9px;margin:6px 0}
+#chat{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
+.msg{max-width:85%;padding:10px 14px;border-radius:14px;white-space:pre-wrap;line-height:1.4;word-wrap:break-word}
+.user{align-self:flex-end;background:var(--btn);color:var(--btntext)}
+.bot{align-self:flex-start;background:var(--card);border:1px solid var(--border);color:var(--bot)}
+.note{align-self:flex-start;color:var(--ok);font-size:13px}
+.taskrow{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:8px 0}
+.taskrow button{padding:6px 12px;margin:0 0 0 4px}
+.done{text-decoration:line-through;opacity:0.5}
+#tools{padding:0 12px}
+#bar{display:flex;gap:8px;padding:10px 12px;border-top:1px solid var(--line)}
+#bar input{flex:1;margin:0}
+#bar button{margin:0}
+#micbtn{background:var(--mic)}
