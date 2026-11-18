@@ -31,12 +31,13 @@ input{width:100%;padding:13px;background:#081323;border:1px solid #34506d;color:
 #bar{display:flex;gap:8px;padding:10px 12px;border-top:1px solid #263750}
 #bar input{flex:1;margin:0}
 #bar button{margin:0}
+#micbtn{background:#2f4660}
 </style>
 </head>
 <body>
 <header>
 <h1>JARVIS</h1>
-<small>VERSION 0.9 · AI, memory, tasks, alerts</small>
+<small>VERSION 1.0 · AI, memory, tasks, alerts, voice</small>
 </header>
 
 <details id="account" open>
@@ -61,6 +62,7 @@ input{width:100%;padding:13px;background:#081323;border:1px solid #34506d;color:
 </div>
 
 <div id="bar">
+<button id="micbtn" onclick="startVoice()">🎤</button>
 <input id="command" placeholder="Message JARVIS...">
 <button id="sendbtn" onclick="send()">Send</button>
 </div>
@@ -68,6 +70,7 @@ input{width:100%;padding:13px;background:#081323;border:1px solid #34506d;color:
 <script src="app.js"></script>
 <script src="auth.js"></script>
 <script src="lists.js"></script>
+<script src="voice.js"></script>
 <script>
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("sw.js");
