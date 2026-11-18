@@ -224,7 +224,8 @@ function addFeedbackControls(messageElement, messageId, conversationId) {
     }
   });
   controls.append(helpful, unhelpful, correction);
-  messageElement.appendChild(controls);
+  controls.setAttribute("aria-label", "Rate this JEEVES response");
+  messageElement.insertAdjacentElement("afterend", controls);
 }
 
 async function submitFeedback(controls, messageId, conversationId, feedbackType, rating, correction) {
