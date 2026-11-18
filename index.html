@@ -3,41 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>JARVIS AI</title>
+<title>Jeeves</title>
 <link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="style.css">
 <meta name="theme-color" content="#080d18">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<style>
-*{box-sizing:border-box}
-html,body{height:100%}
-body{margin:0;background:#080d18;color:#eaf2ff;font-family:Arial,sans-serif;display:flex;flex-direction:column;height:100dvh}
-header{padding:14px 20px;border-bottom:1px solid #263750}
-h1{letter-spacing:5px;color:#65baff;margin:0;font-size:22px}
-small{color:#8296b0}
-#account{background:#111d30;border:1px solid #263b57;border-radius:12px;padding:10px 14px;margin:8px 12px}
-#account summary{color:#65e6ad;cursor:pointer}
-#alerts{display:none;margin:0 12px 4px 12px;padding:10px 14px;border-radius:12px;background:#3a2a10;border:1px solid #a06a1c;color:#ffd9a0;white-space:pre-wrap;line-height:1.4;cursor:pointer}
-button{background:#237cbd;color:white;border:0;padding:12px 14px;border-radius:9px;margin:4px 4px 4px 0}
-input{width:100%;padding:13px;background:#081323;border:1px solid #34506d;color:white;border-radius:9px;margin:6px 0}
-#chat{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
-.msg{max-width:85%;padding:10px 14px;border-radius:14px;white-space:pre-wrap;line-height:1.4;word-wrap:break-word}
-.user{align-self:flex-end;background:#237cbd;color:white}
-.bot{align-self:flex-start;background:#111d30;border:1px solid #263b57;color:#9fcfff}
-.note{align-self:flex-start;color:#65e6ad;font-size:13px}
-.taskrow{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:8px 0}
-.taskrow button{padding:6px 12px;margin:0 0 0 4px}
-.done{text-decoration:line-through;opacity:0.5}
-#tools{padding:0 12px}
-#bar{display:flex;gap:8px;padding:10px 12px;border-top:1px solid #263750}
-#bar input{flex:1;margin:0}
-#bar button{margin:0}
-#micbtn{background:#2f4660}
-</style>
 </head>
 <body>
 <header>
-<h1>JARVIS</h1>
-<small>VERSION 1.0 · AI, memory, tasks, alerts, voice</small>
+<h1>JEEVES</h1>
+<small>VERSION 1.1 · At your service</small>
 </header>
 
 <details id="account" open>
@@ -59,11 +34,12 @@ input{width:100%;padding:13px;background:#081323;border:1px solid #34506d;color:
 <button onclick="showMemories()">Show memories</button>
 <button onclick="showTasks()">Show tasks</button>
 <button onclick="clearChat()">Clear chat</button>
+<button id="themebtn" onclick="cycleTheme()">Theme</button>
 </div>
 
 <div id="bar">
 <button id="micbtn" onclick="startVoice()">🎤</button>
-<input id="command" placeholder="Message JARVIS...">
+<input id="command" placeholder="Message Jeeves...">
 <button id="sendbtn" onclick="send()">Send</button>
 </div>
 
@@ -71,6 +47,7 @@ input{width:100%;padding:13px;background:#081323;border:1px solid #34506d;color:
 <script src="auth.js"></script>
 <script src="lists.js"></script>
 <script src="voice.js"></script>
+<script src="jeeves.js"></script>
 <script>
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("sw.js");
