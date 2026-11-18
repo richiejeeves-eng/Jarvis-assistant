@@ -91,6 +91,26 @@ async function checkAlerts() {
 
   banner.textContent = lines.join("\n") + "\n(tap to manage tasks)";
   banner.style.display = "block";
+
+  // Speak each newly due-soon/overdue task once per local day while voice is enabled.
+  try {
+    const today = new Date().toLocaleDateString("en-CA");
+    const storageKey = "jeeves-spoken-alerts-" + today;
+    const announced = new Set(JSON.parse(localStorage.getItem(storageKey) || "[]"));
+    const fresh = data.filter(function (task) { return !announced.has(task.id); });
+    if (fresh.length && typeof speak === "function" && typeof speakOn !== "undefined" && speakOn) {
+      fresh.forEach(function (task) { announced.add(task.id); });
+      localStorage.setItem(storageKey, JSON.stringify(Array.from(announced)));
+      const first = fresh.slice(0, 3).map(function (task) {
+        const due = new Date(task.due_at);
+        return task.title + (due < now ? ", overdue" : ", due soon");
+      });
+      const extra = fresh.length > 3 ? " And " + (fresh.length - 3) + " more." : "";
+      speak("A quick reminder. " + first.join(". ") + "." + extra + " You can review your tasks in JEEVES.");
+    }
+  } catch (announcementError) {
+    console.warn("Could not store spoken task reminders:", announcementError);
+  }
 }
 
 async function requireSession() {
