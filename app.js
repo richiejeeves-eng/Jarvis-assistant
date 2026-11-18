@@ -276,6 +276,30 @@ async function submitFeedback(controls, messageId, conversationId, feedbackType,
   controls.appendChild(confirmation);
 }
 
+function startMorningBriefing(automatic) {
+  const input = document.getElementById("command");
+  if (!input || sendingMessage || conversationBusy) return false;
+  const prompt = "Prepare my concise morning executive briefing. Use only information actually available in my saved tasks, memories and recent conversation context. Cover: (1) overdue and due-today tasks, (2) today's priorities, (3) active projects and one practical next action for each, and (4) any personal commitments I have explicitly recorded. Separate confirmed facts from suggestions. If schedule/calendar data is unavailable, say so; do not invent appointments, deadlines, progress or commitments. End with the single most valuable action to start now.";
+  input.value = prompt;
+  if (automatic) {
+    addNote("☀️ Preparing your daily JEEVES briefing…");
+  }
+  send();
+  return true;
+}
+
+function maybeRunMorningBriefing() {
+  try {
+    const hour = new Date().getHours();
+    if (hour < 6 || hour >= 11) return;
+    const key = "jeeves-morning-briefing-" + new Date().toLocaleDateString("en-CA");
+    if (localStorage.getItem(key) === "done") return;
+    if (startMorningBriefing(true)) localStorage.setItem(key, "done");
+  } catch (error) {
+    console.warn("Morning briefing could not start:", error);
+  }
+}
+
 async function send() {
   const input = document.getElementById("command");
   const button = document.getElementById("sendbtn");
@@ -369,6 +393,7 @@ db.auth.onAuthStateChange(function (event, session) {
             await openConversation(data.id);
           }
         }
+        setTimeout(maybeRunMorningBriefing, 1200);
       }, 0);
     }
   } else if (event === "SIGNED_OUT") {
