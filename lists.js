@@ -211,6 +211,7 @@ async function showTasks() {
 
       label.className = "done";
       buttons.remove();
+      if (typeof speak === "function") speak("Completed: " + task.title);
       checkAlerts();
     });
 
