@@ -12,7 +12,7 @@
 <body>
 <header>
 <h1>JEEVES</h1>
-<small>VERSION 1.1 · At your service</small>
+<small>VERSION 1.2 · At your service</small>
 </header>
 
 <details id="account" open>
@@ -35,6 +35,7 @@
 <button onclick="showTasks()">Show tasks</button>
 <button onclick="clearChat()">Clear chat</button>
 <button id="themebtn" onclick="cycleTheme()">Theme</button>
+<button id="speakbtn" onclick="toggleSpeak()">🔇 Voice off</button>
 </div>
 
 <div id="bar">
@@ -48,6 +49,7 @@
 <script src="lists.js"></script>
 <script src="voice.js"></script>
 <script src="jeeves.js"></script>
+<script src="speak.js"></script>
 <script>
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("sw.js");
