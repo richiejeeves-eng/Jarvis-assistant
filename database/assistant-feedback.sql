@@ -54,3 +54,9 @@ create policy "Users can submit their own assistant feedback"
         and m.role = 'assistant'
     )
   );
+
+
+-- Optional durable preference flag: only corrections explicitly approved by the user
+-- are included in the assistant's persistent response-preference context.
+alter table public.assistant_feedback
+  add column if not exists remember_as_preference boolean not null default false;
