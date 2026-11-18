@@ -268,7 +268,8 @@ async function send() {
     sendingMessage = false;
     button.disabled = false;
     document.getElementById("newchatbtn").disabled = false;
-    document.getElementById("conversationSelect").disabled = false;
+    const { data: currentSession } = await db.auth.getSession();
+    document.getElementById("conversationSelect").disabled = !currentSession.session;
     input.focus();
   }
 }
