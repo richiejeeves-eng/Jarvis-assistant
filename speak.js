@@ -1,11 +1,16 @@
 let speakOn = false;
 let profileIndex = 0;
 let voiceURI = "";
+let currentAudio = null;
+let currentAudioUrl = null;
+let useElevenLabs = true;
+const JEEVES_VOICE_ID = "JBFqnCBsd6RMkjVDRZzb"; // George — British male voice
 
 try {
   speakOn = localStorage.getItem("jeeves-speak") === "on";
   profileIndex = parseInt(localStorage.getItem("jeeves-profile") || "0", 10) || 0;
   voiceURI = localStorage.getItem("jeeves-voice") || "";
+  useElevenLabs = localStorage.getItem("jeeves-elevenlabs") !== "off";
 } catch (e) {}
 
 const PROFILES = [
@@ -15,14 +20,12 @@ const PROFILES = [
 ];
 
 function saveSetting(key, value) {
-  try {
-    localStorage.setItem(key, value);
-  } catch (e) {}
+  try { localStorage.setItem(key, value); } catch (e) {}
 }
 
 function getVoices() {
   if (!window.speechSynthesis) return [];
-  const lang = (navigator.language || "en").slice(0, 2).toLowerCase();
+  const lang = (navigator.language || "en-GB").slice(0, 2).toLowerCase();
   return window.speechSynthesis.getVoices().filter(function (v) {
     return v.lang.toLowerCase().startsWith(lang);
   });
@@ -31,45 +34,84 @@ function getVoices() {
 function updateSpeakButtons() {
   const speakButton = document.getElementById("speakbtn");
   if (speakButton) speakButton.textContent = speakOn ? "🔊 Voice on" : "🔇 Voice off";
-
   const styleButton = document.getElementById("stylebtn");
-  if (styleButton) {
-    styleButton.textContent = "🎭 Style: " + PROFILES[profileIndex % PROFILES.length].name;
-  }
-
+  if (styleButton) styleButton.textContent = "🎭 Style: " + PROFILES[profileIndex % PROFILES.length].name;
   const voiceButton = document.getElementById("voicebtn");
   if (voiceButton) {
     const voices = getVoices();
     const index = voices.findIndex(function (v) { return v.voiceURI === voiceURI; });
-    voiceButton.textContent = "🗣 Voice " + (index + 1) + "/" + voices.length;
+    voiceButton.textContent = "🗣 " + (useElevenLabs ? "Jeeves · ElevenLabs" : "Device voice " + (index + 1) + "/" + voices.length);
   }
 }
 
-function speakNow(text) {
+function speakWithBrowser(text) {
   if (!window.speechSynthesis) return;
   window.speechSynthesis.cancel();
-
   const profile = PROFILES[profileIndex % PROFILES.length];
   const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = navigator.language || "en-GB";
+  utterance.lang = "en-GB";
   utterance.rate = profile.rate;
   utterance.pitch = profile.pitch;
-
   const voice = getVoices().find(function (v) { return v.voiceURI === voiceURI; });
   if (voice) utterance.voice = voice;
-
   window.speechSynthesis.speak(utterance);
 }
 
+async function speakWithElevenLabs(text) {
+  const { data, error } = await db.auth.getSession();
+  const session = data && data.session;
+  if (error || !session) throw new Error("Sign in required");
+  const response = await fetch(SUPABASE_URL + "/functions/v1/jeeves-voice", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer " + session.access_token,
+      "apikey": SUPABASE_KEY
+    },
+    body: JSON.stringify({ text: text.slice(0, 1200), voice_id: JEEVES_VOICE_ID })
+  });
+  if (!response.ok) {
+    let detail = "Voice request failed";
+    try { const body = await response.json(); detail = body.error || detail; } catch (e) {}
+    throw new Error(detail);
+  }
+  const blob = await response.blob();
+  if (currentAudio) {
+    currentAudio.pause();
+    currentAudio = null;
+  }
+  if (currentAudioUrl) URL.revokeObjectURL(currentAudioUrl);
+  currentAudioUrl = URL.createObjectURL(blob);
+  currentAudio = new Audio(currentAudioUrl);
+  await currentAudio.play();
+}
+
+async function speakNow(text) {
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+  if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+  if (useElevenLabs) {
+    try {
+      await speakWithElevenLabs(text);
+      return;
+    } catch (error) {
+      console.warn("JEEVES premium voice unavailable; using device voice:", error.message);
+    }
+  }
+  speakWithBrowser(text);
+}
+
 function speak(text) {
-  if (!speakOn) return;
+  if (!speakOn || !text) return;
   speakNow(text);
 }
 
 function toggleSpeak() {
   speakOn = !speakOn;
   saveSetting("jeeves-speak", speakOn ? "on" : "off");
-  if (!speakOn && window.speechSynthesis) window.speechSynthesis.cancel();
+  if (!speakOn) {
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+    if (currentAudio) currentAudio.pause();
+  }
   updateSpeakButtons();
 }
 
@@ -81,16 +123,16 @@ function cycleProfile() {
 }
 
 function cycleVoice() {
-  const voices = getVoices();
-  if (voices.length === 0) {
-    addMessage("No other voices were found on this device.", "bot");
-    return;
+  useElevenLabs = !useElevenLabs;
+  saveSetting("jeeves-elevenlabs", useElevenLabs ? "on" : "off");
+  if (!useElevenLabs) {
+    const voices = getVoices();
+    if (voices.length) {
+      const index = voices.findIndex(function (v) { return v.voiceURI === voiceURI; });
+      voiceURI = voices[(index + 1) % voices.length].voiceURI;
+      saveSetting("jeeves-voice", voiceURI);
+    }
   }
-
-  const index = voices.findIndex(function (v) { return v.voiceURI === voiceURI; });
-  const next = voices[(index + 1) % voices.length];
-  voiceURI = next.voiceURI;
-  saveSetting("jeeves-voice", voiceURI);
   updateSpeakButtons();
   speakNow("Good day. At your service.");
 }
@@ -105,9 +147,7 @@ function makeToolButton(id, handler) {
 makeToolButton("stylebtn", cycleProfile);
 makeToolButton("voicebtn", cycleVoice);
 
-if (window.speechSynthesis) {
-  window.speechSynthesis.onvoiceschanged = updateSpeakButtons;
-}
+if (window.speechSynthesis) window.speechSynthesis.onvoiceschanged = updateSpeakButtons;
 
 const originalSend = send;
 send = async function () {
@@ -118,7 +158,8 @@ send = async function () {
   if (
     messages.length > before + 1 &&
     last.classList.contains("bot") &&
-    !last.textContent.startsWith("AI error")
+    !last.textContent.startsWith("AI error") &&
+    !last.textContent.startsWith("Could not")
   ) {
     speak(last.textContent);
   }
