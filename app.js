@@ -7,6 +7,7 @@ let history = [];
 let activeConversationId = null;
 let conversationSwitchToken = 0;
 let conversationBusy = false;
+let sendingMessage = false;
 
 function showStatus(text) {
   document.getElementById("authstatus").textContent = text;
@@ -44,7 +45,9 @@ function makeButton(text, handler) {
 }
 
 function newChat() {
+  if (sendingMessage) return;
   conversationSwitchToken++;
+  conversationBusy = false;
   activeConversationId = null;
   history = [];
   document.getElementById("conversationSelect").value = "";
@@ -132,7 +135,7 @@ async function refreshConversationList(selectedId, openSelected) {
     picker.appendChild(option);
   });
 
-  picker.disabled = false;
+  picker.disabled = sendingMessage;
   picker.value = selectedId || "";
   if (openSelected && selectedId) await openConversation(selectedId);
 }
@@ -206,12 +209,15 @@ async function send() {
   const button = document.getElementById("sendbtn");
   const message = input.value.trim();
 
-  if (!message || conversationBusy || button.disabled) return;
+  if (!message || conversationBusy || sendingMessage || button.disabled) return;
   if (!(await requireSession())) return;
 
   input.value = "";
   addMessage(message, "user");
+  sendingMessage = true;
   button.disabled = true;
+  document.getElementById("newchatbtn").disabled = true;
+  document.getElementById("conversationSelect").disabled = true;
   const thinking = addMessage("JARVIS is thinking...", "bot");
 
   try {
@@ -259,7 +265,10 @@ async function send() {
   } catch (error) {
     thinking.textContent = "Could not save or send this message: " + error.message;
   } finally {
+    sendingMessage = false;
     button.disabled = false;
+    document.getElementById("newchatbtn").disabled = false;
+    document.getElementById("conversationSelect").disabled = false;
     input.focus();
   }
 }
@@ -290,6 +299,7 @@ db.auth.onAuthStateChange(function (event, session) {
     }
   } else if (event === "SIGNED_OUT") {
     conversationSwitchToken++;
+    conversationBusy = false;
     activeConversationId = null;
     history = [];
     document.getElementById("chat").textContent = "";
