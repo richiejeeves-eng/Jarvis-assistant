@@ -11,8 +11,11 @@ small{color:var(--muted)}
 #account summary{color:var(--ok);cursor:pointer}
 #alerts{display:none;margin:0 12px 4px 12px;padding:10px 14px;border-radius:12px;background:var(--alertbg);border:1px solid var(--alertborder);color:var(--alerttext);white-space:pre-wrap;line-height:1.4;cursor:pointer}
 button{background:var(--btn);color:var(--btntext);border:0;padding:12px 14px;border-radius:9px;margin:4px 4px 4px 0}
-input{width:100%;padding:13px;background:var(--input);border:1px solid var(--inputborder);color:var(--text);border-radius:9px;margin:6px 0}
-#chat{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
+input,select{width:100%;padding:13px;background:var(--input);border:1px solid var(--inputborder);color:var(--text);border-radius:9px;margin:6px 0}
+#conversationbar{display:flex;gap:8px;align-items:center;padding:0 12px}
+#conversationbar select{flex:1;min-width:0;margin:0}
+#conversationbar button{white-space:nowrap;margin:0}
+#chat{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px;min-height:100px}
 .msg{max-width:85%;padding:10px 14px;border-radius:14px;white-space:pre-wrap;line-height:1.4;word-wrap:break-word}
 .user{align-self:flex-end;background:var(--btn);color:var(--btntext)}
 .bot{align-self:flex-start;background:var(--card);border:1px solid var(--border);color:var(--bot)}
@@ -25,3 +28,4 @@ input{width:100%;padding:13px;background:var(--input);border:1px solid var(--inp
 #bar input{flex:1;margin:0}
 #bar button{margin:0}
 #micbtn{background:var(--mic)}
+@media(max-width:420px){#conversationbar button{padding:11px 9px;font-size:12px}}
