@@ -59,6 +59,22 @@ function clearChat() {
   newChat();
 }
 
+async function enableTaskNotifications() {
+  if (!("Notification" in window)) {
+    addNote("This browser does not support notifications.");
+    return;
+  }
+  const permission = await Notification.requestPermission();
+  if (permission === "granted") {
+    addNote("Task notifications enabled on this device.");
+    checkAlerts();
+  } else {
+    addNote(permission === "denied"
+      ? "Notifications are blocked in browser settings."
+      : "Notification permission was not granted.");
+  }
+}
+
 async function checkAlerts() {
   const banner = document.getElementById("alerts");
   const { data: sessionData } = await db.auth.getSession();
@@ -91,6 +107,41 @@ async function checkAlerts() {
 
   banner.textContent = lines.join("\n") + "\n(tap to manage tasks)";
   banner.style.display = "block";
+
+  // Notify once per task per local day when the user has explicitly enabled notifications.
+  if ("Notification" in window && Notification.permission === "granted") {
+    try {
+      const today = new Date().toLocaleDateString("en-CA");
+      const storageKey = "jeeves-notified-tasks-" + today;
+      const notified = new Set(JSON.parse(localStorage.getItem(storageKey) || "[]"));
+      const fresh = data.filter(function (task) { return !notified.has(task.id); });
+      if (fresh.length) {
+        const titles = fresh.slice(0, 3).map(function (task) { return task.title; });
+        const extra = fresh.length > 3 ? " +" + (fresh.length - 3) + " more" : "";
+        const title = fresh.length === 1 ? "JEEVES task reminder" : "JEEVES task reminders";
+        const options = {
+          body: titles.join("\n") + extra,
+          tag: "jeeves-task-reminders",
+          data: { url: window.location.href }
+        };
+        let shown = false;
+        if ("serviceWorker" in navigator) {
+          const registration = await navigator.serviceWorker.ready;
+          await registration.showNotification(title, options);
+          shown = true;
+        } else {
+          new Notification(title, options);
+          shown = true;
+        }
+        if (shown) {
+          fresh.forEach(function (task) { notified.add(task.id); });
+          localStorage.setItem(storageKey, JSON.stringify(Array.from(notified)));
+        }
+      }
+    } catch (notificationError) {
+      console.warn("Could not show task notification:", notificationError);
+    }
+  }
 
   // Speak each newly due-soon/overdue task once per local day while voice is enabled.
   try {
