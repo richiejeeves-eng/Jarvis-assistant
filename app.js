@@ -146,7 +146,7 @@ async function openConversation(id) {
   conversationBusy = true;
   const { data, error } = await db
     .from("conversation_messages")
-    .select("role, content, created_at")
+    .select("id, role, content, created_at")
     .eq("conversation_id", id)
     .order("created_at", { ascending: true })
     .limit(500);
@@ -170,7 +170,8 @@ async function openConversation(id) {
   const chat = document.getElementById("chat");
   chat.textContent = "";
   (data || []).forEach(function (message) {
-    addMessage(message.content, message.role === "assistant" ? "bot" : "user");
+    const bubble = addMessage(message.content, message.role === "assistant" ? "bot" : "user");
+    if (message.role === "assistant") addFeedbackControls(bubble, message.id, id);
   });
   if (!data || data.length === 0) addMessage("This conversation is empty. Send a message to continue.", "bot");
 }
@@ -190,11 +191,11 @@ async function createConversation(firstMessage) {
 }
 
 async function saveConversationMessage(role, content) {
-  const { error } = await db.from("conversation_messages").insert({
+  const { data, error } = await db.from("conversation_messages").insert({
     conversation_id: activeConversationId,
     role: role,
     content: content
-  });
+  }).select("id").single();
   if (error) throw error;
 
   const { error: updateError } = await db
@@ -202,6 +203,54 @@ async function saveConversationMessage(role, content) {
     .update({ updated_at: new Date().toISOString() })
     .eq("id", activeConversationId);
   if (updateError) throw updateError;
+  return data.id;
+}
+
+function addFeedbackControls(messageElement, messageId, conversationId) {
+  if (!messageElement || !messageId) return;
+  const controls = document.createElement("div");
+  controls.className = "feedback-controls";
+
+  const helpful = makeButton("👍 Helpful", function () {
+    submitFeedback(controls, messageId, conversationId, "helpful", 1, null);
+  });
+  const unhelpful = makeButton("👎 Not helpful", function () {
+    submitFeedback(controls, messageId, conversationId, "unhelpful", -1, null);
+  });
+  const correction = makeButton("✎ Correct", function () {
+    const text = window.prompt("What should JEEVES have said instead?");
+    if (text && text.trim()) {
+      submitFeedback(controls, messageId, conversationId, "correction", null, text.trim());
+    }
+  });
+  controls.append(helpful, unhelpful, correction);
+  messageElement.appendChild(controls);
+}
+
+async function submitFeedback(controls, messageId, conversationId, feedbackType, rating, correction) {
+  if (controls.dataset.submitted === "true" || controls.dataset.saving === "true") return;
+  controls.dataset.saving = "true";
+  const { error } = await db.from("assistant_feedback").insert({
+    conversation_id: conversationId,
+    assistant_message_id: messageId,
+    feedback_type: feedbackType,
+    rating: rating,
+    correction: correction
+  });
+
+  controls.dataset.saving = "false";
+  if (error) {
+    addNote("Could not save feedback: " + error.message);
+    return;
+  }
+
+  controls.dataset.submitted = "true";
+  controls.querySelectorAll("button").forEach(function (button) {
+    button.disabled = true;
+  });
+  const confirmation = document.createElement("span");
+  confirmation.textContent = "Feedback saved";
+  controls.appendChild(confirmation);
 }
 
 async function send() {
@@ -251,7 +300,8 @@ async function send() {
     }
 
     thinking.textContent = data.reply;
-    await saveConversationMessage("assistant", data.reply);
+    const assistantMessageId = await saveConversationMessage("assistant", data.reply);
+    addFeedbackControls(thinking, assistantMessageId, activeConversationId);
     history.push({ role: "model", text: data.reply });
     history = history.slice(-10);
     await refreshConversationList(activeConversationId, false);
