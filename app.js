@@ -280,7 +280,7 @@ async function send() {
 
     const { data, error } = await db.functions.invoke("jarvis-brain", {
       body: {
-        message: message,
+        message: (window.jeevesMode ? "[Assistant mode: " + window.jeevesMode + "]\\n" : "") + message,
         history: modelHistory,
         now: new Date().toString(),
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
