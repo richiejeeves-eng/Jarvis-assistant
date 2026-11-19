@@ -7,7 +7,7 @@
     { group: "GOOGLE WORKSPACE", name: "Google Tasks", detail: "Import Google Tasks into Jeeves and sync completion", status: "Additional permission required", kind: "setup", icon: "✓" },
     { group: "GOOGLE WORKSPACE", name: "Gmail", detail: "Read recent email metadata and snippets (read-only)", status: "Awaiting authorisation", kind: "setup", icon: "✉" },
     { group: "GOOGLE WORKSPACE", name: "Google Drive", detail: "List files and metadata (read-only)", status: "Awaiting authorisation", kind: "setup", icon: "▧" },
-    { group: "HEALTH & FITNESS", name: "Health Connect", detail: "Native Android companion · steps, heart rate, sleep, weight, body fat and blood pressure", status: "Android companion · launch from your device", kind: "setup", icon: "⌁" },
+    { group: "HEALTH & FITNESS", name: "Health Connect", detail: "Sync source for Jeeves Fitness · steps, heart rate, sleep, weight, body fat and blood pressure", status: "Managed in Jeeves Fitness", kind: "ready", icon: "⌁" },
     { group: "HEALTH & FITNESS", name: "MyFitnessPal", detail: "Nutrition and food diary data", status: "Not wired into Jeeves", kind: "planned", icon: "◉" }
   ];
 
@@ -207,7 +207,7 @@
       }
       html += '<article class="integration-tile" data-tile="' + item.name + '"><div class="integration-tile-top"><span class="integration-icon">' + item.icon + '</span><span class="integration-status ' + item.kind + '" data-status>' + item.status + '</span></div><h4>' + item.name + '</h4><p>' + item.detail + '</p>';
       if (item.name === "Health Connect") {
-        html += '<button class="integration-action" type="button" data-health-build>Open Jeeves Health ↗</button>';
+        html += '<button class="integration-action" type="button" data-health-build>Open Jeeves Fitness ↗</button>';
       } else if (item.name === "Google Tasks") {
         html += '<button class="integration-action" type="button" data-google-tasks-connect>Connect & grant Google Tasks access ↗</button><button class="integration-action" type="button" data-google-tasks-sync hidden>Sync Google Tasks ↻</button>';
       } else if (item.name === "Gmail" || item.name === "Google Drive") {
