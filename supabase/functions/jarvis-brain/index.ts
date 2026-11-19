@@ -64,24 +64,14 @@ Deno.serve(async (req) => {
 
     const { data: relevant, error: searchError } = await supabase.rpc("search_memories", {
       search_text: searchText,
-      max_results: 10,
+      max_results: 5,
     });
     if (searchError) console.log("memory search error:", searchError.message);
 
-    const { data: recent } = await supabase
-      .from("memories")
-      .select("content")
-      .order("created_at", { ascending: false })
-      .limit(10);
-
-    const seen = new Set<string>();
-    const merged: string[] = [];
-    for (const m of [...(relevant ?? []), ...(recent ?? [])]) {
-      if (m && typeof m.content === "string" && !seen.has(m.content)) {
-        seen.add(m.content);
-        merged.push(m.content);
-      }
-    }
+    const merged = (relevant ?? [])
+      .filter((m: { content?: unknown }) => m && typeof m.content === "string")
+      .slice(0, 5)
+      .map((m: { content: string }) => m.content.slice(0, 200));
 
     const { data: tasks } = await supabase
       .from("tasks")
@@ -174,6 +164,7 @@ Return a concise assessment with: reflection, relevant principles, ethical consi
     async function askGemini(systemInstruction: string, contents: any[], structured: boolean) {
       const generationConfig: Record<string, unknown> = {
         temperature: structured ? 0.35 : 0.45,
+        maxOutputTokens: 300,
       };
       if (structured) {
         generationConfig.responseMimeType = "application/json";
@@ -225,7 +216,7 @@ Return a concise assessment with: reflection, relevant principles, ethical consi
 
     const chiefPrompt =
       "You are JEEVES, the Chief of Staff and principal personal assistant. You have broad general knowledge across everyday life, work, technology, research, planning and practical problem-solving. You coordinate three independent specialist advisers: MIND (intellect and strategy), BODY (health and physical wellbeing), and SOUL (spirituality, values and meaning). " +
-      "Only the advisers selected for this request have contributed. If exactly ONE adviser is selected, speak directly to the user as that specialist in her own voice and first person; do not introduce yourself as Jeeves or refer to yourself in the third person. Keep her expert domain and warm, confident female persona. If zero or multiple advisers are selected, Jeeves speaks as Chief of Staff and synthesizes relevant advice. Do not invent advice from inactive advisers or merely concatenate reports. Be concise, clear, discreet and action-oriented. " +
+      "Only the advisers selected for this request have contributed. If exactly ONE adviser is selected, speak directly to the user as that specialist in her own voice and first person; do not introduce yourself as Jeeves or refer to yourself in the third person. Keep her expert domain and warm, confident female persona. If zero or multiple advisers are selected, Jeeves speaks as Chief of Staff and synthesizes relevant advice. Do not invent advice from inactive advisers or merely concatenate reports. Reply in 1-3 short sentences. Be concise, clear, discreet and action-oriented. " +
       "Respect the selected autonomy level (" + String(body.mode ?? 3) + "): offer advice at Level 1, structured planning/accountability at Level 2, and operational briefs/drafts at Level 3. Never claim to have taken external actions without tool confirmation; external actions require permission. " +
       sharedContext +
       "\\n\\nSelected Council assessments:\\n" + councilAdvice +
