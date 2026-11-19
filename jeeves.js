@@ -97,8 +97,8 @@ async function useMyLocation() {
 
 const locationButton = document.createElement("button");
 locationButton.id = "locbtn";
-locationButton.textContent = "📍";
-locationButton.className = "tool-icon";
+locationButton.textContent = "Location";
+locationButton.className = "jeeves-tool-button";
 locationButton.setAttribute("aria-label", "Save or update location");
 locationButton.setAttribute("data-description", "Save or update your location");
 locationButton.onclick = useMyLocation;
