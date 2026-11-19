@@ -4,6 +4,7 @@
     { group: "CORE SERVICES", name: "Supabase", detail: "Authentication, database and persistent conversations", status: "Configured", kind: "ready", icon: "▤" },
     { group: "CORE SERVICES", name: "ElevenLabs", detail: "Jeeves voice generation via jeeves-voice", status: "Configured", kind: "ready", icon: "♫" },
     { group: "GOOGLE WORKSPACE", name: "Google Calendar", detail: "Read upcoming events and create approved events", status: "OAuth setup required", kind: "setup", icon: "◷" },
+    { group: "GOOGLE WORKSPACE", name: "Google Tasks", detail: "Import Google Tasks into Jeeves and sync completion", status: "Additional permission required", kind: "setup", icon: "✓" },
     { group: "GOOGLE WORKSPACE", name: "Gmail", detail: "Search, summarise and draft email with permission", status: "OAuth setup required", kind: "setup", icon: "✉" },
     { group: "GOOGLE WORKSPACE", name: "Google Drive", detail: "Find and work with selected documents", status: "OAuth setup required", kind: "setup", icon: "▧" },
     { group: "HEALTH & FITNESS", name: "Health Connect", detail: "Android health and activity data", status: "Not wired into Jeeves", kind: "planned", icon: "⌁" },
@@ -168,7 +169,9 @@
         html += '<div class="integration-group-label">' + currentGroup + '</div>';
       }
       html += '<article class="integration-tile" data-tile="' + item.name + '"><div class="integration-tile-top"><span class="integration-icon">' + item.icon + '</span><span class="integration-status ' + item.kind + '" data-status>' + item.status + '</span></div><h4>' + item.name + '</h4><p>' + item.detail + '</p>';
-      if (item.name === "Google Calendar") {
+      if (item.name === "Google Tasks") {
+        html += '<button class="integration-action" type="button" data-google-tasks-connect>Connect & grant Google Tasks access ↗</button><button class="integration-action" type="button" data-google-tasks-sync hidden>Sync Google Tasks ↻</button>';
+      } else if (item.name === "Google Calendar") {
         html += '<button class="integration-action" type="button" data-calendar-connect>Connect Google Calendar ↗</button><div class="calendar-connected-actions" hidden><button class="integration-action" type="button" data-calendar-events>Refresh upcoming events</button><button class="integration-action secondary" type="button" data-calendar-disconnect>Disconnect</button><div class="calendar-event-list" data-calendar-event-list><p class="calendar-empty">Your upcoming events will appear here.</p></div></div>';
       } else if (item.kind === "setup" || item.kind === "planned") {
         html += '<button class="integration-action" type="button" data-integration="' + item.name + '">Prepare connection ↗</button>';
@@ -209,6 +212,23 @@
         const badge = tile.querySelector("[data-status]");
         const connect = tile.querySelector("[data-calendar-connect]");
         const actions = tile.querySelector(".calendar-connected-actions");
+        const tasksTile = root.querySelector('[data-tile="Google Tasks"]');
+        if (tasksTile) {
+          const tasksBadge = tasksTile.querySelector("[data-status]");
+          const tasksConnect = tasksTile.querySelector("[data-google-tasks-connect]");
+          const tasksSync = tasksTile.querySelector("[data-google-tasks-sync]");
+          if (status.tasks_enabled) {
+            tasksBadge.textContent = "Connected";
+            tasksBadge.className = "integration-status ready";
+            tasksConnect.hidden = true;
+            tasksSync.hidden = false;
+          } else {
+            tasksBadge.textContent = status.connected ? "Permission needed" : "Connect Google first";
+            tasksBadge.className = "integration-status setup";
+            tasksConnect.hidden = false;
+            tasksSync.hidden = true;
+          }
+        }
         if (status.connected) {
           badge.textContent = "Connected";
           badge.className = "integration-status ready";
@@ -234,7 +254,7 @@
   const callback = new URLSearchParams(window.location.search).get("calendar");
   if (callback) {
     window.addEventListener("load", function () {
-      if (callback === "connected") note("Google Calendar successfully connected to Jeeves.");
+      if (callback === "connected") note("Google Workspace connected. Calendar and Google Tasks permissions have been refreshed.");
       else note("Google Calendar connection was not completed: " + (new URLSearchParams(window.location.search).get("reason") || callback) + ".");
       const clean = new URL(window.location.href);
       clean.searchParams.delete("calendar");
