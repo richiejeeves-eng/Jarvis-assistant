@@ -86,7 +86,7 @@
     }
   }
   document.addEventListener("DOMContentLoaded", () => {
-    $("fitness-refresh")?.addEventListener("click", refresh);
+    $("fitness-refresh")?.addEventListener("click", triggerSync);
     refresh();
     if (typeof db !== "undefined" && db.auth) {
       db.auth.onAuthStateChange((event) => {
@@ -94,5 +94,53 @@
       });
     }
   });
+  let syncInProgress = false;
+  async function triggerSync() {
+    const status = $("fitness-updated");
+    const button = $("fitness-refresh");
+    if (syncInProgress || typeof db === "undefined") return;
+    syncInProgress = true;
+    if (button) button.disabled = true;
+    const finish = () => { syncInProgress = false; if (button) button.disabled = false; };
+    try {
+      const { data, error } = await db.auth.getSession();
+      if (error) throw error;
+      if (!data.session) throw new Error("Sign in to Jeeves before syncing.");
+      const queued = await db.from("health_sync_requests")
+        .insert({ user_id: data.session.user.id, status: "queued" }).select("id").single();
+      if (queued.error) throw queued.error;
+      const requestId = queued.data.id;
+      if (status) status.textContent = "Sync requested · waiting for Jeeves Health on your Android phone…";
+      const started = Date.now();
+      const check = async () => {
+        try {
+          const result = await db.from("health_sync_requests").select("status,error").eq("id", requestId).single();
+          if (result.error) throw result.error;
+          if (result.data.status === "completed") {
+            await refresh();
+            if (status) status.textContent = "Health Connect sync completed · dashboard refreshed.";
+            finish(); return;
+          }
+          if (result.data.status === "failed") {
+            if (status) status.textContent = "Health sync failed: " + (result.data.error || "Open Jeeves Health to check the error.");
+            finish(); return;
+          }
+          if (Date.now() - started > 120000) {
+            if (status) status.textContent = "Sync request queued. Open Jeeves Health on your Android phone; it will pick up the request while open.";
+            finish(); return;
+          }
+          window.setTimeout(check, 5000);
+        } catch (error) {
+          if (status) status.textContent = "Could not check sync status: " + (error.message || "Unknown error");
+          finish();
+        }
+      };
+      window.setTimeout(check, 4000);
+    } catch (error) {
+      if (status) status.textContent = "Could not request health sync: " + (error.message || "Unknown error");
+      finish();
+    }
+  }
   window.refreshJeevesFitness = refresh;
+  window.triggerJeevesHealthSync = triggerSync;
 })();
