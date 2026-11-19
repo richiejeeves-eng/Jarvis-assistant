@@ -1,6 +1,9 @@
 (function () {
   const button = document.getElementById("locationbtn");
   if (!button) return;
+  button.textContent = "Location";
+  button.className = "jeeves-tool-button";
+  button.setAttribute("aria-label", "Share current location");
 
   button.addEventListener("click", function () {
     if (!navigator.geolocation) {
