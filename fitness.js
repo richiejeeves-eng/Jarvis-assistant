@@ -1,32 +1,20 @@
 (function () {
   const $ = (id) => document.getElementById(id);
   const fields = {
-    steps: ["fitness-steps", "fitness-steps-meta"],
-    heart_rate: ["fitness-heart", "fitness-heart-meta"],
-    weight: ["fitness-weight", "fitness-weight-meta"],
-    sleep: ["fitness-sleep", "fitness-sleep-meta"]
+    steps: "fitness-steps",
+    heart_rate: "fitness-heart",
+    weight: "fitness-weight",
+    sleep: "fitness-sleep"
   };
-  const sourceNames = {
-    "com.sec.android.app.shealth": "Samsung Health",
-    "com.hihonor.health": "HONOR Health",
-    "com.myfitnesspal.android": "MyFitnessPal",
-    "com.google.android.apps.fitness": "Google Fit",
-    "Health Connect": "Health Connect"
-  };
-  function set(type, value, meta) {
-    const ids = fields[type];
-    if (!ids) return;
-    if ($(ids[0])) $(ids[0]).textContent = value;
-    if ($(ids[1])) $(ids[1]).textContent = meta || "No data yet";
+  function set(type, value) {
+    const id = fields[type];
+    if (id && $(id)) $(id).textContent = value;
   }
   function dateLabel(value) {
     if (!value) return "Date unavailable";
     const date = new Date(value);
     return Number.isNaN(date.getTime()) ? "Date unavailable" :
       date.toLocaleString("en-GB", { day:"numeric", month:"short", hour:"2-digit", minute:"2-digit" });
-  }
-  function sourceLabel(row) {
-    return sourceNames[row.source_app] || row.source_app || "Connected source";
   }
   async function latest(type) {
     const result = await db.from("health_records")
@@ -38,19 +26,18 @@
     return result.data && result.data[0] ? result.data[0] : null;
   }
   function showRecord(type, row) {
-    if (!row) { set(type, "—", "No records synced"); return; }
+    if (!row) { set(type, "—"); return; }
     const value = row.value || {};
-    const meta = sourceLabel(row) + " · " + dateLabel(row.start_time);
-    if (type === "steps") set(type, Number.isFinite(Number(value.count)) ? Number(value.count).toLocaleString("en-GB") : "—", meta);
+    if (type === "steps") set(type, Number.isFinite(Number(value.count)) ? Number(value.count).toLocaleString("en-GB") : "—");
     if (type === "heart_rate") {
       const samples = Array.isArray(value.samples) ? value.samples : [];
       const sample = samples.length ? samples[samples.length - 1] : null;
-      set(type, sample && Number.isFinite(Number(sample.bpm)) ? Math.round(Number(sample.bpm)) + " bpm" : "—", meta);
+      set(type, sample && Number.isFinite(Number(sample.bpm)) ? Math.round(Number(sample.bpm)) + " bpm" : "—");
     }
-    if (type === "weight") set(type, Number.isFinite(Number(value.kg)) && Number(value.kg) > 0 ? Number(value.kg).toFixed(1) + " kg" : "—", meta);
+    if (type === "weight") set(type, Number.isFinite(Number(value.kg)) && Number(value.kg) > 0 ? Number(value.kg).toFixed(1) + " kg" : "—");
     if (type === "sleep") {
       const minutes = Number(value.duration_minutes);
-      set(type, Number.isFinite(minutes) && minutes > 0 ? (minutes / 60).toFixed(1) + " hrs" : "—", meta);
+      set(type, Number.isFinite(minutes) && minutes > 0 ? (minutes / 60).toFixed(1) + " hrs" : "—");
     }
   }
   async function refresh() {
@@ -63,7 +50,7 @@
       const { data, error } = await db.auth.getSession();
       if (error) throw error;
       if (!data.session) {
-        Object.keys(fields).forEach((type) => set(type, "—", "Sign in to view"));
+        Object.keys(fields).forEach((type) => set(type, "—"));
         status.textContent = "Sign in to load your health data.";
         return;
       }
