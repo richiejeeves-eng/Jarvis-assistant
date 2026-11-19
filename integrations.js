@@ -186,10 +186,10 @@
     set("Google Tasks", status?.tasks_enabled ? "Connected" : (status?.connected ? "Permission needed" : "Not connected"), !!status?.tasks_enabled);
     const summary = document.getElementById("eco-summary");
     if (summary) {
-      // The sidebar tracks only the three services Rich explicitly selected:
-      // Gemini AI, Google Calendar and Google Tasks. Gmail and Drive remain optional.
-      const count = 1 + (status?.connected ? 1 : 0) + (status?.tasks_enabled ? 1 : 0);
-      summary.textContent = count + " / 3 ACTIVE";
+      // Gemini AI, ElevenLabs and Health Connect are configured/managed services.
+      // Google Calendar and Google Tasks count only after live authorisation.
+      const count = 3 + (status?.connected ? 1 : 0) + (status?.tasks_enabled ? 1 : 0);
+      summary.textContent = count + " / 5 ACTIVE";
     }
     const updated = document.getElementById("eco-updated");
     if (updated) updated.textContent = status ? "Live connection status · just checked." : "Sign in to verify Google connections.";
