@@ -419,3 +419,15 @@
 .council-member input.council-toggle{width:15px;height:15px;flex:0 0 15px;margin:0;accent-color:#c5a059}.council-member:has(.council-toggle:not(:checked)){opacity:.48;border-style:dashed}.council-member:has(.council-toggle:checked){border-color:#c5a05955;background:#c5a0590d}
 .council-panel-foot{padding-top:9px;border-top:1px solid #ffffff10;color:#858b95;font-size:9px;letter-spacing:.2px}
 @media(max-width:700px){.council-panel{padding:13px 9px;gap:10px}.council-panel-heading{display:block}.council-panel-heading>p{text-align:left;margin-top:5px}.council-panel-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}.council-member{padding:8px 5px;gap:5px;flex-wrap:wrap}.council-member input.council-toggle{width:13px;height:13px;flex-basis:13px}.council-number{flex-basis:22px;height:22px;font-size:9px}.council-member-copy{width:100%;padding-left:2px}.council-member-copy b{font-size:9px}.council-member-copy small{font-size:8px}.council-panel-foot{font-size:8px}}
+
+/* Council identity orbs: Mind blue, Body red, Soul yellow, Jeeves gold */
+.council-title{display:flex;align-items:center;gap:9px}
+.council-orb{display:inline-block;flex:0 0 24px;width:24px;height:24px;border-radius:50%;position:relative;overflow:hidden;box-shadow:inset -4px -5px 8px #0006,inset 3px 3px 6px #ffffff55,0 0 12px currentColor}
+.council-orb:after{content:"";position:absolute;top:4px;left:5px;width:7px;height:5px;border-radius:50%;background:#ffffff9c;filter:blur(1px);transform:rotate(-35deg)}
+.mind-orb{color:#398cff;background:radial-gradient(circle at 32% 27%,#a8d6ff 0%,#398cff 36%,#1450b4 75%,#09285e 100%)}
+.body-orb{color:#ef5350;background:radial-gradient(circle at 32% 27%,#ffb0a8 0%,#ef5350 36%,#b51f32 75%,#5e0d20 100%)}
+.soul-orb{color:#f4c542;background:radial-gradient(circle at 32% 27%,#fff4a6 0%,#f4c542 38%,#c58a12 76%,#68430a 100%)}
+.jeeves-orb{flex-basis:16px;width:16px;height:16px;color:#c5a059;background:radial-gradient(circle at 32% 27%,#fff0b8 0%,#dfbe7d 35%,#c5a059 70%,#805b25 100%);box-shadow:inset -3px -3px 5px #0006,inset 2px 2px 4px #ffffff66,0 0 12px #c5a05966}
+.council-member{gap:10px}
+.council-member:has(.council-toggle:checked) .council-orb{filter:saturate(1.12);transform:scale(1.04)}
+@media(max-width:700px){.council-orb{flex-basis:19px;width:19px;height:19px}.jeeves-orb{flex-basis:14px;width:14px;height:14px}.council-member{gap:5px}}
