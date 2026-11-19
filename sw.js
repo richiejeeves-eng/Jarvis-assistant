@@ -17,7 +17,10 @@ self.addEventListener("notificationclick", function (event) {
     : self.location.origin + self.registration.scope;
   event.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(function (clients) {
     for (const client of clients) {
-      if ("focus" in client) return client.focus();
+      if ("focus" in client) {
+        if ("navigate" in client) await client.navigate(target);
+        return client.focus();
+      }
     }
     if (self.clients.openWindow) return self.clients.openWindow(target);
   }));
