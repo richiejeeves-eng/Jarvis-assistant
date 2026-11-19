@@ -540,3 +540,18 @@ body.left-drawer-collapsed .main-area{margin-left:0}
 .council-menu-member .council-orb{width:19px;height:19px;flex-basis:19px}
 .council-menu-member:has(input:not(:checked)){opacity:.45}
 @media(max-width:800px){.chat-top-actions{top:10px;right:12px}.new-chat-top{height:36px;padding:0 10px}.council-menu>summary{width:36px;height:36px}}
+
+
+/* The responding Council orb floats in the centre of the conversation, without a card or backdrop. */
+.chat-stage{min-height:260px}
+.active-council-orb{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .3s ease,visibility .3s ease;background:transparent}
+.active-council-orb.visible{opacity:1;visibility:visible}
+.active-council-orb .council-orb{width:76px;height:76px;flex:0 0 76px;overflow:visible;filter:saturate(1.15);box-shadow:inset -9px -11px 18px #0008,inset 6px 6px 12px #ffffff55,0 0 24px currentColor,0 0 58px color-mix(in srgb,currentColor 42%,transparent)}
+.active-council-orb .council-orb:before{content:"";position:absolute;inset:-10px;border:2px solid rgba(222,190,126,.9);border-radius:50%;box-shadow:0 0 12px rgba(214,184,118,.65),0 0 28px rgba(214,184,118,.35);animation:active-orb-pulse 1.5s ease-in-out infinite}
+.active-council-orb b{font-size:10px;letter-spacing:.22em;color:#e6c98e;text-shadow:0 0 14px #d6b87855}
+.active-council-orb.active-mind .council-orb{animation:active-orb-float 2.6s ease-in-out infinite}
+.active-council-orb.active-body .council-orb{animation:active-orb-float 2.6s ease-in-out infinite}
+.active-council-orb.active-soul .council-orb{animation:active-orb-float 2.6s ease-in-out infinite}
+@keyframes active-orb-pulse{0%,100%{transform:scale(1);opacity:.72}50%{transform:scale(1.13);opacity:1}}
+@keyframes active-orb-float{0%,100%{translate:0 0}50%{translate:0 -5px}}
+@media(prefers-reduced-motion:reduce){.active-council-orb .council-orb,.active-council-orb .council-orb:before{animation:none}}
