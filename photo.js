@@ -2,6 +2,7 @@
   const fileInput = document.createElement("input");
   fileInput.type = "file";
   fileInput.accept = "image/*";
+  fileInput.capture = "environment";
   fileInput.style.display = "none";
   document.body.appendChild(fileInput);
 
@@ -84,12 +85,16 @@
 
   const button = document.createElement("button");
   button.id = "photobtn";
-  button.textContent = "📷";
-  button.className = "tool-icon";
-  button.setAttribute("aria-label", "Choose a photo");
-  button.setAttribute("data-description", "Choose a photo to ask Jeeves about");
+  button.textContent = "Camera";
+  button.className = "jeeves-tool-button";
+  button.setAttribute("aria-label", "Open camera or choose a photo");
+  button.setAttribute("data-description", "Take a photo or choose an image to ask Jeeves about");
   button.onclick = function () { fileInput.click(); };
 
-  const toolsBar = document.getElementById("tools");
-  if (toolsBar) toolsBar.appendChild(button);
+  const cameraButton = document.getElementById("camerabtn");
+  if (cameraButton) cameraButton.addEventListener("click", function () { fileInput.click(); });
+  else {
+    const toolsBar = document.getElementById("tools");
+    if (toolsBar) toolsBar.appendChild(button);
+  }
 })();
