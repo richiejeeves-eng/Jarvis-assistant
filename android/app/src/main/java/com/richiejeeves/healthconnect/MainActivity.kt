@@ -108,10 +108,7 @@ class MainActivity : ComponentActivity() {
                         if (pending.length() > 0) {
                             val requestId = pending.getJSONObject(0).getString("id")
                             val requestUrl = "$supabaseUrl/rest/v1/health_sync_requests?id=eq.$requestId"
-                            withContext(Dispatchers.IO) {
-                                restRequest("PATCH", requestUrl,
-                                    JSONObject().put("status", "processing").put("started_at", Instant.now().toString()), token)
-                            }
+                            status.text = "Jeeves requested a health sync. Reading Health Connect…"
                             status.text = "Jeeves requested a health sync. Reading Health Connect…"
                             val succeeded = performSync()
                             val completion = JSONObject()
