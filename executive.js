@@ -39,6 +39,7 @@
     }
   }
   async function openAccountView(kind) {
+    if (kind === "tasks") kind = "open";
     const title = $("account-detail-title"), subtitle = $("account-detail-subtitle"), host = $("account-detail-content");
     if (!host) return;
     const labels = { open:["Open tasks","All currently pending tasks"], overdue:["Overdue tasks","Pending tasks past their due date"], today:["Due today","Pending tasks due today"], memories:["Saved memories","Your saved memory entries"] };
