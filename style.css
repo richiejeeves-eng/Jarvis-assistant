@@ -559,3 +559,12 @@ body.left-drawer-collapsed .main-area{margin-left:0}
 
 /* Keep the full-screen conversation workspace exclusive to the main Command page. */
 .workspace[hidden]{display:none!important}
+
+
+/* Council selector now lives at the top of the right drawer. */
+.council-menu-trigger{display:grid;place-items:center;width:38px;height:38px;padding:0;border:1px solid rgba(214,184,118,.4);border-radius:9px;background:#151922;color:#e4c584;font-size:24px;line-height:1;cursor:pointer}
+.council-menu-trigger:hover{background:#33291d;border-color:#dfbe7d}
+.council-drawer-card{margin-top:0;padding:0 0 16px!important;border-bottom:1px solid rgba(255,255,255,.1)}
+.council-drawer-card>label{display:block;margin:0 0 10px;color:#d6b878;font-size:9px;letter-spacing:1.5px;font-weight:700}
+.council-drawer-card .council-menu-content{position:static;width:100%;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;display:grid;gap:7px}
+@media(max-width:800px){.council-menu-trigger{width:36px;height:36px}}
