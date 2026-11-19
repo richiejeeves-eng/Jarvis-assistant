@@ -18,3 +18,7 @@
 .integration-action:hover{background:#c5a05922}
 .integration-configured{font-size:9px;color:var(--green)}
 .integration-security{font-size:9px;line-height:1.55;color:#858b95;padding:11px;border:1px solid #c5a05925;border-radius:9px;background:#c5a05909;margin-top:14px}
+
+.integration-action[hidden],.calendar-connected-actions[hidden]{display:none!important}
+.calendar-connected-actions{display:grid;gap:7px}
+.integration-action.secondary{background:transparent;border-color:#ffffff20;color:var(--silver)}
