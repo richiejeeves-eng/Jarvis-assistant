@@ -5,7 +5,7 @@ plugins {
 
 android {
     namespace = "com.richiejeeves.healthconnect"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.richiejeeves.healthconnect"
