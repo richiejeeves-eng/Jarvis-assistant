@@ -211,7 +211,7 @@
       } else if (item.name === "Google Tasks") {
         html += '<button class="integration-action" type="button" data-google-tasks-connect>Connect & grant Google Tasks access ↗</button><button class="integration-action" type="button" data-google-tasks-sync hidden>Sync Google Tasks ↻</button>';
       } else if (item.name === "Gmail" || item.name === "Google Drive") {
-        html += '<button class="integration-action" type="button" data-google-extend="' + item.name + '">Connect with Google ↗</button><button class="integration-action" type="button" data-google-test="' + item.name + '" hidden>Test connection ↻</button><div class="integration-test-result" data-test-result></div>';
+        html += '<button class="integration-action" type="button" data-google-extend="' + item.name + '">Connect with Google ↗</button>';
       } else if (item.name === "Google Calendar") {
         html += '<button class="integration-action" type="button" data-calendar-connect>Connect Google Calendar ↗</button><div class="calendar-connected-actions" hidden><button class="integration-action" type="button" data-calendar-events>Refresh upcoming events</button><button class="integration-action secondary" type="button" data-calendar-disconnect>Disconnect</button><div class="calendar-event-list" data-calendar-event-list><p class="calendar-empty">Your upcoming events will appear here.</p></div></div>';
       } else if (item.kind === "setup" || item.kind === "planned") {
@@ -219,13 +219,27 @@
       } else {
         html += '<span class="integration-configured">✓ Backend configured</span>';
       }
-      html += '</article>';
+      html += '<details class="integration-more"><summary>Additional information</summary><div class="integration-more-content">';
+      if (item.name === "Gmail") {
+        html += '<p>Recent emails · read-only. Load recent message subjects, senders, dates and previews here.</p><button class="integration-action" type="button" data-gmail-recent hidden>Load recent emails ↻</button><div class="gmail-recent-list" data-gmail-recent-list><p class="calendar-empty">Connect Gmail to view recent emails.</p></div>';
+      } else if (item.name === "Google Drive") {
+        html += '<p>Browse recent Drive files and view file names, types, modified dates and links. Jeeves access remains read-only.</p><button class="integration-action" type="button" data-google-test="Google Drive" hidden>Check Drive connection ↻</button><div class="integration-test-result" data-test-result></div>';
+      } else if (item.name === "Google Calendar") {
+        html += '<p>View upcoming events, dates, times and locations. Use Refresh upcoming events to retrieve the latest schedule.</p>';
+      } else if (item.name === "Google Tasks") {
+        html += '<p>Import task lists, review task titles and due dates, and sync completion status with Jeeves.</p>';
+      } else if (item.name === "Health Connect") {
+        html += '<p>Health Connect supplies activity, heart-rate, sleep, weight and body-composition data to Jeeves Fitness on this device.</p>';
+      } else {
+        html += '<p>Jeeves reasoning service used by the private assistant workspace.</p>';
+      }
+      html += '</div></details></article>';
     });
     html += '<p class="integration-security">Security rule: OAuth tokens are encrypted server-side. API secrets belong in Supabase secrets — never in browser JavaScript.</p>';
     root.innerHTML = html;
 
     const style = document.createElement("style");
-    style.textContent = ".calendar-event-list{margin-top:12px;border-top:1px solid #ffffff16;padding-top:5px}.calendar-event-row{display:grid;gap:4px;padding:10px 2px;border-bottom:1px solid #ffffff10}.calendar-event-row strong{font:600 12px Georgia,serif;color:#f4f4f6}.calendar-event-row span{font-size:10px;color:#dfbe7d}.calendar-event-row small,.calendar-empty{font-size:9px;color:#9ca3af}.calendar-empty{margin:8px 0;line-height:1.5}";
+    style.textContent = ".calendar-event-list,.gmail-recent-list{margin-top:12px;border-top:1px solid #ffffff16;padding-top:5px}.calendar-event-row,.gmail-recent-row{display:grid;gap:5px;padding:10px 2px;border-bottom:1px solid #ffffff10}.calendar-event-row strong,.gmail-recent-row strong{font:600 12px Georgia,serif;color:#f4f4f6}.calendar-event-row span,.gmail-recent-row span{font-size:10px;color:#dfbe7d}.calendar-event-row small,.calendar-empty,.gmail-recent-row p{font-size:11px;color:#9ca3af;line-height:1.5}.calendar-empty{margin:8px 0}.integration-more{margin-top:14px;border-top:1px solid #ffffff16;padding-top:10px}.integration-more summary{color:#d8bd8a;font-size:12px;cursor:pointer;list-style:none}.integration-more summary::-webkit-details-marker{display:none}.integration-more summary:after{content:'＋';float:right;color:#d8bd8a}.integration-more[open] summary:after{content:'−'}.integration-more-content{padding-top:10px}.integration-more-content>p{font-size:12px;line-height:1.55;color:#aeb2bb;margin:4px 0 12px}";
     if (!document.getElementById("calendar-event-styles")) {
       style.id = "calendar-event-styles";
       document.head.appendChild(style);
@@ -238,22 +252,63 @@
     root.querySelectorAll("[data-google-extend]").forEach(function (button) {
       button.addEventListener("click", function (event) { connectCalendar(event.currentTarget, button.dataset.googleExtend); });
     });
-    root.querySelectorAll("[data-google-test]").forEach(function (button) {
+    root.querySelectorAll('[data-google-test="Google Drive"]').forEach(function (button) {
       button.addEventListener("click", async function (event) {
         const target = event.currentTarget;
         target.disabled = true;
+        target.textContent = "Checking Drive…";
         try {
-          const action = target.dataset.googleTest === "Gmail" ? "gmailMessages" : "driveFiles";
-          const data = await calendarAction(action);
+          const data = await calendarAction("driveFiles");
           const result = target.parentElement.querySelector("[data-test-result]");
-          result.textContent = target.dataset.googleTest === "Gmail"
-            ? "Verified: " + (data.messages || []).length + " recent messages returned."
-            : "Verified: " + (data.files || []).length + " Drive files returned.";
-          note(target.dataset.googleTest + " connection verified successfully.");
-        } catch (error) { note(target.dataset.googleTest + " test failed: " + error.message); }
-        finally { target.disabled = false; }
+          result.textContent = "Verified: " + (data.files || []).length + " recent Drive files returned.";
+          note("Google Drive connection verified successfully.");
+        } catch (error) { note("Google Drive test failed: " + error.message); }
+        finally { target.disabled = false; target.textContent = "Check Drive connection ↻"; }
       });
     });
+    const gmailRecentButton = root.querySelector("[data-gmail-recent]");
+    if (gmailRecentButton) {
+      gmailRecentButton.addEventListener("click", async function () {
+        const target = gmailRecentButton;
+        const list = root.querySelector("[data-gmail-recent-list]");
+        target.disabled = true;
+        target.textContent = "Loading recent emails…";
+        try {
+          const data = await calendarAction("gmailMessages");
+          const messages = data.messages || [];
+          list.replaceChildren();
+          if (!messages.length) {
+            const empty = document.createElement("p");
+            empty.className = "calendar-empty";
+            empty.textContent = "No recent emails were returned.";
+            list.appendChild(empty);
+          } else {
+            messages.slice(0, 10).forEach(function (message) {
+              const row = document.createElement("article");
+              row.className = "gmail-recent-row";
+              const subject = document.createElement("strong");
+              subject.textContent = message.subject || "(No subject)";
+              const meta = document.createElement("span");
+              meta.textContent = [message.from || message.sender || "Unknown sender", message.date || ""].filter(Boolean).join(" · ");
+              const preview = document.createElement("p");
+              preview.textContent = message.snippet || message.preview || "";
+              row.append(subject, meta, preview);
+              list.appendChild(row);
+            });
+          }
+          note("Gmail returned " + messages.length + " recent messages.");
+        } catch (error) {
+          const message = document.createElement("p");
+          message.className = "calendar-empty";
+          message.textContent = "Recent emails could not be loaded: " + error.message;
+          list.replaceChildren(message);
+          note("Gmail recent emails could not be loaded: " + error.message);
+        } finally {
+          target.disabled = false;
+          target.textContent = "Refresh recent emails ↻";
+        }
+      });
+    }
     root.querySelectorAll("[data-integration]").forEach(function (button) {
       button.addEventListener("click", function () {
         promptJeeves(prompts[button.dataset.integration] || ("Help me configure " + button.dataset.integration + " securely."));
@@ -295,10 +350,12 @@
           const badge = tile.querySelector("[data-status]");
           const connect = tile.querySelector("[data-google-extend]");
           const test = tile.querySelector("[data-google-test]");
+          const recent = tile.querySelector("[data-gmail-recent]");
           badge.textContent = enabled ? "Connected" : (status.connected ? "Permission needed" : "Not connected");
           badge.className = "integration-status " + (enabled ? "ready" : "setup");
           connect.hidden = !!enabled;
-          test.hidden = !enabled;
+          if (test) test.hidden = !enabled;
+          if (recent) recent.hidden = !enabled;
         });
         if (status.tasks_enabled) {
             tasksBadge.textContent = "Connected";
