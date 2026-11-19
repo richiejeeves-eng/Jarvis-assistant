@@ -431,3 +431,11 @@
 .council-member{gap:10px}
 .council-member:has(.council-toggle:checked) .council-orb{filter:saturate(1.12);transform:scale(1.04)}
 @media(max-width:700px){.council-orb{flex-basis:19px;width:19px;height:19px}.jeeves-orb{flex-basis:14px;width:14px;height:14px}.council-member{gap:5px}}
+
+/* Conversation history deletion control */
+#conversationbar{display:flex;align-items:center;gap:8px}
+#conversationbar #conversationSelect{flex:1;min-width:0}
+#conversationbar #deleteConversationBtn{flex:0 0 auto;padding:10px 12px;border:1px solid #9a594b66;border-radius:9px;background:#2a1918;color:#e0a18f;font-size:10px;font-weight:600;white-space:nowrap}
+#conversationbar #deleteConversationBtn:disabled{opacity:.38;cursor:not-allowed}
+#conversationbar #deleteConversationBtn:not(:disabled):active{background:#482522}
+@media(max-width:390px){#conversationbar{gap:5px}#conversationbar #deleteConversationBtn{padding:10px 8px;font-size:9px}}
