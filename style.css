@@ -601,3 +601,23 @@ footer{border-top:0!important}
 .sidebar-account-block{justify-content:space-between!important;align-items:center!important;margin-bottom:28px!important;min-height:46px}
 .sidebar-wordmark{color:var(--gold-light);font:600 23px 'Playfair Display',serif;letter-spacing:2px;line-height:1}
 .sidebar-account-btn{margin-left:auto!important;flex:0 0 42px}
+
+
+/* Council selector: retain the coloured orbs, remove their square tile backgrounds. */
+.council-drawer-card .council-menu-member,
+.council-drawer-card .council-menu-member:hover,
+.council-drawer-card .council-menu-member:focus-within{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:flex-start!important;
+  gap:10px!important;
+  min-height:38px!important;
+  padding:5px 2px!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+.council-drawer-card .council-menu-member:has(input:not(:checked)){background:transparent!important}
+.council-drawer-card .council-menu-member .council-orb{flex:0 0 24px;width:24px;height:24px}
+.council-drawer-card .council-menu-member b{font-size:10px;letter-spacing:1.2px}
