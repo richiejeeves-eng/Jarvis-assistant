@@ -97,7 +97,10 @@ async function useMyLocation() {
 
 const locationButton = document.createElement("button");
 locationButton.id = "locbtn";
-locationButton.textContent = "📍 Location";
+locationButton.textContent = "📍";
+locationButton.className = "tool-icon";
+locationButton.setAttribute("aria-label", "Save or update location");
+locationButton.setAttribute("data-description", "Save or update your location");
 locationButton.onclick = useMyLocation;
 const toolsBar = document.getElementById("tools");
 if (toolsBar) toolsBar.appendChild(locationButton);
