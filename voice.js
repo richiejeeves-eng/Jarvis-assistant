@@ -1,134 +1,20 @@
-let jeevesRecognition = null;
-let jeevesVoiceActive = false;
-let jeevesVoiceReplyInProgress = false;
-let jeevesRestartTimer = null;
-
-function setVoiceStage(active, transcript) {
-  const workspace = document.querySelector(".workspace");
-  const stage = document.getElementById("voice-stage");
-  const preview = document.getElementById("voice-live-preview");
-  const status = document.getElementById("voice-stage-status");
-  if (!workspace || !stage) return;
-  workspace.classList.toggle("voice-active", active);
-  stage.setAttribute("aria-hidden", String(!active));
-  if (preview && transcript !== undefined) preview.textContent = transcript || "Speak naturally…";
-  if (status) status.textContent = active ? (jeevesVoiceReplyInProgress ? "JEEVES IS SPEAKING" : "LISTENING — SPEAK NATURALLY") : "";
+let rec=null,mode=false,reply=false,timer=0,retry=0;
+const $=id=>document.getElementById(id);
+function status(s,preview){const w=document.querySelector(".workspace"),v=$("voice-stage"),t=$("voice-stage-status"),p=$("voice-live-preview");if(w)w.classList.toggle("voice-active",mode);if(v)v.setAttribute("aria-hidden",String(!mode));if(t)t.textContent=mode?s:"";if(p&&preview!==undefined)p.textContent=preview||"Speak naturally…";}
+function button(){const b=$("conversation-toggle");if(b){b.textContent=mode?"Conversation on":"Conversation";b.setAttribute("aria-pressed",String(mode));}const m=$("micbtn");if(m){m.textContent=mode?"Leave":"Speak";m.setAttribute("aria-label",mode?"End conversation":"Start voice input");}}
+function stopAll(message){mode=false;reply=false;clearTimeout(timer);if(rec){const r=rec;rec=null;try{r.stop();}catch(e){}}if(window.speechSynthesis)window.speechSynthesis.cancel();const a=window.jeevesActiveAudio;if(a){try{a.pause();}catch(e){}}status("");button();if(message&&typeof addMessage==="function")addMessage(message,"bot");}
+function finishUtterance(){if(!mode||reply)return;clearTimeout(timer);if(rec){const r=rec;rec=null;try{r.stop();}catch(e){}}}
+function listen(){if(!mode||reply||rec)return;const R=window.webkitSpeechRecognition||window.SpeechRecognition;if(!R){stopAll("Voice recognition is not supported in this browser.");return;}const r=new R();rec=r;r.lang="en-GB";r.continuous=true;r.interimResults=true;r.maxAlternatives=1;
+r.onstart=()=>{retry=0;status("LISTENING","Speak naturally…");};
+r.onresult=e=>{let text="";for(let i=e.resultIndex;i<e.results.length;i++)if(e.results[i].isFinal)text+=e.results[i][0].transcript+" ";else status("LISTENING",e.results[i][0].transcript);if(!text.trim())return;const phrase=text.trim(),cmd=phrase.toLowerCase().replace(/[.!?,]/g,"").trim();if(/^(stop|goodbye jeeves)$/.test(cmd)){stopAll("Conversation ended.");return;}const input=$("command");if(input)input.value=(input.value+" "+phrase).trim();clearTimeout(timer);timer=setTimeout(finishUtterance,1500);status("LISTENING",phrase);};
+r.onerror=e=>{if(e.error==="not-allowed"||e.error==="service-not-allowed"){stopAll("Microphone permission denied. Allow microphone access and try again.");return;}if(e.error==="network"){retry++;if(retry>=3){stopAll("Voice connection failed after three attempts.");return;}}};
+r.onend=()=>{if(rec===r)rec=null;if(!mode||reply)return;const input=$("command");if(input&&input.value.trim()){clearTimeout(timer);reply=true;status("THINKING","Preparing your reply…");Promise.resolve(send()).catch(err=>console.error(err));return;}clearTimeout(timer);timer=setTimeout(listen,300);};
+try{r.start();}catch(e){if(rec===r)rec=null;if(mode){retry++;if(retry>=3)stopAll("Unable to restart voice recognition.");else timer=setTimeout(listen,300);}}
 }
-
-function updateMicButton() {
-  const micButton = document.getElementById("micbtn");
-  if (!micButton) return;
-  micButton.textContent = jeevesVoiceActive ? "Leave conversation" : "Speak";
-  micButton.setAttribute("aria-label", jeevesVoiceActive ? "End continuous voice conversation" : "Start continuous voice conversation");
-}
-
-function launchRecognition() {
-  if (!jeevesVoiceActive || jeevesVoiceReplyInProgress || jeevesRecognition) return;
-  const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!Recognition) {
-    jeevesVoiceActive = false;
-    updateMicButton();
-    addMessage("Continuous voice input is not supported in this browser.", "bot");
-    return;
-  }
-  const recognition = new Recognition();
-  jeevesRecognition = recognition;
-  recognition.lang = navigator.language || "en-GB";
-  recognition.interimResults = true;
-  recognition.continuous = true;
-  recognition.maxAlternatives = 1;
-
-  recognition.onresult = function (event) {
-    let interim = "";
-    let finalText = "";
-    for (let i = event.resultIndex; i < event.results.length; i++) {
-      const transcript = event.results[i][0].transcript;
-      if (event.results[i].isFinal) finalText += transcript;
-      else interim += transcript;
-    }
-    setVoiceStage(true, finalText || interim || "");
-    if (finalText.trim()) {
-      const input = document.getElementById("command");
-      input.value = (input.value.trim() + " " + finalText.trim()).trim();
-    }
-  };
-
-  recognition.onerror = function (event) {
-    if (event.error !== "no-speech" && event.error !== "aborted") {
-      console.warn("Jeeves voice recognition:", event.error);
-    }
-  };
-
-  recognition.onend = function () {
-    if (jeevesRecognition === recognition) jeevesRecognition = null;
-    if (!jeevesVoiceActive) return;
-    const input = document.getElementById("command");
-    if (input && input.value.trim() && !jeevesVoiceReplyInProgress) {
-      jeevesVoiceReplyInProgress = true;
-      setVoiceStage(true, "Preparing your reply…");
-      updateMicButton();
-      send();
-      return;
-    }
-    if (!jeevesVoiceReplyInProgress) {
-      clearTimeout(jeevesRestartTimer);
-      jeevesRestartTimer = setTimeout(launchRecognition, 350);
-    }
-  };
-
-  try {
-    recognition.start();
-    setVoiceStage(true, "");
-    updateMicButton();
-  } catch (error) {
-    if (jeevesRecognition === recognition) jeevesRecognition = null;
-    if (jeevesVoiceActive) {
-      clearTimeout(jeevesRestartTimer);
-      jeevesRestartTimer = setTimeout(launchRecognition, 700);
-    }
-  }
-}
-
-function startVoice() {
-  if (jeevesVoiceActive) {
-    jeevesVoiceActive = false;
-    jeevesVoiceReplyInProgress = false;
-    clearTimeout(jeevesRestartTimer);
-    if (jeevesRecognition) {
-      const active = jeevesRecognition;
-      jeevesRecognition = null;
-      try { active.stop(); } catch (e) {}
-    }
-    setVoiceStage(false);
-    updateMicButton();
-    return;
-  }
-
-  const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!Recognition) {
-    addMessage("Voice input is not supported in this browser. Try Chrome on Android or desktop Chrome.", "bot");
-    return;
-  }
-  jeevesVoiceActive = true;
-  jeevesVoiceReplyInProgress = false;
-  updateMicButton();
-  launchRecognition();
-}
-
-window.jeevesVoiceIsActive = function () { return jeevesVoiceActive; };
-window.jeevesResumeListening = function () {
-  if (!jeevesVoiceActive) return;
-  jeevesVoiceReplyInProgress = false;
-  setVoiceStage(true, "");
-  updateMicButton();
-  clearTimeout(jeevesRestartTimer);
-  jeevesRestartTimer = setTimeout(launchRecognition, 300);
-};
-window.jeevesVoiceStopListening = function () {
-  jeevesVoiceReplyInProgress = true;
-  if (jeevesRecognition) {
-    const active = jeevesRecognition;
-    jeevesRecognition = null;
-    try { active.stop(); } catch (e) {}
-  }
-};
+function setMode(on){if(on===mode)return;if(!on){stopAll("Conversation ended.");return;}mode=true;reply=false;retry=0;button();status("LISTENING","Speak naturally…");listen();}
+function startVoice(){if(mode)setMode(false);else{const R=window.webkitSpeechRecognition||window.SpeechRecognition;if(!R){addMessage("Voice input is not supported. Try Chrome on Android.", "bot");return;}setMode(true);}}
+window.jeevesVoiceIsActive=()=>mode;
+window.jeevesVoiceStopListening=()=>{reply=true;clearTimeout(timer);if(rec){const r=rec;rec=null;try{r.stop();}catch(e){}}status("THINKING","Jeeves is thinking…");};
+window.jeevesResumeListening=()=>{if(!mode)return;reply=false;status("LISTENING","Speak naturally…");clearTimeout(timer);timer=setTimeout(listen,300);};
+function install(){const mic=$("micbtn");if(!mic||$("conversation-toggle"))return;const b=document.createElement("button");b.id="conversation-toggle";b.type="button";b.className=mic.className;b.textContent="Conversation";b.setAttribute("aria-pressed","false");b.onclick=()=>setMode(!mode);mic.insertAdjacentElement("beforebegin",b);button();}
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",install);else install();
