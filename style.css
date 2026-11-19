@@ -100,7 +100,7 @@
 
 /* Jeeves standalone feature icon set */
 .nav-btn{gap:12px}
-.nav-btn .nav-icon{display:block;width:19px;height:19px;flex:0 0 19px;object-fit:contain;opacity:.92}
+.nav-btn .nav-icon{display:block;width:15px;height:15px;flex:0 0 15px;object-fit:contain;opacity:.92}
 .nav-btn.active .nav-icon,.nav-btn:hover .nav-icon{filter:drop-shadow(0 0 4px rgba(214,184,120,.38));opacity:1}
 
 
