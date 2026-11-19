@@ -498,3 +498,28 @@ body.left-drawer-collapsed .main-area{margin-left:0}
 .message-actions button{min-height:29px;padding:5px 9px;border:1px solid rgba(197,160,89,.24);border-radius:7px;background:#171d26;color:#d8c69e;font-size:10px;cursor:pointer}
 .message-actions button:hover{background:#28251f;border-color:rgba(197,160,89,.58)}
 .msg.user+.message-actions{align-self:flex-end;margin-right:7px}
+
+
+/* Full-screen conversation and persistent chat log in the left navigation */
+.chat-log-panel{margin:24px 0 8px;padding-top:17px;border-top:1px solid rgba(255,255,255,.1);display:flex;flex-direction:column;min-height:180px}
+.chat-log-heading{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.chat-log-heading span{font-size:9px;letter-spacing:1.7px;font-weight:700;color:#d6b878}
+.chat-log-heading button{width:28px;height:28px;border:1px solid #c5a05955;border-radius:8px;background:#c5a05918;color:#e4c77f;font-size:19px;line-height:1}
+.chat-log-list{display:flex;flex-direction:column;gap:4px;max-height:38vh;overflow-y:auto}
+.chat-log-item{width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left;padding:10px 11px;border:1px solid transparent;border-radius:8px;background:transparent;color:#aeb4bd;font-size:11px}
+.chat-log-item:hover,.chat-log-item.active{background:#c5a05918;border-color:#c5a05940;color:#e4c77f}
+.chat-log-empty{margin:4px 2px;color:#777f89;font-size:10px;line-height:1.5}
+.chat-log-delete{align-self:flex-start;margin-top:8px;padding:6px 0;border:0;background:transparent;color:#d99b8b;font-size:10px}
+.chat-log-delete:disabled{opacity:.3;cursor:not-allowed}
+.workspace{position:fixed!important;inset:0 0 0 278px!important;height:100dvh!important;min-height:100dvh!important;margin:0!important;padding:12px 18px 76px!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:transparent!important;display:flex!important;flex-direction:column!important;overflow:hidden!important}
+.workspace .council-panel{display:none!important}
+#conversationbar{display:none!important}
+.chat-stage{flex:1 1 auto!important;min-height:0!important;display:flex!important;flex-direction:column!important}
+#chat{flex:1 1 auto!important;width:100%!important;height:100%!important;min-height:0!important;max-height:none!important;border:1px solid rgba(214,184,118,.22)!important;border-radius:14px!important;background:rgba(7,9,13,.78)!important;padding:18px!important;overflow-y:auto!important}
+#bar{flex:0 0 auto!important}
+.workspace .composer-foot{flex:0 0 auto}
+@media(max-width:1100px){.workspace{left:250px!important}}
+@media(max-width:800px){
+ .workspace{inset:0!important;height:100dvh!important;min-height:100dvh!important;padding:10px 10px 72px!important}
+ .chat-log-list{max-height:32vh}
+}
