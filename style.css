@@ -181,7 +181,7 @@
 
 
 /* Full-size Jeeves AI banner on the Operations page */
-.operations-banner{display:block;width:50%;max-width:700px;height:auto;object-fit:contain;margin:0 auto 18px;}
+.operations-banner{display:block;width:25%;max-width:350px;height:auto;object-fit:contain;margin:0 auto 18px;}
 
 
 /* Operations workspace: centre all content and text */
@@ -344,7 +344,7 @@
  .mobile-top{height:auto;min-height:112px;display:grid;grid-template-columns:40px 1fr 40px;grid-template-rows:auto auto;align-items:center;justify-items:center;padding:9px 13px 10px;row-gap:5px}
  .mobile-top>.iconbtn{grid-column:1;grid-row:1;justify-self:start}
  .mobile-top>.jeeves-assist-brand{grid-column:2;grid-row:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;width:100%}
- .mobile-top>.jeeves-assist-brand img{width:auto;max-width:112px;max-height:58px;object-fit:contain}
+ .mobile-top>.jeeves-assist-brand img{width:auto;max-width:168px;max-height:87px;object-fit:contain}
  .mobile-top>.mobile-account-btn{grid-column:3;grid-row:1;justify-self:end}
  .mobile-top>.top-date-time{grid-column:1 / -1;grid-row:2;min-height:0;padding:0;border:0;background:none;box-shadow:none;gap:3px!important}
  .mobile-top .top-date{font-size:9px!important;letter-spacing:1px!important}
