@@ -110,7 +110,20 @@
         .insert({ user_id: data.session.user.id, status: "queued" }).select("id").single();
       if (queued.error) throw queued.error;
       const requestId = queued.data.id;
-      if (status) status.textContent = "Sync requested · waiting for Jeeves Health on your Android phone…";
+      let pushMessage = "";
+      try {
+        const push = await db.functions.invoke("health-sync-notify", {
+          body: { request_id: requestId },
+          headers: { Authorization: "Bearer " + data.session.access_token }
+        });
+        if (push.error) throw push.error;
+        if (!push.data || Number(push.data.sent || 0) < 1) {
+          pushMessage = " No registered phone notification was confirmed.";
+        }
+      } catch (pushError) {
+        pushMessage = " Push notification could not be sent; open Jeeves Health on your phone.";
+      }
+      if (status) status.textContent = "Sync requested · notifying Jeeves Health…" + pushMessage;
       const started = Date.now();
       const check = async () => {
         try {
