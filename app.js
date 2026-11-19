@@ -75,6 +75,39 @@ async function enableTaskNotifications() {
   }
 }
 
+async function sendTestNotification() {
+  if (!("Notification" in window)) {
+    addNote("This browser does not support notifications.");
+    return;
+  }
+  let permission = Notification.permission;
+  if (permission === "default") permission = await Notification.requestPermission();
+  if (permission !== "granted") {
+    addNote(permission === "denied"
+      ? "Notifications are blocked in browser settings. Allow them for this site, then try again."
+      : "Notification permission was not granted.");
+    return;
+  }
+
+  const title = "JEEVES notification test";
+  const options = {
+    body: "Success — device notifications are enabled. Tap this alert to reopen JEEVES.",
+    tag: "jeeves-test-notification-" + Date.now(),
+    data: { url: window.location.href }
+  };
+  try {
+    if ("serviceWorker" in navigator) {
+      const registration = await navigator.serviceWorker.ready;
+      await registration.showNotification(title, options);
+    } else {
+      new Notification(title, options);
+    }
+    addNote("Test notification sent. Check your device notification shade.");
+  } catch (error) {
+    addNote("Could not show test notification: " + error.message);
+  }
+}
+
 async function checkAlerts() {
   const banner = document.getElementById("alerts");
   const { data: sessionData } = await db.auth.getSession();
