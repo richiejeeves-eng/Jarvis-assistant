@@ -174,3 +174,7 @@
   letter-spacing:0!important;
   text-transform:none!important;
 }
+
+/* Original Jeeves icons at the head of each page */
+.page-heading-icon{display:inline-block;width:34px;height:34px;flex:0 0 34px;object-fit:contain;vertical-align:middle;}
+.workspace-head h2,.section-heading h2,.executive-live-head h2{display:flex;align-items:center;gap:12px;}
