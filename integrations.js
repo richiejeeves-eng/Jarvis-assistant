@@ -7,14 +7,14 @@
     { group: "GOOGLE WORKSPACE", name: "Google Tasks", detail: "Import Google Tasks into Jeeves and sync completion", status: "Additional permission required", kind: "setup", icon: "✓" },
     { group: "GOOGLE WORKSPACE", name: "Gmail", detail: "Read recent email metadata and snippets (read-only)", status: "Awaiting authorisation", kind: "setup", icon: "✉" },
     { group: "GOOGLE WORKSPACE", name: "Google Drive", detail: "List files and metadata (read-only)", status: "Awaiting authorisation", kind: "setup", icon: "▧" },
-    { group: "HEALTH & FITNESS", name: "Health Connect", detail: "Android health and activity data", status: "Not wired into Jeeves", kind: "planned", icon: "⌁" },
+    { group: "HEALTH & FITNESS", name: "Health Connect", detail: "Native Android companion · steps, heart rate, sleep, weight, body fat and blood pressure", status: "Companion scaffold added · build pending", kind: "setup", icon: "⌁" },
     { group: "HEALTH & FITNESS", name: "MyFitnessPal", detail: "Nutrition and food diary data", status: "Not wired into Jeeves", kind: "planned", icon: "◉" }
   ];
 
   const prompts = {
     "Gmail": "Help me integrate Gmail into Jeeves securely using least-privilege OAuth scopes. First inspect the existing Supabase architecture and give me the exact setup steps. Do not claim it is connected until a live test succeeds.",
     "Google Drive": "Help me integrate Google Drive into Jeeves securely using least-privilege OAuth scopes. First inspect the existing Supabase architecture and give me the exact setup steps. Do not claim it is connected until a live test succeeds.",
-    "Health Connect": "Plan a secure Android Health Connect integration for Jeeves. Inspect what is currently available and identify the required Android bridge and permissions. Do not claim it is connected until verified.",
+    "Health Connect": "Jeeves Health Android companion has been added to the repository. Help me build, install and verify the APK and Health Connect permissions. Do not claim it is connected until a live sync succeeds.",
     "MyFitnessPal": "Plan a secure MyFitnessPal integration for Jeeves. Check current supported API or export options first; do not assume an API is available and do not claim it is connected until verified."
   };
 
@@ -206,7 +206,9 @@
         html += '<div class="integration-group-label">' + currentGroup + '</div>';
       }
       html += '<article class="integration-tile" data-tile="' + item.name + '"><div class="integration-tile-top"><span class="integration-icon">' + item.icon + '</span><span class="integration-status ' + item.kind + '" data-status>' + item.status + '</span></div><h4>' + item.name + '</h4><p>' + item.detail + '</p>';
-      if (item.name === "Google Tasks") {
+      if (item.name === "Health Connect") {
+        html += '<button class="integration-action" type="button" data-health-build>Open Android companion source ↗</button>';
+      } else if (item.name === "Google Tasks") {
         html += '<button class="integration-action" type="button" data-google-tasks-connect>Connect & grant Google Tasks access ↗</button><button class="integration-action" type="button" data-google-tasks-sync hidden>Sync Google Tasks ↻</button>';
       } else if (item.name === "Gmail" || item.name === "Google Drive") {
         html += '<button class="integration-action" type="button" data-google-extend="' + item.name + '">Connect with Google ↗</button><button class="integration-action" type="button" data-google-test="' + item.name + '" hidden>Test connection ↻</button><div class="integration-test-result" data-test-result></div>';
@@ -229,6 +231,9 @@
       document.head.appendChild(style);
     }
 
+    root.querySelector("[data-health-build]")?.addEventListener("click", function () {
+      window.open("https://github.com/richiejeeves-eng/Jeeves-assistant/tree/main/android", "_blank", "noopener");
+    });
     root.querySelectorAll("[data-google-extend]").forEach(function (button) {
       button.addEventListener("click", function (event) { connectCalendar(event.currentTarget, button.dataset.googleExtend); });
     });
