@@ -44,15 +44,35 @@ function updateSpeakButtons() {
   }
 }
 
-function speakWithBrowser(text) {
+const SPECIALIST_VOICES = {
+  mind: { rate: 0.98, pitch: 1.22, preferred: ["samantha", "serena", "google uk english female"] },
+  body: { rate: 1.02, pitch: 1.34, preferred: ["karen", "moira", "google uk english female", "samantha"] },
+  soul: { rate: 0.92, pitch: 1.16, preferred: ["tessa", "victoria", "google uk english female", "serena"] }
+};
+
+function specialistVoice(speaker) {
+  const voices = getVoices();
+  const profile = SPECIALIST_VOICES[speaker];
+  if (!profile) return null;
+  for (const hint of profile.preferred) {
+    const found = voices.find(function (v) { return v.name.toLowerCase().includes(hint); });
+    if (found) return found;
+  }
+  const likelyFemale = voices.filter(function (v) {
+    return /female|woman|samantha|victoria|karen|moira|tessa|serena|zira|aria|jenny|susan|hazel|libby|sonia/i.test(v.name);
+  });
+  return likelyFemale[["mind", "body", "soul"].indexOf(speaker)] || likelyFemale[0] || null;
+}
+
+function speakWithBrowser(text, speaker) {
   if (!window.speechSynthesis) return;
   window.speechSynthesis.cancel();
-  const profile = PROFILES[profileIndex % PROFILES.length];
+  const profile = SPECIALIST_VOICES[speaker] || PROFILES[profileIndex % PROFILES.length];
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = "en-GB";
   utterance.rate = profile.rate;
   utterance.pitch = profile.pitch;
-  const voice = getVoices().find(function (v) { return v.voiceURI === voiceURI; });
+  const voice = SPECIALIST_VOICES[speaker] ? specialistVoice(speaker) : getVoices().find(function (v) { return v.voiceURI === voiceURI; });
   if (voice) utterance.voice = voice;
   window.speechSynthesis.speak(utterance);
 }
@@ -86,10 +106,10 @@ async function speakWithElevenLabs(text) {
   await currentAudio.play();
 }
 
-async function speakNow(text) {
+async function speakNow(text, speaker) {
   if (window.speechSynthesis) window.speechSynthesis.cancel();
   if (currentAudio) { currentAudio.pause(); currentAudio = null; }
-  if (useElevenLabs) {
+  if (useElevenLabs && !SPECIALIST_VOICES[speaker]) {
     try {
       await speakWithElevenLabs(text);
       return;
@@ -97,12 +117,12 @@ async function speakNow(text) {
       console.warn("JEEVES premium voice unavailable; using device voice:", error.message);
     }
   }
-  speakWithBrowser(text);
+  speakWithBrowser(text, speaker);
 }
 
-function speak(text) {
+function speak(text, speaker) {
   if (!speakOn || !text) return;
-  speakNow(text);
+  speakNow(text, speaker || "jeeves");
 }
 
 function toggleSpeak() {
@@ -164,7 +184,8 @@ send = async function () {
     !last.textContent.startsWith("AI error") &&
     !last.textContent.startsWith("Could not")
   ) {
-    speak(last.textContent);
+    speak(last.textContent, window.lastResponseSpeaker || "jeeves");
+    window.lastResponseSpeaker = "jeeves";
   }
 };
 
