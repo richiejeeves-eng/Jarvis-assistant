@@ -50,8 +50,58 @@ function addMessage(text, who) {
   div.className = "msg " + who;
   div.textContent = text;
   chat.appendChild(div);
+  addMessageActions(div, text, who);
   scrollChat();
   return div;
+}
+
+function addMessageActions(messageElement, messageText, who) {
+  const actions = document.createElement("div");
+  actions.className = "message-actions";
+  actions.setAttribute("aria-label", "Message actions");
+
+  const copy = makeButton("Copy", async function () {
+    try {
+      await navigator.clipboard.writeText(messageText);
+      copy.textContent = "Copied";
+      setTimeout(function () { copy.textContent = "Copy"; }, 1400);
+    } catch (error) { addNote("Could not copy this message. Check browser clipboard permissions."); }
+  });
+  const share = makeButton("Share", async function () {
+    try {
+      if (navigator.share) await navigator.share({ title: "Jeeves message", text: messageText });
+      else {
+        await navigator.clipboard.writeText(messageText);
+        share.textContent = "Copied to share";
+        setTimeout(function () { share.textContent = "Share"; }, 1600);
+      }
+    } catch (error) {
+      if (error.name !== "AbortError") addNote("Sharing is unavailable on this device.");
+    }
+  });
+  const read = makeButton("Read aloud", function () {
+    if (!("speechSynthesis" in window)) { addNote("Read aloud is not supported by this browser."); return; }
+    if (window.speechSynthesis.speaking) window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(messageText);
+    utterance.lang = document.documentElement.lang || "en-GB";
+    window.speechSynthesis.speak(utterance);
+  });
+  const remove = makeButton("Delete", async function () {
+    if (!window.confirm("Delete this message?")) return;
+    const id = messageElement.dataset.messageId;
+    if (id) {
+      const { error } = await db.from("conversation_messages").delete().eq("id", id);
+      if (error) { addNote("Could not delete message: " + error.message); return; }
+    }
+    const role = who === "bot" ? "model" : "user";
+    const historyIndex = history.findIndex(function (item) { return item.role === role && item.text === messageText; });
+    if (historyIndex >= 0) history.splice(historyIndex, 1);
+    messageElement.remove();
+    actions.remove();
+  });
+  actions.append(copy, share, read, remove);
+  messageElement.insertAdjacentElement("afterend", actions);
+  return actions;
 }
 
 function addNote(text) {
@@ -333,6 +383,7 @@ async function openConversation(id) {
   chat.textContent = "";
   (data || []).forEach(function (message) {
     const bubble = addMessage(message.content, message.role === "assistant" ? "bot" : "user");
+    bubble.dataset.messageId = message.id;
     if (message.role === "assistant") addFeedbackControls(bubble, message.id, id);
   });
   if (!data || data.length === 0) addMessage("This conversation is empty. Send a message to continue.", "bot");
@@ -467,7 +518,8 @@ async function send() {
 
   try {
     if (!activeConversationId) await createConversation(message);
-    saveConversationMessage("user", message).catch(error => console.warn("User message save failed:", error));
+    const userBubble = document.querySelector("#chat .msg.user:last-of-type");
+    saveConversationMessage("user", message).then(id => { if (userBubble) userBubble.dataset.messageId = id; }).catch(error => console.warn("User message save failed:", error));
     history.push({ role: "user", text: message });
     const modelHistory = history.slice(-11, -1).slice(-10);
 
@@ -500,7 +552,7 @@ async function send() {
     thinking.textContent = data.reply;
     window.lastResponseSpeaker = data.speaker || (activeAdvisers.length === 1 ? activeAdvisers[0] : "jeeves");
     const savedConversationId = activeConversationId;
-    saveConversationMessage("assistant", data.reply).then(id => addFeedbackControls(thinking, id, savedConversationId)).catch(error => console.warn("Assistant message save failed:", error));
+    saveConversationMessage("assistant", data.reply).then(id => { thinking.dataset.messageId = id; addFeedbackControls(thinking, id, savedConversationId); }).catch(error => console.warn("Assistant message save failed:", error));
     history.push({ role: "model", text: data.reply });
     history = history.slice(-10);
     refreshConversationList(activeConversationId, false).catch(error => console.warn("Conversation list refresh failed:", error));
