@@ -49,3 +49,11 @@
 .task-groups .task-group-heading{margin:0 0 10px;padding-bottom:9px;border-bottom:1px solid rgba(205,166,103,.22);font:600 12px 'JetBrains Mono',monospace;letter-spacing:.09em;text-transform:uppercase;color:#d8b77e}
 .task-groups .taskrow{padding:9px 0;border-bottom:1px solid rgba(255,255,255,.07)}
 .task-groups .taskrow:last-child{border-bottom:0}
+
+
+/* Live ecosystem connection states */
+.eco-grid span{display:flex;flex-direction:column;gap:4px}
+.eco-grid span i{font-size:8px;font-style:normal;color:#d5a36d}
+.eco-grid span.eco-connected i{color:#80d7aa}
+.eco-grid span.eco-pending i{color:#d5a36d}
+.eco-grid span[data-eco="Gemini AI"] i,.eco-grid span[data-eco="Supabase"] i,.eco-grid span[data-eco="ElevenLabs"] i{color:#80d7aa}
