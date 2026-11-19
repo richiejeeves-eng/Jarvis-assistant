@@ -19,7 +19,7 @@ function startVoice() {
     jeevesVoiceActive = false;
     try { jeevesRecognition.stop(); } catch (e) {}
     setVoiceStage(false);
-    micButton.textContent = "🎤";
+    micButton.textContent = "Speak";
     micButton.setAttribute("aria-label", "Start voice input");
     return;
   }
@@ -37,7 +37,7 @@ function startVoice() {
   recognition.interimResults = true;
   recognition.maxAlternatives = 1;
 
-  micButton.textContent = "■";
+  micButton.textContent = "Stop";
   micButton.setAttribute("aria-label", "Stop voice input");
   setVoiceStage(true, "");
   recognition.onresult = function (event) {
@@ -60,7 +60,7 @@ function startVoice() {
     if (jeevesRecognition === recognition) jeevesRecognition = null;
     jeevesVoiceActive = false;
     setVoiceStage(false);
-    micButton.textContent = "🎤";
+    micButton.textContent = "Speak";
     micButton.setAttribute("aria-label", "Start voice input");
     const input = document.getElementById("command");
     if (input.value.trim()) send();
@@ -71,7 +71,7 @@ function startVoice() {
     jeevesVoiceActive = false;
     jeevesRecognition = null;
     setVoiceStage(false);
-    micButton.textContent = "🎤";
+    micButton.textContent = "Speak";
     addMessage("Could not start voice input: " + error.message, "bot");
   }
 }
