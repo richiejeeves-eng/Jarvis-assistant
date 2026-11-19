@@ -79,3 +79,37 @@
  .council-member-copy{width:auto!important}
  .council-member-copy b{font-size:9px!important}
 }
+
+
+/* Jeeves signature halo: champagne-gold ring becomes the shared orb language. */
+.council-orb{
+  overflow:visible!important;
+  isolation:isolate;
+  box-shadow:inset -4px -5px 8px #0008,inset 3px 3px 6px #ffffff35,0 0 8px rgba(214,184,118,.18)!important;
+}
+.council-orb:before{
+  content:"";
+  position:absolute;
+  z-index:-1;
+  inset:-4px;
+  border:1.5px solid rgba(222,190,126,.88);
+  border-radius:50%;
+  box-shadow:0 0 5px rgba(214,184,118,.42),inset 0 0 4px rgba(214,184,118,.16);
+  pointer-events:none;
+}
+.jeeves-orb:before{inset:-4px;border-width:1.7px;box-shadow:0 0 7px #d6b87888,0 0 13px #d6b87844}
+.council-panel.consulting-mind .mind-orb:before,
+.council-panel.consulting-body .body-orb:before,
+.council-panel.consulting-soul .soul-orb:before{
+  border-color:#f1d59c;
+  box-shadow:0 0 8px #d6b878aa,0 0 16px #d6b87866;
+  animation:council-halo-breathe 1.25s ease-in-out infinite;
+}
+@keyframes council-halo-breathe{0%,100%{transform:scale(1);opacity:.78}50%{transform:scale(1.13);opacity:1}}
+/* The larger voice orb carries the same clean gold halo. */
+.voice-orb{border:1px solid rgba(222,190,126,.72);outline:1px solid rgba(222,190,126,.35);outline-offset:6px}
+.voice-orb:before{border:1.5px solid rgba(222,190,126,.78)!important;box-shadow:0 0 10px #d6b87855}
+.voice-orb:after{border-color:rgba(222,190,126,.35)!important}
+@media(prefers-reduced-motion:reduce){
+ .council-panel.consulting-mind .mind-orb:before,.council-panel.consulting-body .body-orb:before,.council-panel.consulting-soul .soul-orb:before{animation:none}
+}
