@@ -56,3 +56,48 @@ try {
   savedTheme = localStorage.getItem("jeeves-theme") || "navy";
 } catch (e) {}
 applyTheme(savedTheme);
+
+async function useMyLocation() {
+  if (!navigator.geolocation) {
+    addMessage("Location is not available in this browser.", "bot");
+    return;
+  }
+
+  const { data: userData } = await db.auth.getUser();
+  const user = userData && userData.user;
+  if (!user) {
+    addMessage("Please sign in first, then tap Location.", "bot");
+    return;
+  }
+
+  const meta = user.user_metadata || {};
+  if (meta.home_lat != null && !confirm("A location is already saved.\nOK = update it\nCancel = remove it")) {
+    await db.auth.updateUser({ data: { home_lat: null, home_lon: null } });
+    addMessage("Saved location removed.", "bot");
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    async function (position) {
+      const lat = Math.round(position.coords.latitude * 100) / 100;
+      const lon = Math.round(position.coords.longitude * 100) / 100;
+      const { error } = await db.auth.updateUser({ data: { home_lat: lat, home_lon: lon } });
+      if (error) {
+        addMessage("Location error: " + error.message, "bot");
+        return;
+      }
+      addMessage("Approximate location saved. Ask me about the weather any time.", "bot");
+    },
+    function (err) {
+      addMessage("Location error: " + err.message, "bot");
+    },
+    { enableHighAccuracy: false, timeout: 15000, maximumAge: 600000 }
+  );
+}
+
+const locationButton = document.createElement("button");
+locationButton.id = "locbtn";
+locationButton.textContent = "📍 Location";
+locationButton.onclick = useMyLocation;
+const toolsBar = document.getElementById("tools");
+if (toolsBar) toolsBar.appendChild(locationButton);
