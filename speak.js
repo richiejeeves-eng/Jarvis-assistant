@@ -202,3 +202,43 @@ updateSpeakButtons();
     button.addEventListener("contextmenu", function (event) { event.preventDefault(); });
   });
 })();
+
+
+// Delegated long-press help also covers buttons added after page load (Location and Photo).
+(function attachDynamicLongPressHelp() {
+  const bar = document.getElementById("tools");
+  if (!bar) return;
+  let timer = null;
+  let tip = null;
+  let target = null;
+  function clearHelp() {
+    if (timer) clearTimeout(timer);
+    timer = null;
+    if (tip) tip.remove();
+    tip = null;
+    target = null;
+  }
+  bar.addEventListener("pointerdown", function (event) {
+    const button = event.target.closest("button.tool-icon");
+    if (!button || event.pointerType === "mouse") return;
+    clearHelp();
+    target = button;
+    timer = setTimeout(function () {
+      if (!target) return;
+      tip = document.createElement("span");
+      tip.className = "tool-longpress-tip";
+      tip.textContent = target.getAttribute("data-description") || target.getAttribute("aria-label") || "Setting";
+      target.appendChild(tip);
+    }, 550);
+  });
+  ["pointerup", "pointercancel", "pointerleave"].forEach(function (name) {
+    bar.addEventListener(name, function () {
+      if (timer) clearTimeout(timer);
+      timer = null;
+      if (tip) setTimeout(clearHelp, 1400);
+    });
+  });
+  bar.addEventListener("contextmenu", function (event) {
+    if (event.target.closest("button.tool-icon")) event.preventDefault();
+  });
+})();
