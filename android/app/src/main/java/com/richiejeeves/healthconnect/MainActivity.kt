@@ -75,8 +75,22 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         permissionLauncher = registerForActivityResult(
             PermissionController.createRequestPermissionResultContract()
-        ) { granted ->
-            status.text = if (granted.isNotEmpty()) "Health Connect permissions updated. Tap Sync now." else "No Health Connect permissions granted."
+        ) { _ ->
+            lifecycleScope.launch {
+                val client = healthClient
+                val granted = client?.permissionController?.getGrantedPermissions().orEmpty()
+                val backgroundAvailable = client?.features?.getFeatureStatus(
+                    HealthConnectFeatures.FEATURE_READ_HEALTH_DATA_IN_BACKGROUND
+                ) == HealthConnectFeatures.FEATURE_STATUS_AVAILABLE
+                status.text = when {
+                    PERMISSION_READ_HEALTH_DATA_IN_BACKGROUND in granted ->
+                        "Health Connect background access is enabled. Background sync is ready."
+                    backgroundAvailable ->
+                        "Health data access is granted, but background access is not. Tap Connect Health Connect and allow background access."
+                    else ->
+                        "Health data access is granted. This Health Connect version does not support background reading."
+                }
+            }
         }
         buildScreen()
         val sdkStatus = HealthConnectClient.getSdkStatus(this)
@@ -224,12 +238,22 @@ class MainActivity : ComponentActivity() {
         }
         lifecycleScope.launch {
             val granted = client.permissionController.getGrantedPermissions()
-            if (!granted.containsAll(requestedPermissions)) {
-                permissionLauncher.launch(requestedPermissions)
-            } else if (client.features.getFeatureStatus(HealthConnectFeatures.FEATURE_READ_HEALTH_DATA_IN_BACKGROUND) == HealthConnectFeatures.FEATURE_STATUS_AVAILABLE && PERMISSION_READ_HEALTH_DATA_IN_BACKGROUND !in granted) {
-                permissionLauncher.launch(setOf(PERMISSION_READ_HEALTH_DATA_IN_BACKGROUND))
-            } else {
-                status.text = if (PERMISSION_READ_HEALTH_DATA_IN_BACKGROUND in granted) "Health Connect read and background access are enabled." else "Health Connect read access is enabled. Background reading is not available on this Health Connect version."
+            val backgroundAvailable = client.features.getFeatureStatus(
+                HealthConnectFeatures.FEATURE_READ_HEALTH_DATA_IN_BACKGROUND
+            ) == HealthConnectFeatures.FEATURE_STATUS_AVAILABLE
+            when {
+                !granted.containsAll(requestedPermissions) -> {
+                    status.text = "Requesting Health Connect read permissions…"
+                    permissionLauncher.launch(requestedPermissions)
+                }
+                backgroundAvailable && PERMISSION_READ_HEALTH_DATA_IN_BACKGROUND !in granted -> {
+                    status.text = "Requesting Health Connect background access…"
+                    permissionLauncher.launch(setOf(PERMISSION_READ_HEALTH_DATA_IN_BACKGROUND))
+                }
+                PERMISSION_READ_HEALTH_DATA_IN_BACKGROUND in granted ->
+                    status.text = "Health Connect read and background access are enabled."
+                else ->
+                    status.text = "Health Connect read access is enabled, but this Health Connect version does not support background reading."
             }
         }
     }
