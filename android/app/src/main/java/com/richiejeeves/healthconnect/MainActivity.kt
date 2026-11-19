@@ -193,11 +193,25 @@ class MainActivity : ComponentActivity() {
                     status.text = "No records found in the approved categories for the last 30 days."
                     return@launch
                 }
-                val result = withContext(Dispatchers.IO) {
-                    postJson("$supabaseUrl/functions/v1/health-sync",
-                        JSONObject().put("records", records), token)
+                val batchSize = 100
+                val totalBatches = (records.length() + batchSize - 1) / batchSize
+                var syncedTotal = 0
+                var batchNumber = 0
+                for (start in 0 until records.length() step batchSize) {
+                    batchNumber++
+                    val batch = JSONArray()
+                    val end = minOf(start + batchSize, records.length())
+                    for (index in start until end) {
+                        batch.put(records.getJSONObject(index))
+                    }
+                    status.text = "Uploading health data: batch $batchNumber of $totalBatches…"
+                    val result = withContext(Dispatchers.IO) {
+                        postJson("$supabaseUrl/functions/v1/health-sync",
+                            JSONObject().put("records", batch), token)
+                    }
+                    syncedTotal += result.optInt("synced")
                 }
-                status.text = "Sync complete: ${result.optInt("synced")} records sent to Jeeves."
+                status.text = "Sync complete: $syncedTotal records sent to Jeeves."
             } catch (e: Exception) {
                 status.text = "Sync failed: ${e.message ?: "Please try again."}"
             }
