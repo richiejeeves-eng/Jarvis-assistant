@@ -121,7 +121,7 @@
           pushMessage = " No registered phone notification was confirmed.";
         }
       } catch (pushError) {
-        pushMessage = " Push notification could not be sent; open Jeeves Health on your phone.";
+        pushMessage = " Push notification error: " + (pushError?.message || String(pushError)).slice(0, 240);
       }
       if (status) status.textContent = "Sync requested · notifying Jeeves Health…" + pushMessage;
       const started = Date.now();
