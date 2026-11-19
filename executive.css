@@ -50,3 +50,5 @@ footer{border-top-color:var(--line)}
 .executive-metric-link:hover,.executive-metric-link:focus-visible{border-color:var(--gold);background:rgba(212,175,118,.07);transform:translateY(-2px);outline:none}
 .executive-metric-link:focus-visible{box-shadow:0 0 0 2px rgba(212,175,118,.25)}
 .executive-metric-link::after{content:"OPEN ↗";display:block;margin-top:7px;font:9px 'JetBrains Mono',monospace;letter-spacing:1px;color:var(--gold)}
+
+.account-back-button{white-space:normal;min-height:40px;padding:9px 13px;border:1px solid rgba(214,184,118,.35);border-radius:10px;background:rgba(214,184,118,.07);color:var(--gold,#d6b878);cursor:pointer}@media(max-width:600px){#view-account-detail>.section-heading{display:flex;flex-direction:column;align-items:stretch;gap:14px}#view-account-detail>.section-heading .account-back-button{align-self:flex-start}}
