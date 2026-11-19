@@ -460,6 +460,7 @@ async function send() {
     }
 
     thinking.textContent = data.reply;
+    window.lastResponseSpeaker = data.speaker || (activeAdvisers.length === 1 ? activeAdvisers[0] : "jeeves");
     const assistantMessageId = await saveConversationMessage("assistant", data.reply);
     addFeedbackControls(thinking, assistantMessageId, activeConversationId);
     history.push({ role: "model", text: data.reply });
