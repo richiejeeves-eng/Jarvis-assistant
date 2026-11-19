@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.graphics.Color
 import android.view.Gravity
 import android.widget.*
+import androidx.activity.ComponentActivity
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.lifecycleScope
@@ -29,7 +30,7 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 
-class MainActivity : Activity() {
+class MainActivity : ComponentActivity() {
     private val supabaseUrl = "https://aelsipdtezvhjkwsshqx.supabase.co"
     private val publishableKey = "sb_publishable_JbN0kUdtX6d5J8bWAPbz4w_syw2aG4K"
     private lateinit var emailInput: EditText
