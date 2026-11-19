@@ -1,0 +1,29 @@
+/* Council presentation: calm when idle, illuminated only while one adviser is responding. */
+.council-panel{text-align:center;justify-items:center}
+.council-panel-heading{width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:7px}
+.council-panel-heading .council-title{justify-content:center;width:100%}
+.council-panel-heading>p,.council-panel-foot{width:100%;text-align:center}
+.council-panel-grid{width:100%}
+.council-member{min-height:112px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;text-align:center;padding:12px 6px}
+.council-member input.council-toggle{order:0;margin:0 auto 1px}
+.council-member .council-orb{order:1;filter:saturate(.48);opacity:.58;transform:none;box-shadow:inset -4px -5px 8px #0006,inset 3px 3px 6px #ffffff35}
+.council-member-copy{order:2;width:100%;padding:0;display:grid;justify-items:center;text-align:center;gap:4px}
+.council-member-copy b,.council-member-copy small{text-align:center;width:100%}
+.council-panel .council-orb{animation:none}
+.council-panel.is-consulting .council-member .council-orb{filter:saturate(.48);opacity:.38}
+.council-panel.consulting-mind .council-member.mind .mind-orb,
+.council-panel.consulting-body .council-member.body .body-orb,
+.council-panel.consulting-soul .council-member.soul .soul-orb{opacity:1;filter:saturate(1.2);transform:scale(1.12);animation:council-orb-pulse 1.25s ease-in-out infinite;box-shadow:0 0 13px currentColor,0 0 27px currentColor,inset -4px -5px 8px #0006,inset 3px 3px 6px #ffffff66}
+@keyframes council-orb-pulse{0%,100%{scale:1}50%{scale:1.16}}
+@media(max-width:700px){
+ .council-panel-heading{align-items:center;text-align:center}
+ .council-panel-heading>p{text-align:center;margin:0}
+ .council-member{min-height:112px;flex-wrap:nowrap;gap:6px;padding:9px 4px}
+ .council-member-copy{width:100%;padding:0}
+ .council-member-copy b,.council-member-copy small{text-align:center}
+}
+@media(prefers-reduced-motion:reduce){.council-panel.consulting-mind .mind-orb,.council-panel.consulting-body .body-orb,.council-panel.consulting-soul .soul-orb{animation:none}}
+/* Keep workspace copy and controls visually centred on narrow screens. */
+.workspace-head,.workspace-head>div,.workspace-tools,.composer-foot{justify-content:center;text-align:center}
+#conversationSelect,#bar input,#bar button{text-align:center}
+#chat .msg{text-align:center}
