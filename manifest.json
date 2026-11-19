@@ -1,17 +1,17 @@
 {
-  "name": "Jeeves",
+  "name": "Jeeves — Chief of Staff",
   "short_name": "Jeeves",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#080d18",
-  "theme_color": "#080d18",
+  "background_color": "#0b0c10",
+  "theme_color": "#0b0c10",
   "icons": [
     {
-      "src": "icon.svg",
-      "sizes": "192x192 512x512",
+      "src": "icon.svg?v=2",
+      "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any"
+      "purpose": "any maskable"
     }
   ]
 }
