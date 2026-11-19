@@ -8,14 +8,12 @@
     { group: "GOOGLE WORKSPACE", name: "Gmail", detail: "Read recent email metadata and snippets (read-only)", status: "Awaiting authorisation", kind: "setup", icon: "✉" },
     { group: "GOOGLE WORKSPACE", name: "Google Drive", detail: "List files and metadata (read-only)", status: "Awaiting authorisation", kind: "setup", icon: "▧" },
     { group: "HEALTH & FITNESS", name: "Health Connect", detail: "Sync source for Jeeves Fitness · steps, heart rate, sleep, weight, body fat and blood pressure", status: "Managed in Jeeves Fitness", kind: "ready", icon: "⌁" },
-    { group: "HEALTH & FITNESS", name: "MyFitnessPal", detail: "Nutrition and food diary data", status: "Not wired into Jeeves", kind: "planned", icon: "◉" }
   ];
 
   const prompts = {
     "Gmail": "Help me integrate Gmail into Jeeves securely using least-privilege OAuth scopes. First inspect the existing Supabase architecture and give me the exact setup steps. Do not claim it is connected until a live test succeeds.",
     "Google Drive": "Help me integrate Google Drive into Jeeves securely using least-privilege OAuth scopes. First inspect the existing Supabase architecture and give me the exact setup steps. Do not claim it is connected until a live test succeeds.",
-    "Health Connect": "Jeeves Health Android companion has been added to the repository. Help me build, install and verify the APK and Health Connect permissions. Do not claim it is connected until a live sync succeeds.",
-    "MyFitnessPal": "Plan a secure MyFitnessPal integration for Jeeves. Check current supported API or export options first; do not assume an API is available and do not claim it is connected until verified."
+    "Health Connect": "Jeeves Health Android companion has been added to the repository. Help me build, install and verify the APK and Health Connect permissions. Do not claim it is connected until a live sync succeeds."
   };
 
   function note(message) {
