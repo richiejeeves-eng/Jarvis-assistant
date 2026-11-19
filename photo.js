@@ -84,7 +84,10 @@
 
   const button = document.createElement("button");
   button.id = "photobtn";
-  button.textContent = "📷 Photo";
+  button.textContent = "📷";
+  button.className = "tool-icon";
+  button.setAttribute("aria-label", "Choose a photo");
+  button.setAttribute("data-description", "Choose a photo to ask Jeeves about");
   button.onclick = function () { fileInput.click(); };
 
   const toolsBar = document.getElementById("tools");
