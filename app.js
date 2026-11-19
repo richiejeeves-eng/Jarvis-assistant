@@ -445,6 +445,7 @@ async function send() {
   if (!(await requireSession())) return;
 
   input.value = "";
+  input.dispatchEvent(new Event("input", { bubbles: true }));
   addMessage(message, "user");
   sendingMessage = true;
   document.getElementById("newchatbtn").disabled = true;
