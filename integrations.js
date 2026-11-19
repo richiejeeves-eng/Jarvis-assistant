@@ -5,8 +5,8 @@
     { group: "CORE SERVICES", name: "ElevenLabs", detail: "Jeeves voice generation via jeeves-voice", status: "Configured", kind: "ready", icon: "♫" },
     { group: "GOOGLE WORKSPACE", name: "Google Calendar", detail: "Read upcoming events and create approved events", status: "OAuth setup required", kind: "setup", icon: "◷" },
     { group: "GOOGLE WORKSPACE", name: "Google Tasks", detail: "Import Google Tasks into Jeeves and sync completion", status: "Additional permission required", kind: "setup", icon: "✓" },
-    { group: "GOOGLE WORKSPACE", name: "Gmail", detail: "Search, summarise and draft email with permission", status: "OAuth setup required", kind: "setup", icon: "✉" },
-    { group: "GOOGLE WORKSPACE", name: "Google Drive", detail: "Find and work with selected documents", status: "OAuth setup required", kind: "setup", icon: "▧" },
+    { group: "GOOGLE WORKSPACE", name: "Gmail", detail: "Read recent email metadata and snippets (read-only)", status: "Awaiting authorisation", kind: "setup", icon: "✉" },
+    { group: "GOOGLE WORKSPACE", name: "Google Drive", detail: "List files and metadata (read-only)", status: "Awaiting authorisation", kind: "setup", icon: "▧" },
     { group: "HEALTH & FITNESS", name: "Health Connect", detail: "Android health and activity data", status: "Not wired into Jeeves", kind: "planned", icon: "⌁" },
     { group: "HEALTH & FITNESS", name: "MyFitnessPal", detail: "Nutrition and food diary data", status: "Not wired into Jeeves", kind: "planned", icon: "◉" }
   ];
@@ -188,8 +188,8 @@
     set("Google Tasks", status?.tasks_enabled ? "Connected" : (status?.connected ? "Permission needed" : "Not connected"), !!status?.tasks_enabled);
     const summary = document.getElementById("eco-summary");
     if (summary) {
-      const count = 1 + (status?.connected ? 1 : 0) + (status?.tasks_enabled ? 1 : 0);
-      summary.textContent = count + " / 3 ACTIVE";
+      const count = 1 + (status?.connected ? 1 : 0) + (status?.tasks_enabled ? 1 : 0) + (status?.gmail_enabled ? 1 : 0) + (status?.drive_enabled ? 1 : 0);
+      summary.textContent = count + " / 5 ACTIVE";
     }
     const updated = document.getElementById("eco-updated");
     if (updated) updated.textContent = status ? "Live connection status · just checked." : "Sign in to verify Google connections.";
@@ -208,6 +208,8 @@
       html += '<article class="integration-tile" data-tile="' + item.name + '"><div class="integration-tile-top"><span class="integration-icon">' + item.icon + '</span><span class="integration-status ' + item.kind + '" data-status>' + item.status + '</span></div><h4>' + item.name + '</h4><p>' + item.detail + '</p>';
       if (item.name === "Google Tasks") {
         html += '<button class="integration-action" type="button" data-google-tasks-connect>Connect & grant Google Tasks access ↗</button><button class="integration-action" type="button" data-google-tasks-sync hidden>Sync Google Tasks ↻</button>';
+      } else if (item.name === "Gmail" || item.name === "Google Drive") {
+        html += '<button class="integration-action" type="button" data-google-extend="' + item.name + '">Connect with Google ↗</button><button class="integration-action" type="button" data-google-test="' + item.name + '" hidden>Test connection ↻</button><div class="integration-test-result" data-test-result></div>';
       } else if (item.name === "Google Calendar") {
         html += '<button class="integration-action" type="button" data-calendar-connect>Connect Google Calendar ↗</button><div class="calendar-connected-actions" hidden><button class="integration-action" type="button" data-calendar-events>Refresh upcoming events</button><button class="integration-action secondary" type="button" data-calendar-disconnect>Disconnect</button><div class="calendar-event-list" data-calendar-event-list><p class="calendar-empty">Your upcoming events will appear here.</p></div></div>';
       } else if (item.kind === "setup" || item.kind === "planned") {
@@ -227,6 +229,25 @@
       document.head.appendChild(style);
     }
 
+    root.querySelectorAll("[data-google-extend]").forEach(function (button) {
+      button.addEventListener("click", function (event) { connectCalendar(event.currentTarget, button.dataset.googleExtend); });
+    });
+    root.querySelectorAll("[data-google-test]").forEach(function (button) {
+      button.addEventListener("click", async function (event) {
+        const target = event.currentTarget;
+        target.disabled = true;
+        try {
+          const action = target.dataset.googleTest === "Gmail" ? "gmailMessages" : "driveFiles";
+          const data = await calendarAction(action);
+          const result = target.parentElement.querySelector("[data-test-result]");
+          result.textContent = target.dataset.googleTest === "Gmail"
+            ? "Verified: " + (data.messages || []).length + " recent messages returned."
+            : "Verified: " + (data.files || []).length + " Drive files returned.";
+          note(target.dataset.googleTest + " connection verified successfully.");
+        } catch (error) { note(target.dataset.googleTest + " test failed: " + error.message); }
+        finally { target.disabled = false; }
+      });
+    });
     root.querySelectorAll("[data-integration]").forEach(function (button) {
       button.addEventListener("click", function () {
         promptJeeves(prompts[button.dataset.integration] || ("Help me configure " + button.dataset.integration + " securely."));
@@ -261,7 +282,19 @@
           const tasksBadge = tasksTile.querySelector("[data-status]");
           const tasksConnect = tasksTile.querySelector("[data-google-tasks-connect]");
           const tasksSync = tasksTile.querySelector("[data-google-tasks-sync]");
-          if (status.tasks_enabled) {
+          const gmailTile = root.querySelector('[data-tile="Gmail"]');
+        const driveTile = root.querySelector('[data-tile="Google Drive"]');
+        [[gmailTile, status.gmail_enabled], [driveTile, status.drive_enabled]].forEach(function ([tile, enabled]) {
+          if (!tile) return;
+          const badge = tile.querySelector("[data-status]");
+          const connect = tile.querySelector("[data-google-extend]");
+          const test = tile.querySelector("[data-google-test]");
+          badge.textContent = enabled ? "Connected" : (status.connected ? "Permission needed" : "Not connected");
+          badge.className = "integration-status " + (enabled ? "ready" : "setup");
+          connect.hidden = !!enabled;
+          test.hidden = !enabled;
+        });
+        if (status.tasks_enabled) {
             tasksBadge.textContent = "Connected";
             tasksBadge.className = "integration-status ready";
             tasksConnect.hidden = true;
