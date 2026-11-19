@@ -117,7 +117,7 @@
 #bar #micbtn{min-width:58px;min-height:42px;padding:0 12px;border:1px solid #c5a05955;border-radius:10px;background:#27313d;color:#e5c98f;font-size:11px;font-weight:700;cursor:pointer}
 #bar #micbtn[aria-label="Stop voice input"]{background:#7c3f35;color:#fff;border-color:#bd7768}
 #bar #command{min-width:0;flex:1 1 auto}
-#bar #sendbtn{min-height:42px;padding:0 15px}
+
 .chat-stage{position:relative;z-index:1}
 .voice-stage{pointer-events:none;z-index:2}
 .workspace.voice-active #bar{position:relative;z-index:10}
