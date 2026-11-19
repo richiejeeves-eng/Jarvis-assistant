@@ -36,6 +36,22 @@ class HealthSyncWorker(context: Context, params: WorkerParameters) : CoroutineWo
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         try {
             val token = validToken()
+            // Do not claim desktop requests unless Android has granted true background
+            // Health Connect access. The foreground listener in MainActivity handles
+            // requests while the companion is open.
+            val client = HealthConnectClient.getOrCreate(applicationContext)
+            val granted = client.permissionController.getGrantedPermissions()
+            val required = listOf(
+                HealthPermission.getReadPermission(StepsRecord::class),
+                HealthPermission.getReadPermission(HeartRateRecord::class),
+                HealthPermission.getReadPermission(SleepSessionRecord::class),
+                HealthPermission.getReadPermission(WeightRecord::class),
+                HealthPermission.getReadPermission(BodyFatRecord::class),
+                HealthPermission.getReadPermission(BloodPressureRecord::class)
+            )
+            if (required.none { it in granted }) return@withContext Result.success()
+            if (PERMISSION_READ_HEALTH_DATA_IN_BACKGROUND !in granted) return@withContext Result.success()
+
             // Recover requests abandoned by a process death or force-stop.
             val staleBefore = Instant.now().minus(10, ChronoUnit.MINUTES).toString()
             request(
@@ -69,21 +85,6 @@ class HealthSyncWorker(context: Context, params: WorkerParameters) : CoroutineWo
                 }
 
                 try {
-                    val client = HealthConnectClient.getOrCreate(applicationContext)
-                    val granted = client.permissionController.getGrantedPermissions()
-                    val required = listOf(
-                        HealthPermission.getReadPermission(StepsRecord::class),
-                        HealthPermission.getReadPermission(HeartRateRecord::class),
-                        HealthPermission.getReadPermission(SleepSessionRecord::class),
-                        HealthPermission.getReadPermission(WeightRecord::class),
-                        HealthPermission.getReadPermission(BodyFatRecord::class),
-                        HealthPermission.getReadPermission(BloodPressureRecord::class)
-                    )
-                    if (required.none { it in granted }) throw IllegalStateException("Health Connect permissions are not granted.")
-                    if (PERMISSION_READ_HEALTH_DATA_IN_BACKGROUND !in granted) {
-                        throw IllegalStateException("Enable Health Connect background access in Jeeves Health > Connect Health Connect.")
-                    }
-
                     val records = readRecords(client, granted)
                     for (batchStart in 0 until records.length() step 100) {
                         val batch = JSONArray()
