@@ -51,6 +51,8 @@ class MainActivity : ComponentActivity() {
     private lateinit var firebaseStatus: TextView
     private lateinit var permissionLauncher: ActivityResultLauncher<Set<String>>
     private var healthClient: HealthConnectClient? = null
+    private var queueListenerJob: Job? = null
+    private var processingQueueRequest = false
     private val requestedPermissions by lazy {
         setOf(
             HealthPermission.getReadPermission(StepsRecord::class),
@@ -106,7 +108,56 @@ class MainActivity : ComponentActivity() {
         super.onResume()
         scheduleBackgroundSync()
         registerFirebaseDevice()
+        startForegroundQueueListener()
     }
+
+    override fun onPause() {
+        queueListenerJob?.cancel()
+        queueListenerJob = null
+        super.onPause()
+    }
+
+    private fun startForegroundQueueListener() {
+        if (queueListenerJob?.isActive == true) return
+        queueListenerJob = lifecycleScope.launch {
+            while (isActive) {
+                if (prefs.getString("refresh_token", null) != null) {
+                    try { processQueuedHealthRequest() }
+                    catch (e: Exception) { status.text = "Health sync queue check failed: ${e.message ?: "Unknown error"}" }
+                }
+                delay(5000)
+            }
+        }
+    }
+
+    private suspend fun processQueuedHealthRequest() {
+        if (processingQueueRequest || healthClient == null) return
+        processingQueueRequest = true
+        try {
+            val token = validAccessToken()
+            val queue = withContext(Dispatchers.IO) {
+                JSONArray(restRequest("GET", "$supabaseUrl/rest/v1/health_sync_requests?select=id&status=eq.queued&order=requested_at.asc&limit=1", null, token))
+            }
+            if (queue.length() == 0) return
+            val id = queue.getJSONObject(0).getString("id")
+            val itemUrl = "$supabaseUrl/rest/v1/health_sync_requests?id=eq.$id&status=eq.queued"
+            val claimed = withContext(Dispatchers.IO) {
+                JSONArray(restRequest("PATCH", itemUrl, JSONObject().put("status", "processing").put("started_at", Instant.now().toString()).put("error", JSONObject.NULL), token))
+            }
+            if (claimed.length() == 0) return
+            status.text = "Processing Jeeves Desktop health sync request…"
+            try {
+                val synced = performSync()
+                if (!synced) throw IllegalStateException(status.text.toString())
+                withContext(Dispatchers.IO) { restRequest("PATCH", "$supabaseUrl/rest/v1/health_sync_requests?id=eq.$id", JSONObject().put("status", "completed").put("completed_at", Instant.now().toString()).put("error", JSONObject.NULL), token) }
+                status.text = "Desktop health sync completed."
+            } catch (e: Exception) {
+                withContext(Dispatchers.IO) { restRequest("PATCH", "$supabaseUrl/rest/v1/health_sync_requests?id=eq.$id", JSONObject().put("status", "failed").put("completed_at", Instant.now().toString()).put("error", (e.message ?: "Foreground sync failed").take(500)), token) }
+                status.text = "Desktop health sync failed: ${e.message ?: "Unknown error"}"
+            }
+        } finally { processingQueueRequest = false }
+    }
+
 
     private fun registerFirebaseDevice() {
         if (!::firebaseStatus.isInitialized) return
@@ -169,7 +220,11 @@ class MainActivity : ComponentActivity() {
             setRequestProperty("apikey", publishableKey)
             setRequestProperty("Authorization", "Bearer $bearer")
             setRequestProperty("Content-Type", "application/json")
-            setRequestProperty("Prefer", if (method == "POST") "resolution=merge-duplicates,return=minimal" else "return=minimal")
+            setRequestProperty("Prefer", when (method) {
+                "POST" -> "resolution=merge-duplicates,return=minimal"
+                "PATCH" -> "return=representation"
+                else -> "return=minimal"
+            })
             if (body != null) doOutput = true
         }
         if (body != null) connection.outputStream.use {
