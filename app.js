@@ -289,6 +289,7 @@ function renderChatLog() {
   if (!list || !picker) return;
   list.textContent = "";
   const options = Array.from(picker.options).filter(option => option.value && option.value !== "__new__");
+  list.classList.toggle("has-history", options.length > 0);
   if (!options.length) {
     const empty = document.createElement("p");
     empty.className = "chat-log-empty";
