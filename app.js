@@ -426,6 +426,12 @@ async function send() {
   const activeAdvisers = Array.from(document.querySelectorAll(".council-toggle:checked")).map(function (el) { return el.dataset.adviser; });
   const adviserNames = activeAdvisers.map(function (name) { return name.toUpperCase(); });
   const thinking = addMessage(activeAdvisers.length ? "Jeeves is consulting " + adviserNames.join(", ") + "…" : "Jeeves is preparing your response…", "bot");
+  const councilPanel = document.querySelector(".council-panel");
+  if (councilPanel) {
+    councilPanel.classList.remove("consulting-mind", "consulting-body", "consulting-soul");
+    if (activeAdvisers.length === 1) councilPanel.classList.add("consulting-" + activeAdvisers[0]);
+    councilPanel.classList.toggle("is-consulting", activeAdvisers.length === 1);
+  }
 
   try {
     if (!activeConversationId) await createConversation(message);
@@ -476,6 +482,7 @@ async function send() {
   } catch (error) {
     thinking.textContent = "Could not save or send this message: " + error.message;
   } finally {
+    if (councilPanel) councilPanel.classList.remove("is-consulting", "consulting-mind", "consulting-body", "consulting-soul");
     sendingMessage = false;
     button.disabled = false;
     document.getElementById("newchatbtn").disabled = false;
