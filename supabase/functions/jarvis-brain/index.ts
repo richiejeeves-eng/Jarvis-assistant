@@ -181,12 +181,13 @@ Return a concise assessment with: reflection, relevant principles, ethical consi
           type: "OBJECT",
           properties: {
             reply: { type: "STRING" },
+            speaker: { type: "STRING" },
             memory: { type: "STRING" },
             task_title: { type: "STRING" },
             task_due_at: { type: "STRING" },
           },
-          required: ["reply", "memory", "task_title", "task_due_at"],
-          propertyOrdering: ["task_title", "task_due_at", "memory", "reply"],
+          required: ["reply", "speaker", "memory", "task_title", "task_due_at"],
+          propertyOrdering: ["speaker", "task_title", "task_due_at", "memory", "reply"],
         };
       }
       const response = await fetch(
@@ -224,11 +225,11 @@ Return a concise assessment with: reflection, relevant principles, ethical consi
 
     const chiefPrompt =
       "You are JEEVES, the Chief of Staff and principal personal assistant. You have broad general knowledge across everyday life, work, technology, research, planning and practical problem-solving. You coordinate three independent specialist advisers: MIND (intellect and strategy), BODY (health and physical wellbeing), and SOUL (spirituality, values and meaning). " +
-      "Only the advisers selected for this request have contributed. Use their assessments where relevant, identify disagreement and resolve it using evidence and sound judgement. When none are selected, answer independently using your broad general knowledge. Do not invent advice from inactive advisers or merely concatenate reports. You retain responsibility for the final answer. Be concise, clear, discreet and action-oriented. " +
+      "Only the advisers selected for this request have contributed. If exactly ONE adviser is selected, speak directly to the user as that specialist in her own voice and first person; do not introduce yourself as Jeeves or refer to yourself in the third person. Keep her expert domain and warm, confident female persona. If zero or multiple advisers are selected, Jeeves speaks as Chief of Staff and synthesizes relevant advice. Do not invent advice from inactive advisers or merely concatenate reports. Be concise, clear, discreet and action-oriented. " +
       "Respect the selected autonomy level (" + String(body.mode ?? 3) + "): offer advice at Level 1, structured planning/accountability at Level 2, and operational briefs/drafts at Level 3. Never claim to have taken external actions without tool confirmation; external actions require permission. " +
       sharedContext +
       "\\n\\nSelected Council assessments:\\n" + councilAdvice +
-      "\\n\\nReturn JSON. reply: final answer to user, incorporating only relevant specialist advice. memory: ONE short durable fact/preference/goal from the latest user message (under 200 characters), or empty if none/already saved/question/small talk/to-do. Never save passwords, keys, card numbers or ID numbers. task_title: only if user explicitly asks for reminder/to-do, 2-6 words; otherwise empty. task_due_at: ISO 8601 with offset only when a due time was supplied; otherwise empty. You cannot mark tasks done; direct user to Show tasks.";
+      "\\n\\nReturn JSON. speaker: exactly one of "jeeves", "mind", "body", or "soul"; use the sole selected adviser when exactly one is active, otherwise "jeeves". reply: final answer to user, in the speaker voice described above, incorporating only relevant specialist advice. memory: ONE short durable fact/preference/goal from the latest user message (under 200 characters), or empty if none/already saved/question/small talk/to-do. Never save passwords, keys, card numbers or ID numbers. task_title: only if user explicitly asks for reminder/to-do, 2-6 words; otherwise empty. task_due_at: ISO 8601 with offset only when a due time was supplied; otherwise empty. You cannot mark tasks done; direct user to Show tasks.";
 
     const chiefRaw = await askGemini(chiefPrompt, [{ role: "user", parts: [{ text: message }] }], true);
     const raw = chiefRaw;
@@ -280,7 +281,9 @@ Return a concise assessment with: reflection, relevant principles, ethical consi
       }
     }
 
-    return json({ reply: reply || "(no reply)", saved: saved, task: taskAdded });
+    let speaker = "jeeves";
+    try { const parsedSpeaker = JSON.parse(raw); if (["mind", "body", "soul"].includes(parsedSpeaker.speaker)) speaker = parsedSpeaker.speaker; } catch (_e) {}
+    return json({ reply: reply || "(no reply)", speaker: speaker, saved: saved, task: taskAdded });
   } catch (e) {
     console.log("function error:", String(e));
     return json({ error: "Server error: " + String(e) }, 500);
