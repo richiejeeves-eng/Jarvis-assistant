@@ -65,7 +65,7 @@ function specialistVoice(speaker) {
 }
 
 function speakWithBrowser(text, speaker) {
-  if (!window.speechSynthesis) return;
+  if (!window.speechSynthesis) return Promise.resolve();
   window.speechSynthesis.cancel();
   const profile = SPECIALIST_VOICES[speaker] || PROFILES[profileIndex % PROFILES.length];
   const utterance = new SpeechSynthesisUtterance(text);
@@ -74,7 +74,11 @@ function speakWithBrowser(text, speaker) {
   utterance.pitch = profile.pitch;
   const voice = SPECIALIST_VOICES[speaker] ? specialistVoice(speaker) : getVoices().find(function (v) { return v.voiceURI === voiceURI; });
   if (voice) utterance.voice = voice;
-  window.speechSynthesis.speak(utterance);
+  return new Promise(function (resolve) {
+    utterance.onend = resolve;
+    utterance.onerror = resolve;
+    window.speechSynthesis.speak(utterance);
+  });
 }
 
 async function speakWithElevenLabs(text) {
@@ -103,7 +107,11 @@ async function speakWithElevenLabs(text) {
   if (currentAudioUrl) URL.revokeObjectURL(currentAudioUrl);
   currentAudioUrl = URL.createObjectURL(blob);
   currentAudio = new Audio(currentAudioUrl);
-  await currentAudio.play();
+  await new Promise(async function (resolve, reject) {
+    currentAudio.onended = resolve;
+    currentAudio.onerror = reject;
+    try { await currentAudio.play(); } catch (error) { reject(error); }
+  });
 }
 
 async function speakNow(text, speaker) {
@@ -117,12 +125,12 @@ async function speakNow(text, speaker) {
       console.warn("JEEVES premium voice unavailable; using device voice:", error.message);
     }
   }
-  speakWithBrowser(text, speaker);
+  return speakWithBrowser(text, speaker);
 }
 
 function speak(text, speaker) {
-  if (!speakOn || !text) return;
-  speakNow(text, speaker || "jeeves");
+  if (!speakOn || !text) return Promise.resolve();
+  return speakNow(text, speaker || "jeeves");
 }
 
 function toggleSpeak() {
@@ -174,18 +182,24 @@ if (window.speechSynthesis) window.speechSynthesis.onvoiceschanged = updateSpeak
 
 const originalSend = send;
 send = async function () {
+  const continuousVoice = typeof window.jeevesVoiceIsActive === "function" && window.jeevesVoiceIsActive();
+  if (continuousVoice && typeof window.jeevesVoiceStopListening === "function") window.jeevesVoiceStopListening();
   const before = document.querySelectorAll("#chat .msg").length;
-  await originalSend();
-  const messages = document.querySelectorAll("#chat .msg");
-  const last = messages[messages.length - 1];
-  if (
-    messages.length > before + 1 &&
-    last.classList.contains("bot") &&
-    !last.textContent.startsWith("AI error") &&
-    !last.textContent.startsWith("Could not")
-  ) {
-    speak(last.textContent, window.lastResponseSpeaker || "jeeves");
-    window.lastResponseSpeaker = "jeeves";
+  try {
+    await originalSend();
+    const messages = document.querySelectorAll("#chat .msg");
+    const last = messages[messages.length - 1];
+    if (
+      messages.length > before + 1 &&
+      last.classList.contains("bot") &&
+      !last.textContent.startsWith("AI error") &&
+      !last.textContent.startsWith("Could not")
+    ) {
+      await speak(last.textContent, window.lastResponseSpeaker || "jeeves");
+      window.lastResponseSpeaker = "jeeves";
+    }
+  } finally {
+    if (continuousVoice && typeof window.jeevesResumeListening === "function") window.jeevesResumeListening();
   }
 };
 
