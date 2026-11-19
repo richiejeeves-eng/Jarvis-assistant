@@ -27,3 +27,55 @@
 .workspace-head,.workspace-head>div,.workspace-tools,.composer-foot{justify-content:center;text-align:center}
 #conversationSelect,#bar input,#bar button{text-align:center}
 #chat .msg{text-align:center}
+
+/* Minimal Council selector: no cards, just each adviser orb and name. */
+.council-panel{
+  padding:8px 0!important;
+  margin:0 0 12px!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  gap:10px!important;
+}
+.council-panel-heading>p,.council-panel-foot{display:none!important}
+.council-panel-grid{
+  display:flex!important;
+  flex-direction:row!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:clamp(12px,4vw,30px)!important;
+}
+.council-member{
+  min-height:0!important;
+  width:auto!important;
+  flex:0 1 auto!important;
+  flex-direction:row!important;
+  flex-wrap:nowrap!important;
+  justify-content:center!important;
+  gap:7px!important;
+  padding:5px 2px!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+.council-member:has(.council-toggle:checked),
+.council-member:has(.council-toggle:not(:checked)){
+  border:0!important;
+  background:transparent!important;
+}
+.council-member input.council-toggle{display:none!important}
+.council-member .council-orb{width:21px!important;height:21px!important;flex:0 0 21px!important}
+.council-member-copy{width:auto!important;display:block!important;padding:0!important}
+.council-member-copy b{width:auto!important;white-space:nowrap!important;font-size:10px!important;letter-spacing:1px!important}
+.council-member-copy small{display:none!important}
+.council-member:has(.council-toggle:not(:checked)){opacity:.35!important}
+@media(max-width:700px){
+ .council-panel{padding:6px 0!important}
+ .council-panel-grid{gap:clamp(10px,3.5vw,20px)!important}
+ .council-member{flex-direction:row!important;gap:6px!important;padding:4px 1px!important}
+ .council-member .council-orb{width:19px!important;height:19px!important;flex-basis:19px!important}
+ .council-member-copy{width:auto!important}
+ .council-member-copy b{font-size:9px!important}
+}
