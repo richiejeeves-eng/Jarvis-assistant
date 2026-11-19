@@ -252,6 +252,11 @@ async function refreshConversationList(selectedId, openSelected) {
   }
 
   picker.innerHTML = "";
+  const newOption = document.createElement("option");
+  newOption.value = "__new__";
+  newOption.textContent = "＋ New chat";
+  picker.appendChild(newOption);
+
   const placeholder = document.createElement("option");
   placeholder.value = "";
   placeholder.textContent = "Choose a previous conversation";
@@ -526,9 +531,15 @@ document.getElementById("command").addEventListener("keydown", function (event) 
 });
 
 document.getElementById("conversationSelect").addEventListener("change", function (event) {
+  const selected = event.target.value;
   const deleteButton = document.getElementById("deleteConversationBtn");
-  if (deleteButton) deleteButton.disabled = !event.target.value || sendingMessage || conversationBusy;
-  if (event.target.value) openConversation(event.target.value);
+  if (selected === "__new__") {
+    newChat();
+    if (deleteButton) deleteButton.disabled = true;
+    return;
+  }
+  if (deleteButton) deleteButton.disabled = !selected || sendingMessage || conversationBusy;
+  if (selected) openConversation(selected);
 });
 
 db.auth.onAuthStateChange(function (event, session) {
