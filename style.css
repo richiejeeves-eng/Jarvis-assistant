@@ -587,3 +587,11 @@ body.left-drawer-collapsed .main-area{margin-left:0}
 /* Scroll the chat-history list only when saved conversations exist and overflow. */
 .chat-log-list{max-height:none!important;overflow:visible!important}
 .chat-log-list.has-history{max-height:32vh!important;overflow-y:auto!important;overscroll-behavior:contain}
+
+
+/* Clean conversation surface: standalone message bubbles and no footer/composer divider. */
+#chat{border:0!important;background:transparent!important;box-shadow:none!important;padding:10px 0!important}
+#chat .msg{box-shadow:none!important}
+#chat .bot{border:0!important}
+#bar{border-top:0!important;box-shadow:none!important}
+footer{border-top:0!important}
