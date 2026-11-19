@@ -292,10 +292,16 @@
               row.href = message.id
                 ? "https://mail.google.com/mail/u/0/#all/" + encodeURIComponent(message.id)
                 : "https://mail.google.com/mail/u/0/#all";
-              row.setAttribute("aria-label", "Open email: " + (message.subject || "No subject"));
+              row.target = "_blank";
+              row.rel = "noopener noreferrer";
+              row.setAttribute("aria-label", "Open email in Gmail: " + (message.subject || "No subject"));
               row.addEventListener("click", function (event) {
-                // Keep navigation in the current webview; some Android webviews block target=_blank.
                 event.stopPropagation();
+                // Explicitly open the external Gmail URL from the user gesture (Android PWA/webview).
+                const gmailUrl = row.href;
+                const opened = window.open(gmailUrl, "_blank");
+                if (!opened) window.location.href = gmailUrl;
+                event.preventDefault();
               });
               const subject = document.createElement("strong");
               subject.textContent = message.subject || "(No subject)";
