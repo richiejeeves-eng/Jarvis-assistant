@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Jeeves • Private Chief of Staff</title>
 <link rel="manifest" href="manifest.json?v=2">\n<link rel="icon" type="image/svg+xml" href="icon.svg?v=2">
-<link rel="stylesheet" href="style.css?v=1.9.6">\n<link rel="stylesheet" href="executive.css?v=1.0.0">
+<link rel="stylesheet" href="style.css?v=1.9.6">\n<link rel="stylesheet" href="executive.css?v=1.0.1">
 <meta name="theme-color" content="#0b0c10">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -84,5 +84,5 @@ function triggerQuickSearch(){const v=prompt('What would you like Jeeves to find
 document.getElementById('live-datetime').textContent=new Intl.DateTimeFormat('en-GB',{weekday:'long',day:'numeric',month:'long',hour:'2-digit',minute:'2-digit',timeZoneName:'short'}).format(new Date());
 document.getElementById('command').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}});
 </script>
-<script src="app.js?v=2.2.0"></script><script src="auth.js?v=1.8.0"></script><script src="lists.js?v=1.9.2"></script><script src="voice.js?v=1.8.0"></script><script src="jeeves.js?v=1.8.1"></script><script src="speak.js?v=1.9.2"></script><script src="integrations.js?v=1.4.2"></script><script src="executive.js?v=1.0.0"></script><script src="fitness.js?v=1.0.1"></script><script>if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js?v=1.2.0');</script></body>
+<script src="app.js?v=2.2.0"></script><script src="auth.js?v=1.8.0"></script><script src="lists.js?v=1.9.3"></script><script src="voice.js?v=1.8.0"></script><script src="jeeves.js?v=1.8.1"></script><script src="speak.js?v=1.9.2"></script><script src="integrations.js?v=1.4.2"></script><script src="executive.js?v=1.0.1"></script><script src="fitness.js?v=1.0.1"></script><script>if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js?v=1.2.0');</script></body>
 </html>
