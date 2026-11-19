@@ -49,6 +49,42 @@
     return result.data;
   }
 
+  function formatEvent(event) {
+    const when = event.start ? new Date(event.start).toLocaleString("en-GB", {
+      weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit"
+    }) : "Time not supplied";
+    return { title: event.summary || "Untitled event", when, location: event.location || "" };
+  }
+
+  function renderCalendarEvents(events) {
+    const list = document.querySelector("[data-calendar-event-list]");
+    if (!list) return;
+    list.replaceChildren();
+    if (!events.length) {
+      const empty = document.createElement("p");
+      empty.className = "calendar-empty";
+      empty.textContent = "No upcoming events found.";
+      list.appendChild(empty);
+      return;
+    }
+    events.forEach(function (event) {
+      const item = formatEvent(event);
+      const row = document.createElement("article");
+      row.className = "calendar-event-row";
+      const title = document.createElement("strong");
+      title.textContent = item.title;
+      const time = document.createElement("span");
+      time.textContent = item.when;
+      row.append(title, time);
+      if (item.location) {
+        const place = document.createElement("small");
+        place.textContent = item.location;
+        row.appendChild(place);
+      }
+      list.appendChild(row);
+    });
+  }
+
   async function connectCalendar(button) {
     button.disabled = true;
     button.textContent = "Preparing secure connection…";
@@ -69,12 +105,13 @@
     try {
       const data = await calendarAction("events");
       const events = data.events || [];
+      renderCalendarEvents(events);
       if (!events.length) {
         note("Google Calendar is connected. No upcoming events were returned.");
       } else {
         const lines = events.map(function (event) {
-          const when = event.start ? new Date(event.start).toLocaleString() : "Time not supplied";
-          return "• " + event.summary + " — " + when + (event.location ? " — " + event.location : "");
+          const item = formatEvent(event);
+          return "• " + item.title + " — " + item.when + (item.location ? " — " + item.location : "");
         });
         note("Upcoming Google Calendar events:\n" + lines.join("\n"));
       }
@@ -82,7 +119,7 @@
       note("Calendar events could not be loaded: " + error.message);
     } finally {
       button.disabled = false;
-      button.textContent = "View upcoming events";
+      button.textContent = "Refresh upcoming events";
     }
   }
 
@@ -111,7 +148,7 @@
       }
       html += '<article class="integration-tile" data-tile="' + item.name + '"><div class="integration-tile-top"><span class="integration-icon">' + item.icon + '</span><span class="integration-status ' + item.kind + '" data-status>' + item.status + '</span></div><h4>' + item.name + '</h4><p>' + item.detail + '</p>';
       if (item.name === "Google Calendar") {
-        html += '<button class="integration-action" type="button" data-calendar-connect>Connect Google Calendar ↗</button><div class="calendar-connected-actions" hidden><button class="integration-action" type="button" data-calendar-events>View upcoming events</button><button class="integration-action secondary" type="button" data-calendar-disconnect>Disconnect</button></div>';
+        html += '<button class="integration-action" type="button" data-calendar-connect>Connect Google Calendar ↗</button><div class="calendar-connected-actions" hidden><button class="integration-action" type="button" data-calendar-events>Refresh upcoming events</button><button class="integration-action secondary" type="button" data-calendar-disconnect>Disconnect</button><div class="calendar-event-list" data-calendar-event-list><p class="calendar-empty">Your upcoming events will appear here.</p></div></div>';
       } else if (item.kind === "setup" || item.kind === "planned") {
         html += '<button class="integration-action" type="button" data-integration="' + item.name + '">Prepare connection ↗</button>';
       } else {
@@ -121,6 +158,13 @@
     });
     html += '<p class="integration-security">Security rule: OAuth tokens are encrypted server-side. API secrets belong in Supabase secrets — never in browser JavaScript.</p>';
     root.innerHTML = html;
+
+    const style = document.createElement("style");
+    style.textContent = ".calendar-event-list{margin-top:12px;border-top:1px solid #ffffff16;padding-top:5px}.calendar-event-row{display:grid;gap:4px;padding:10px 2px;border-bottom:1px solid #ffffff10}.calendar-event-row strong{font:600 12px Georgia,serif;color:#f4f4f6}.calendar-event-row span{font-size:10px;color:#dfbe7d}.calendar-event-row small,.calendar-empty{font-size:9px;color:#9ca3af}.calendar-empty{margin:8px 0;line-height:1.5}";
+    if (!document.getElementById("calendar-event-styles")) {
+      style.id = "calendar-event-styles";
+      document.head.appendChild(style);
+    }
 
     root.querySelectorAll("[data-integration]").forEach(function (button) {
       button.addEventListener("click", function () {
