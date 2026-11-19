@@ -65,7 +65,18 @@
   }
   document.addEventListener("DOMContentLoaded", () => {
     $("executive-refresh")?.addEventListener("click", refresh);
-    $("executive-view-tasks")?.addEventListener("click", () => { if (typeof showTasks === "function") showTasks(); });
+    $("executive-view-tasks")?.addEventListener("click", () => { if (typeof showTasks === "function") showTasks("open"); });
+    document.querySelectorAll("[data-metric-action]").forEach((card) => {
+      const activate = () => {
+        const action = card.dataset.metricAction;
+        if (action === "memories") { if (typeof showMemories === "function") showMemories(); }
+        else if (typeof showTasks === "function") showTasks(action);
+      };
+      card.addEventListener("click", activate);
+      card.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") { event.preventDefault(); activate(); }
+      });
+    });
     refresh();
     if (typeof db !== "undefined" && db.auth) db.auth.onAuthStateChange((event) => {
       if (["SIGNED_IN","SIGNED_OUT","TOKEN_REFRESHED","INITIAL_SESSION"].includes(event)) setTimeout(refresh, 100);
