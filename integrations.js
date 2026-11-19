@@ -241,7 +241,7 @@
     root.innerHTML = html;
 
     const style = document.createElement("style");
-    style.textContent = ".calendar-event-list,.gmail-recent-list{margin-top:12px;border-top:1px solid #ffffff16;padding-top:5px}.calendar-event-row,.gmail-recent-row{display:grid;gap:5px;padding:10px 2px;border-bottom:1px solid #ffffff10}.calendar-event-row strong,.gmail-recent-row strong{font:600 12px Georgia,serif;color:#f4f4f6}.calendar-event-row span,.gmail-recent-row span{font-size:10px;color:#dfbe7d}.calendar-event-row small,.calendar-empty,.gmail-recent-row p{font-size:11px;color:#9ca3af;line-height:1.5}.calendar-empty{margin:8px 0}.integration-more{margin-top:14px;border-top:1px solid #ffffff16;padding-top:10px}.integration-more summary{color:#d8bd8a;font-size:12px;cursor:pointer;list-style:none}.integration-more summary::-webkit-details-marker{display:none}.integration-more summary:after{content:'＋';float:right;color:#d8bd8a}.integration-more[open] summary:after{content:'−'}.integration-more-content{padding-top:10px}.integration-more-content>p{font-size:12px;line-height:1.55;color:#aeb2bb;margin:4px 0 12px}";
+    style.textContent = ".calendar-event-list,.gmail-recent-list{margin-top:12px;border-top:1px solid #ffffff16;padding-top:5px}.calendar-event-row,.gmail-recent-row{display:grid;gap:5px;padding:10px 2px;border-bottom:1px solid #ffffff10}.gmail-recent-row{color:inherit;text-decoration:none;cursor:pointer}.gmail-recent-row:hover strong{text-decoration:underline;color:#dfbe7d}.calendar-event-row strong,.gmail-recent-row strong{font:600 12px Georgia,serif;color:#f4f4f6}.calendar-event-row span,.gmail-recent-row span{font-size:10px;color:#dfbe7d}.calendar-event-row small,.calendar-empty,.gmail-recent-row p{font-size:11px;color:#9ca3af;line-height:1.5}.calendar-empty{margin:8px 0}.integration-more{margin-top:14px;border-top:1px solid #ffffff16;padding-top:10px}.integration-more summary{color:#d8bd8a;font-size:12px;cursor:pointer;list-style:none}.integration-more summary::-webkit-details-marker{display:none}.integration-more summary:after{content:'＋';float:right;color:#d8bd8a}.integration-more[open] summary:after{content:'−'}.integration-more-content{padding-top:10px}.integration-more-content>p{font-size:12px;line-height:1.55;color:#aeb2bb;margin:4px 0 12px}";
     if (!document.getElementById("calendar-event-styles")) {
       style.id = "calendar-event-styles";
       document.head.appendChild(style);
@@ -287,9 +287,14 @@
             list.appendChild(empty);
           } else {
             messages.slice(0, 10).forEach(function (message) {
-              const row = document.createElement("details");
+              const row = document.createElement("a");
               row.className = "gmail-recent-row";
-              const subject = document.createElement("summary");
+              row.target = "_blank";
+              row.rel = "noopener noreferrer";
+              row.href = message.id
+                ? "https://mail.google.com/mail/u/0/#all/" + encodeURIComponent(message.id)
+                : (message.url || message.webLink || "https://mail.google.com/mail/u/0/#all");
+              const subject = document.createElement("strong");
               subject.textContent = message.subject || "(No subject)";
               const meta = document.createElement("span");
               meta.textContent = [message.from || message.sender || "Unknown sender", message.date || ""].filter(Boolean).join(" · ");
