@@ -107,7 +107,8 @@
     });
   }
 
-  async function connectCalendar(button) {
+  async function connectCalendar(button, service) {
+    const label = service || "Google Calendar";
     button.disabled = true;
     button.textContent = "Preparing secure connection…";
     try {
@@ -115,9 +116,25 @@
       if (!data?.url) throw new Error("Google authorisation URL was not returned.");
       window.location.assign(data.url);
     } catch (error) {
-      note("Google Calendar setup: " + error.message);
+      note(label + " setup: " + error.message);
       button.disabled = false;
-      button.textContent = "Connect Google Calendar ↗";
+      button.textContent = label === "Google Tasks"
+        ? "Connect & grant Google Tasks access ↗"
+        : "Connect Google Calendar ↗";
+    }
+  }
+
+  async function syncGoogleTasks(button) {
+    button.disabled = true;
+    button.textContent = "Syncing Google Tasks…";
+    try {
+      const data = await calendarAction("syncTasks");
+      note("Google Tasks sync complete. " + Number(data.imported || 0) + " tasks imported or updated.");
+    } catch (error) {
+      note("Google Tasks sync failed: " + error.message);
+    } finally {
+      button.disabled = false;
+      button.textContent = "Sync Google Tasks ↻";
     }
   }
 
@@ -196,7 +213,13 @@
       });
     });
     root.querySelector("[data-calendar-connect]")?.addEventListener("click", function (event) {
-      connectCalendar(event.currentTarget);
+      connectCalendar(event.currentTarget, "Google Calendar");
+    });
+    root.querySelector("[data-google-tasks-connect]")?.addEventListener("click", function (event) {
+      connectCalendar(event.currentTarget, "Google Tasks");
+    });
+    root.querySelector("[data-google-tasks-sync]")?.addEventListener("click", function (event) {
+      syncGoogleTasks(event.currentTarget);
     });
     root.querySelector("[data-calendar-events]")?.addEventListener("click", function (event) {
       showCalendarEvents(event.currentTarget);
