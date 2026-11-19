@@ -97,3 +97,8 @@
 .main-header{position:relative}
 .main-header .top-date-time{position:absolute!important;left:50%!important;top:50%!important;transform:translate(-50%,-50%)!important;align-items:center!important;text-align:center!important;margin:0!important}
 @media(max-width:800px){.main-header .top-date-time{position:static!important;left:auto!important;top:auto!important;transform:none!important;margin-inline:auto!important;align-items:center!important}}
+
+/* Jeeves standalone feature icon set */
+.nav-btn{gap:12px}
+.nav-btn .nav-icon{display:block;width:19px;height:19px;flex:0 0 19px;object-fit:contain;opacity:.92}
+.nav-btn.active .nav-icon,.nav-btn:hover .nav-icon{filter:drop-shadow(0 0 4px rgba(214,184,120,.38));opacity:1}
