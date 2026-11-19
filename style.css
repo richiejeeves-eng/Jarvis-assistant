@@ -92,3 +92,8 @@
 /* Center the stacked date and live clock in the header */
 .main-header .top-date-time{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;text-align:center!important;gap:6px!important}
 .main-header .top-date,.main-header .top-time{display:block!important;width:100%!important;text-align:center!important;padding-left:0!important;margin:0!important;border-left:0!important}
+
+/* Keep the date and live clock centred across the full header */
+.main-header{position:relative}
+.main-header .top-date-time{position:absolute!important;left:50%!important;top:50%!important;transform:translate(-50%,-50%)!important;align-items:center!important;text-align:center!important;margin:0!important}
+@media(max-width:800px){.main-header .top-date-time{position:static!important;left:auto!important;top:auto!important;transform:none!important;margin-inline:auto!important;align-items:center!important}}
