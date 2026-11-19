@@ -2,9 +2,15 @@
   const fileInput = document.createElement("input");
   fileInput.type = "file";
   fileInput.accept = "image/*";
-  fileInput.capture = "environment";
   fileInput.style.display = "none";
   document.body.appendChild(fileInput);
+
+  const cameraInput = document.createElement("input");
+  cameraInput.type = "file";
+  cameraInput.accept = "image/*";
+  cameraInput.capture = "environment";
+  cameraInput.style.display = "none";
+  document.body.appendChild(cameraInput);
 
   function shrinkImage(file) {
     return new Promise(function (resolve, reject) {
@@ -77,24 +83,33 @@
     if (typeof speak === "function") speak(data.reply);
   }
 
-  fileInput.addEventListener("change", function () {
-    const file = fileInput.files[0];
-    fileInput.value = "";
-    if (file) askAboutPhoto(file);
-  });
+  function handleSelectedImage(input) {
+    input.addEventListener("change", function () {
+      const file = input.files[0];
+      input.value = "";
+      if (file) askAboutPhoto(file);
+    });
+  }
+  handleSelectedImage(fileInput);
+  handleSelectedImage(cameraInput);
 
-  const button = document.createElement("button");
-  button.id = "photobtn";
-  button.textContent = "Upload Image";
-  button.className = "jeeves-tool-button";
-  button.setAttribute("aria-label", "Upload an image");
-  button.setAttribute("data-description", "Upload an image to ask Jeeves about");
-  button.onclick = function () { fileInput.click(); };
+  const uploadButton = document.createElement("button");
+  uploadButton.id = "photobtn";
+  uploadButton.textContent = "Upload Image";
+  uploadButton.className = "jeeves-tool-button";
+  uploadButton.setAttribute("aria-label", "Upload an image");
+  uploadButton.setAttribute("data-description", "Choose an image from your device to ask Jeeves about");
+  uploadButton.onclick = function () { fileInput.click(); };
 
   const cameraButton = document.getElementById("camerabtn");
-  if (cameraButton) { cameraButton.textContent = "Upload Image"; cameraButton.className = "jeeves-tool-button"; cameraButton.setAttribute("aria-label", "Upload an image"); cameraButton.addEventListener("click", function () { fileInput.click(); }); }
-  else {
-    const toolsBar = document.getElementById("tools");
-    if (toolsBar) toolsBar.appendChild(button);
+  if (cameraButton) {
+    cameraButton.textContent = "Camera";
+    cameraButton.className = "jeeves-tool-button";
+    cameraButton.setAttribute("aria-label", "Take a photo");
+    cameraButton.setAttribute("data-description", "Take a photo with your camera");
+    cameraButton.onclick = function () { cameraInput.click(); };
   }
+
+  const toolsBar = document.getElementById("tools");
+  if (toolsBar) toolsBar.appendChild(uploadButton);
 })();
