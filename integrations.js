@@ -357,7 +357,7 @@
         [[gmailTile, status.gmail_enabled], [driveTile, status.drive_enabled]].forEach(function ([tile, enabled]) {
           if (!tile) return;
           const badge = tile.querySelector("[data-status]");
-          const connect = tile.querySelector("[data-google-extend]");
+          const connect = tile.querySelector("[data-google-extend], [data-gmail-action]");
           const test = tile.querySelector("[data-google-test]");
           const recent = tile.querySelector("[data-gmail-action]");
           badge.textContent = enabled ? "Connected" : (status.connected ? "Permission needed" : "Not connected");
