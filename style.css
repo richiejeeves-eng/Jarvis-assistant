@@ -203,3 +203,39 @@
 /* Centre page title text and icons together */
 .workspace-head h2,.section-heading h2,.executive-live-head h2{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;width:100%;text-align:center;margin-left:auto;margin-right:auto;}
 .page-heading-icon{display:block;width:20px;height:20px;flex:0 0 20px;object-fit:contain;margin:0 auto;}
+
+
+/* Centre each page heading as one vertical icon-and-title group */
+.section-heading{
+  display:flex!important;
+  flex-wrap:wrap!important;
+  align-items:center!important;
+  justify-content:center!important;
+  text-align:center!important;
+}
+.section-heading>div:first-child{
+  flex:1 1 100%!important;
+  width:100%!important;
+  min-width:0!important;
+  text-align:center!important;
+}
+.section-heading h2,
+.executive-live-head h2,
+.workspace-head h2{
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:100%!important;
+  margin-left:auto!important;
+  margin-right:auto!important;
+  text-align:center!important;
+}
+.section-heading .section-note,
+.section-heading p{
+  text-align:center!important;
+}
+.page-heading-icon{
+  display:block!important;
+  margin:0 auto!important;
+}
