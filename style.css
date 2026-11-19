@@ -88,3 +88,7 @@
 .main-header .top-date{display:block!important;width:100%;color:#d6b878!important;font-size:10px;font-weight:700;letter-spacing:1.35px}
 .main-header .top-time{display:block!important;width:100%;padding-left:0!important;border-left:0!important;margin:0!important;text-align:left!important;font-size:22px}
 @media(max-width:800px){.main-header .top-date{font-size:8px;letter-spacing:.8px}.main-header .top-time{font-size:19px}}
+
+/* Center the stacked date and live clock in the header */
+.main-header .top-date-time{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;text-align:center!important;gap:6px!important}
+.main-header .top-date,.main-header .top-time{display:block!important;width:100%!important;text-align:center!important;padding-left:0!important;margin:0!important;border-left:0!important}
