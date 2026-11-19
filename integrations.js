@@ -232,9 +232,8 @@
     }
 
     root.querySelector("[data-health-build]")?.addEventListener("click", function () {
-      const intent = "intent://#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=com.richiejeeves.healthconnect;end";
-      note("Opening Jeeves Health. If it does not launch, open the Jeeves Health app from your Android app drawer.");
-      window.location.href = intent;
+      if (typeof switchTab === "function") switchTab("fitness");
+      if (innerWidth <= 800) document.getElementById("right-drawer")?.classList.remove("open");
     });
     root.querySelectorAll("[data-google-extend]").forEach(function (button) {
       button.addEventListener("click", function (event) { connectCalendar(event.currentTarget, button.dataset.googleExtend); });
