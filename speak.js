@@ -142,6 +142,7 @@ function makeToolButton(id, handler) {
   button.id = id;
   button.onclick = handler;
   button.className = "tool-icon";
+  button.setAttribute("data-description", id === "stylebtn" ? "Change spoken voice style" : "Change spoken voice");
   document.getElementById("tools").appendChild(button);
 }
 
@@ -167,3 +168,37 @@ send = async function () {
 };
 
 updateSpeakButtons();
+
+
+// Long-press an icon to reveal its description; a normal tap still activates it.
+(function attachLongPressDescriptions() {
+  let timer = null;
+  let activeTip = null;
+  function hideTip() {
+    if (timer) clearTimeout(timer);
+    timer = null;
+    if (activeTip) activeTip.remove();
+    activeTip = null;
+  }
+  document.querySelectorAll("#tools .tool-icon").forEach(function (button) {
+    button.addEventListener("pointerdown", function (event) {
+      if (event.pointerType === "mouse") return;
+      hideTip();
+      timer = setTimeout(function () {
+        const tip = document.createElement("span");
+        tip.className = "tool-longpress-tip";
+        tip.textContent = button.getAttribute("data-description") || button.getAttribute("aria-label") || "Setting";
+        button.appendChild(tip);
+        activeTip = tip;
+      }, 550);
+    });
+    ["pointerup", "pointercancel", "pointerleave"].forEach(function (name) {
+      button.addEventListener(name, function () {
+        if (timer) clearTimeout(timer);
+        timer = null;
+        if (activeTip) setTimeout(hideTip, 1400);
+      });
+    });
+    button.addEventListener("contextmenu", function (event) { event.preventDefault(); });
+  });
+})();
