@@ -57,3 +57,5 @@
 .eco-grid span.eco-connected i{color:#80d7aa}
 .eco-grid span.eco-pending i{color:#d5a36d}
 .eco-grid span[data-eco="Gemini AI"] i,.eco-grid span[data-eco="Supabase"] i,.eco-grid span[data-eco="ElevenLabs"] i{color:#80d7aa}
+
+.tool-longpress-tip{position:absolute;z-index:100;left:50%;bottom:calc(100% + 10px);transform:translateX(-50%);width:max-content;max-width:220px;padding:8px 11px;border:1px solid #c5a05970;border-radius:8px;background:#11161e;color:#f4f4f6;font-size:11px;line-height:1.35;white-space:normal;text-align:center;box-shadow:0 8px 24px #0009;pointer-events:none}.lower-tools .tool-icon{position:relative;overflow:visible;touch-action:pan-y}
