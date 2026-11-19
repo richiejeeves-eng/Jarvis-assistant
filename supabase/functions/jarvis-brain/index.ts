@@ -231,8 +231,6 @@ Return a concise assessment with: reflection, relevant principles, ethical consi
 
     const chiefRaw = await askGemini(chiefPrompt, [{ role: "user", parts: [{ text: message }] }], true);
     const raw = chiefRaw;
-    const parts = aiData?.candidates?.[0]?.content?.parts ?? [];
-    const raw = parts.map((p: { text?: string }) => p.text ?? "").join("");
 
     let reply = raw;
     let memory = "";
