@@ -93,7 +93,10 @@
   handleSelectedImage(fileInput);
   handleSelectedImage(cameraInput);
 
-  const uploadButton = document.createElement("button");
+  const toolsBar = document.getElementById("tools");
+  const existingUploads = document.querySelectorAll("#tools #photobtn");
+  existingUploads.forEach(function (button, index) { if (index > 0) button.remove(); });
+  const uploadButton = document.getElementById("photobtn") || document.createElement("button");
   uploadButton.id = "photobtn";
   uploadButton.textContent = "Upload Image";
   uploadButton.className = "jeeves-tool-button";
@@ -110,6 +113,5 @@
     cameraButton.onclick = function () { cameraInput.click(); };
   }
 
-  const toolsBar = document.getElementById("tools");
-  if (toolsBar) toolsBar.appendChild(uploadButton);
+  if (toolsBar && !toolsBar.contains(uploadButton)) toolsBar.appendChild(uploadButton);
 })();
