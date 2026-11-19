@@ -1,7 +1,7 @@
 let rec=null,mode=false,reply=false,timer=0,retry=0;
 const $=id=>document.getElementById(id);
 function status(s,preview){const w=document.querySelector(".workspace"),v=$("voice-stage"),t=$("voice-stage-status"),p=$("voice-live-preview");if(w)w.classList.toggle("voice-active",mode);if(v)v.setAttribute("aria-hidden",String(!mode));if(t)t.textContent=mode?s:"";if(p&&preview!==undefined)p.textContent=preview||"Speak naturally…";}
-function button(){const b=$("conversation-toggle");if(b){b.textContent=mode?"Conversation on":"Conversation";b.setAttribute("aria-pressed",String(mode));}const m=$("micbtn");if(m){m.textContent=mode?"Leave":"Speak";m.setAttribute("aria-label",mode?"End conversation":"Start voice input");}}
+function button(){const b=$("conversation-toggle");if(b){b.textContent=mode?(reply?"Interrupt":"Conversation on"):"Conversation";b.setAttribute("aria-pressed",String(mode));}const m=$("micbtn");if(m){m.textContent=mode?"Leave":"Speak";m.setAttribute("aria-label",mode?"End conversation":"Start voice input");}}
 function stopAll(message){mode=false;reply=false;clearTimeout(timer);if(rec){const r=rec;rec=null;try{r.stop();}catch(e){}}if(window.speechSynthesis)window.speechSynthesis.cancel();const a=window.jeevesActiveAudio;if(a){try{a.pause();}catch(e){}}status("");button();if(message&&typeof addMessage==="function")addMessage(message,"bot");}
 function finishUtterance(){if(!mode||reply)return;clearTimeout(timer);if(rec){const r=rec;rec=null;try{r.stop();}catch(e){}}}
 function listen(){if(!mode||reply||rec)return;const R=window.webkitSpeechRecognition||window.SpeechRecognition;if(!R){stopAll("Voice recognition is not supported in this browser.");return;}const r=new R();rec=r;r.lang="en-GB";r.continuous=true;r.interimResults=true;r.maxAlternatives=1;
@@ -11,10 +11,10 @@ r.onerror=e=>{if(e.error==="not-allowed"||e.error==="service-not-allowed"){stopA
 r.onend=()=>{if(rec===r)rec=null;if(!mode||reply)return;const input=$("command");if(input&&input.value.trim()){clearTimeout(timer);reply=true;status("THINKING","Preparing your reply…");Promise.resolve(send()).catch(err=>console.error(err));return;}clearTimeout(timer);timer=setTimeout(listen,300);};
 try{r.start();}catch(e){if(rec===r)rec=null;if(mode){retry++;if(retry>=3)stopAll("Unable to restart voice recognition.");else timer=setTimeout(listen,300);}}
 }
-function setMode(on){if(on===mode)return;if(!on){stopAll("Conversation ended.");return;}mode=true;reply=false;retry=0;button();status("LISTENING","Speak naturally…");listen();}
+function setMode(on){if(on===mode){if(on&&reply){if(window.jeevesStopSpeaking)window.jeevesStopSpeaking();reply=false;status("LISTENING","Speak when ready…");button();clearTimeout(timer);timer=setTimeout(listen,250);}return;}if(!on){stopAll("Conversation ended.");return;}mode=true;reply=false;retry=0;button();status("LISTENING","Speak naturally…");listen();}
 function startVoice(){if(mode)setMode(false);else{const R=window.webkitSpeechRecognition||window.SpeechRecognition;if(!R){addMessage("Voice input is not supported. Try Chrome on Android.", "bot");return;}setMode(true);}}
 window.jeevesVoiceIsActive=()=>mode;
 window.jeevesVoiceStopListening=()=>{reply=true;clearTimeout(timer);if(rec){const r=rec;rec=null;try{r.stop();}catch(e){}}status("THINKING","Jeeves is thinking…");};
-window.jeevesResumeListening=()=>{if(!mode)return;reply=false;status("LISTENING","Speak naturally…");clearTimeout(timer);timer=setTimeout(listen,300);};
+window.jeevesResumeListening=()=>{if(!mode)return;reply=false;status("LISTENING","Speak naturally…");button();clearTimeout(timer);timer=setTimeout(listen,300);};
 function install(){const mic=$("micbtn");if(!mic||$("conversation-toggle"))return;const b=document.createElement("button");b.id="conversation-toggle";b.type="button";b.className=mic.className;b.textContent="Conversation";b.setAttribute("aria-pressed","false");b.onclick=()=>setMode(!mode);mic.insertAdjacentElement("beforebegin",b);button();}
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",install);else install();
