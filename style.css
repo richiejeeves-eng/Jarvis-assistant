@@ -178,3 +178,7 @@
 /* Original Jeeves icons at the head of each page */
 .page-heading-icon{display:block;width:20px;height:20px;flex:0 0 20px;object-fit:contain;margin:0 auto;}
 .workspace-head h2,.section-heading h2,.executive-live-head h2{display:flex;align-items:center;justify-content:center;gap:8px;text-align:center;}
+
+
+/* Full-size Jeeves AI banner on the Operations page */
+.operations-banner{display:block;width:100%;max-width:700px;height:auto;object-fit:contain;margin:0 auto 18px;}
