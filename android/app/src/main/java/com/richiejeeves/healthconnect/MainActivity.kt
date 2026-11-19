@@ -95,6 +95,8 @@ class MainActivity : ComponentActivity() {
             }
         }
         buildScreen()
+        // Restore the encrypted Supabase session automatically; never persist the password.
+        restoreSavedLogin()
         val sdkStatus = HealthConnectClient.getSdkStatus(this)
         if (sdkStatus == HealthConnectClient.SDK_AVAILABLE) {
             healthClient = HealthConnectClient.getOrCreate(this)
@@ -264,7 +266,9 @@ class MainActivity : ComponentActivity() {
         content.addView(actionButton("Sync now") { syncNow() })
         content.addView(actionButton("Sign out") {
             prefs.edit().clear().apply()
-            status.text = "Signed out. Your Health Connect permissions remain under your control."
+            emailInput.text.clear()
+            passwordInput.text.clear()
+            status.text = "Signed out. Saved login and session removed. Your Health Connect permissions remain under your control."
             firebaseStatus.text = "Firebase: sign in to register this device."
         })
         status = label("Checking Health Connect…", 14f, Color.rgb(205, 205, 205))
@@ -313,6 +317,23 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun restoreSavedLogin() {
+        val savedEmail = prefs.getString("account_email", null)
+        if (!savedEmail.isNullOrBlank()) emailInput.setText(savedEmail)
+        if (prefs.getString("refresh_token", null) == null) return
+        status.text = if (savedEmail.isNullOrBlank()) "Restoring your secure Jeeves session…" else "Welcome back, $savedEmail. Restoring your secure session…"
+        lifecycleScope.launch {
+            try {
+                validAccessToken()
+                status.text = if (savedEmail.isNullOrBlank()) "Signed in. Connect Health Connect if you have not already." else "Signed in as $savedEmail. Your login is remembered securely."
+                registerFirebaseDevice()
+                scheduleBackgroundSync()
+            } catch (e: Exception) {
+                status.text = "Saved session expired. Please sign in again."
+            }
+        }
+    }
+
     private fun signIn() {
         val email = emailInput.text.toString().trim()
         val password = passwordInput.text.toString()
@@ -328,8 +349,9 @@ class MainActivity : ComponentActivity() {
                         JSONObject().put("email", email).put("password", password), null)
                 }
                 saveSession(result)
+                prefs.edit().putString("account_email", email).apply()
                 passwordInput.text.clear()
-                status.text = "Signed in as $email. Connect Health Connect next."
+                status.text = "Signed in as $email. Login remembered securely. Connect Health Connect next."
                 registerFirebaseDevice()
                 scheduleBackgroundSync()
             } catch (e: Exception) {
