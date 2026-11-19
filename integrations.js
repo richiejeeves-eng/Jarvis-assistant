@@ -49,10 +49,31 @@
     return result.data;
   }
 
+  function ukDateKey(value) {
+    const parts = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Europe/London", year: "numeric", month: "2-digit", day: "2-digit"
+    }).formatToParts(value instanceof Date ? value : new Date(value));
+    const get = (type) => parts.find((part) => part.type === type)?.value || "";
+    return get("year") + "-" + get("month") + "-" + get("day");
+  }
+
+  function isTodayEvent(event) {
+    const start = event.start?.dateTime || event.start?.date;
+    if (!start) return false;
+    // Google all-day events use an exclusive end date.
+    const today = ukDateKey(new Date());
+    const startDay = event.start.date ? event.start.date : ukDateKey(start);
+    const endDay = event.end?.date || (event.end?.dateTime ? ukDateKey(event.end.dateTime) : startDay);
+    return startDay <= today && today < endDay || startDay === today;
+  }
+
   function formatEvent(event) {
-    const when = event.start ? new Date(event.start).toLocaleString("en-GB", {
-      weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit"
-    }) : "Time not supplied";
+    const start = event.start?.dateTime || event.start?.date || event.start;
+    const when = start ? (event.start?.date
+      ? "All day"
+      : new Date(start).toLocaleTimeString("en-GB", {
+          timeZone: "Europe/London", hour: "2-digit", minute: "2-digit"
+        })) : "Time not supplied";
     return { title: event.summary || "Untitled event", when, location: event.location || "" };
   }
 
@@ -104,16 +125,16 @@
     button.textContent = "Loading events…";
     try {
       const data = await calendarAction("events");
-      const events = data.events || [];
+      const events = (data.events || []).filter(isTodayEvent);
       renderCalendarEvents(events);
       if (!events.length) {
-        note("Google Calendar is connected. No upcoming events were returned.");
+        note("Google Calendar is connected. No events scheduled for today.");
       } else {
         const lines = events.map(function (event) {
           const item = formatEvent(event);
           return "• " + item.title + " — " + item.when + (item.location ? " — " + item.location : "");
         });
-        note("Upcoming Google Calendar events:\n" + lines.join("\n"));
+        note("Today's Google Calendar events:\n" + lines.join("\n"));
       }
     } catch (error) {
       note("Calendar events could not be loaded: " + error.message);
