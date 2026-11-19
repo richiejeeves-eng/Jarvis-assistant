@@ -15,7 +15,7 @@ self.addEventListener("notificationclick", function (event) {
   const target = event.notification.data && event.notification.data.url
     ? event.notification.data.url
     : self.location.origin + self.registration.scope;
-  event.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(function (clients) {
+  event.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(async function (clients) {
     for (const client of clients) {
       if ("focus" in client) {
         if ("navigate" in client) await client.navigate(target);
