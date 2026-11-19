@@ -18,7 +18,7 @@ function setAssistanceLevel(level) {
     button.setAttribute("aria-pressed", active ? "true" : "false");
   });
   const note = document.querySelector(".autonomy p");
-  if (note) note.textContent = chosen.description + " All three Jeeves Council members remain active.";
+  if (note) note.textContent = chosen.description + " Only selected Council advisers contribute.";
 }
 document.addEventListener("DOMContentLoaded", function() {
   setAssistanceLevel(window.jeevesModeLevel);
@@ -494,6 +494,7 @@ db.auth.onAuthStateChange(function (event, session) {
     if (session) {
       setTimeout(async function () {
         await refreshConversationList(null, false);
+        db.functions.invoke("jarvis-brain", { body: { ping: true } }).catch(error => console.warn("Jeeves warm-up ping failed:", error));
         // Start every workspace visit with a blank chat.
         // Previous conversations remain available in the selector.
         document.getElementById("chat").textContent = "";
