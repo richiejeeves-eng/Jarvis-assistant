@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0b0c10">
+<title>Sign in · Jeeves Assistant</title>
+<link rel="icon" type="image/png" href="jeeves_app_icon_transparent.png?v=3">
+<link rel="stylesheet" href="style.css?v=1.9.8">
+<style>
+body.login-page{min-height:100vh;display:grid;place-items:center;padding:24px;background:radial-gradient(ellipse at 50% 12%,rgba(197,160,89,.12),transparent 48%),#0b0c10;color:#f4f0e7}
+.login-card{width:min(100%,440px);padding:clamp(24px,6vw,42px);border:1px solid rgba(214,184,120,.24);border-radius:22px;background:rgba(20,22,28,.96);box-shadow:0 24px 80px rgba(0,0,0,.38)}
+.login-brand{display:block;width:112px;height:112px;object-fit:contain;margin:0 auto 18px}
+.login-eyebrow{text-align:center;color:#d6b878;font-size:10px;font-weight:700;letter-spacing:.2em}
+.login-card h1{text-align:center;font-size:28px;margin:10px 0 8px}
+.login-sub{text-align:center;color:#aeb4bf;font-size:13px;line-height:1.6;margin:0 0 26px}
+.login-fields{display:grid;gap:12px}
+.login-fields input{width:100%;box-sizing:border-box;padding:14px 15px;border-radius:11px;border:1px solid rgba(255,255,255,.14);background:#101218;color:#fff;font:inherit}
+.login-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.login-actions button,.login-back{padding:13px;border-radius:11px;cursor:pointer;font:inherit}
+.login-actions button:first-child{background:#d6b878;color:#171717;border:0;font-weight:700}
+.login-actions button:last-child{background:transparent;color:#eee;border:1px solid rgba(255,255,255,.2)}
+.login-links{display:flex;justify-content:center;margin-top:17px}
+.login-links button{border:0;background:none;color:#d6b878;text-decoration:underline;cursor:pointer}
+#login-message{min-height:22px;margin:16px 0 0;text-align:center;color:#d6b878;font-size:12px;line-height:1.5}
+.login-back{display:block;margin:18px auto 0;background:transparent;border:0;color:#aeb4bf}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="login-page">
+<main class="login-card">
+<img class="login-brand" src="jeeves_app_icon_transparent.png" alt="Jeeves butler">
+<div class="login-eyebrow">PRIVATE AGENT WORKSPACE</div>
+<h1>Welcome back</h1>
+<p class="login-sub">Sign in to continue to your Jeeves Assistant workspace.</p>
+<div class="login-fields">
+<input id="login-email" type="email" autocomplete="username" placeholder="Email address" aria-label="Email address">
+<input id="login-password" type="password" autocomplete="current-password" placeholder="Password" aria-label="Password">
+</div>
+<div class="login-actions">
+<button type="button" onclick="jeevesSignIn()">Sign in</button>
+<button type="button" onclick="jeevesSignUp()">Create account</button>
+</div>
+<div class="login-links"><button type="button" onclick="jeevesForgotPassword()">Forgot password?</button></div>
+<p id="login-message" role="status" aria-live="polite"></p>
+<button class="login-back" type="button" onclick="window.location.href='index.html'">← Back to Jeeves</button>
+</main>
+<script src="login.js?v=1.0.0"></script>
+</body>
+</html>
