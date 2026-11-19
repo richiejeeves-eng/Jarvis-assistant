@@ -18,5 +18,5 @@ function startVoice(){if(mode)setMode(false);else{const R=window.webkitSpeechRec
 window.jeevesVoiceIsActive=()=>mode;
 window.jeevesVoiceStopListening=()=>{reply=true;clearTimeout(timer);if(rec){const r=rec;rec=null;try{r.stop();}catch(e){}}status("THINKING","Jeeves is thinking…");};
 window.jeevesResumeListening=()=>{if(!mode)return;reply=false;status("LISTENING","Speak naturally…");button();clearTimeout(timer);timer=setTimeout(listen,300);};
-function install(){const mic=$("micbtn");if(!mic||$("conversation-toggle"))return;const b=document.createElement("button");b.id="conversation-toggle";b.type="button";b.className=mic.className;b.innerHTML=waveIcon;b.setAttribute("aria-label","Start conversation mode");b.title="Conversation mode";b.setAttribute("aria-pressed","false");b.onclick=()=>setMode(!mode);mic.insertAdjacentElement("beforebegin",b);button();}
+function install(){const mic=$("micbtn");if(!mic)return;let toggle=$("conversation-toggle");if(!toggle){toggle=document.createElement("button");toggle.id="conversation-toggle";toggle.type="button";toggle.className="jeeves-voice-icon";toggle.onclick=()=>setMode(!mode);mic.insertAdjacentElement("beforebegin",toggle);}mic.classList.add("jeeves-voice-icon");button();}
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",install);else install();
