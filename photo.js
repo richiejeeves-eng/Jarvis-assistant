@@ -85,14 +85,14 @@
 
   const button = document.createElement("button");
   button.id = "photobtn";
-  button.textContent = "Camera";
+  button.textContent = "Upload Image";
   button.className = "jeeves-tool-button";
-  button.setAttribute("aria-label", "Open camera or choose a photo");
-  button.setAttribute("data-description", "Take a photo or choose an image to ask Jeeves about");
+  button.setAttribute("aria-label", "Upload an image");
+  button.setAttribute("data-description", "Upload an image to ask Jeeves about");
   button.onclick = function () { fileInput.click(); };
 
   const cameraButton = document.getElementById("camerabtn");
-  if (cameraButton) { cameraButton.textContent = "Camera"; cameraButton.className = "jeeves-tool-button"; cameraButton.setAttribute("aria-label", "Open camera or choose a photo"); cameraButton.addEventListener("click", function () { fileInput.click(); }); }
+  if (cameraButton) { cameraButton.textContent = "Upload Image"; cameraButton.className = "jeeves-tool-button"; cameraButton.setAttribute("aria-label", "Upload an image"); cameraButton.addEventListener("click", function () { fileInput.click(); }); }
   else {
     const toolsBar = document.getElementById("tools");
     if (toolsBar) toolsBar.appendChild(button);
