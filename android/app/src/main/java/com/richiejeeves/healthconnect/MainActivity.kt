@@ -10,6 +10,9 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.lifecycleScope
 import androidx.health.connect.client.HealthConnectClient
+import androidx.health.connect.client.HealthConnectFeatures
+import androidx.health.connect.client.permission.HealthPermission.Companion.PERMISSION_READ_HEALTH_DATA_IN_BACKGROUND
+import com.google.firebase.messaging.FirebaseMessaging
 import androidx.health.connect.client.PermissionController
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.*
@@ -82,12 +85,38 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         startSyncRequestListener()
+        registerFirebaseDevice()
     }
 
     override fun onPause() {
         syncRequestJob?.cancel()
         syncRequestJob = null
         super.onPause()
+    }
+
+    private fun registerFirebaseDevice() {
+        if (prefs.getString("refresh_token", null) == null) return
+        FirebaseMessaging.getInstance().token.addOnSuccessListener { fcmToken ->
+            lifecycleScope.launch {
+                try {
+                    val access = validAccessToken()
+                    val user = withContext(Dispatchers.IO) {
+                        JSONObject(restRequest("GET", "$supabaseUrl/auth/v1/user", null, access))
+                    }
+                    val payload = JSONObject()
+                        .put("user_id", user.getString("id"))
+                        .put("token", fcmToken)
+                        .put("platform", "android")
+                        .put("updated_at", Instant.now().toString())
+                    withContext(Dispatchers.IO) {
+                        restRequest("POST", "$supabaseUrl/rest/v1/health_device_tokens?on_conflict=token", payload, access)
+                    }
+                    status.text = "Jeeves Health connected. Background sync device registered."
+                } catch (e: Exception) {
+                    status.text = "Signed in. Device notification registration will retry when Jeeves Health opens."
+                }
+            }
+        }
     }
 
     private fun startSyncRequestListener() {
@@ -138,7 +167,7 @@ class MainActivity : ComponentActivity() {
             setRequestProperty("apikey", publishableKey)
             setRequestProperty("Authorization", "Bearer $bearer")
             setRequestProperty("Content-Type", "application/json")
-            setRequestProperty("Prefer", "return=minimal")
+            setRequestProperty("Prefer", if (method == "POST") "resolution=merge-duplicates,return=minimal" else "return=minimal")
             if (body != null) doOutput = true
         }
         if (body != null) connection.outputStream.use {
@@ -204,10 +233,12 @@ class MainActivity : ComponentActivity() {
         }
         lifecycleScope.launch {
             val granted = client.permissionController.getGrantedPermissions()
-            if (granted.containsAll(requestedPermissions)) {
-                status.text = "All requested Health Connect permissions are already granted."
-            } else {
+            if (!granted.containsAll(requestedPermissions)) {
                 permissionLauncher.launch(requestedPermissions)
+            } else if (client.features.getFeatureStatus(HealthConnectFeatures.FEATURE_READ_HEALTH_DATA_IN_BACKGROUND) == HealthConnectFeatures.FEATURE_STATUS_AVAILABLE && PERMISSION_READ_HEALTH_DATA_IN_BACKGROUND !in granted) {
+                permissionLauncher.launch(setOf(PERMISSION_READ_HEALTH_DATA_IN_BACKGROUND))
+            } else {
+                status.text = if (PERMISSION_READ_HEALTH_DATA_IN_BACKGROUND in granted) "Health Connect read and background access are enabled." else "Health Connect read access is enabled. Background reading is not available on this Health Connect version."
             }
         }
     }
@@ -229,6 +260,7 @@ class MainActivity : ComponentActivity() {
                 saveSession(result)
                 passwordInput.text.clear()
                 status.text = "Signed in as $email. Connect Health Connect next."
+                registerFirebaseDevice()
             } catch (e: Exception) {
                 status.text = "Sign-in failed: ${e.message ?: "Check your details and try again."}"
             }
