@@ -523,3 +523,20 @@ body.left-drawer-collapsed .main-area{margin-left:0}
  .workspace{inset:0!important;height:100dvh!important;min-height:100dvh!important;padding:10px 10px 72px!important}
  .chat-log-list{max-height:32vh}
 }
+
+
+/* Compact top-right chat actions and adviser selector */
+.chat-top-actions{position:fixed;z-index:46;top:14px;right:22px;display:flex;align-items:center;gap:8px}
+.new-chat-top{height:38px;padding:0 14px;border:1px solid rgba(214,184,118,.48);border-radius:9px;background:linear-gradient(120deg,#33291d,#171a20);color:#e8cc91;font-size:11px;font-weight:600}
+.new-chat-top:hover{background:#46351f}
+.council-menu{position:relative}
+.council-menu>summary{list-style:none;display:grid;place-items:center;width:38px;height:38px;border:1px solid rgba(214,184,118,.4);border-radius:9px;background:#151922;color:#e4c584;font-size:24px;line-height:1;cursor:pointer}
+.council-menu>summary::-webkit-details-marker{display:none}
+.council-menu[open]>summary{background:#d6b878;color:#101114}
+.council-menu-content{position:absolute;top:46px;right:0;width:176px;padding:9px;border:1px solid rgba(214,184,118,.28);border-radius:11px;background:#11151d;box-shadow:0 12px 32px #0009;display:grid;gap:5px}
+.council-menu-member{display:flex;align-items:center;gap:9px;padding:9px 8px;border:1px solid #ffffff12;border-radius:8px;background:#0b0d12;cursor:pointer}
+.council-menu-member input{margin:0;accent-color:#c5a059}
+.council-menu-member b{font-size:10px;letter-spacing:1px;color:#e4d2aa}
+.council-menu-member .council-orb{width:19px;height:19px;flex-basis:19px}
+.council-menu-member:has(input:not(:checked)){opacity:.45}
+@media(max-width:800px){.chat-top-actions{top:10px;right:12px}.new-chat-top{height:36px;padding:0 10px}.council-menu>summary{width:36px;height:36px}}
