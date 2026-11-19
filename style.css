@@ -239,3 +239,33 @@
   display:block!important;
   margin:0 auto!important;
 }
+
+
+/* Align Camera and Location with every other item in the single-column tools menu. */
+.composer-tools-menu[open] #tools.lower-tools>button,
+.composer-tools-menu[open] #tools.lower-tools>#camerabtn,
+.composer-tools-menu[open] #tools.lower-tools>#locationbtn,
+.composer-tools-menu[open] #tools.lower-tools>#locbtn{
+  box-sizing:border-box!important;
+  display:flex!important;
+  width:100%!important;
+  min-width:0!important;
+  max-width:none!important;
+  height:40px!important;
+  min-height:40px!important;
+  max-height:40px!important;
+  flex:0 0 40px!important;
+  align-items:center!important;
+  justify-content:center!important;
+  padding:4px 8px!important;
+  margin:0!important;
+  text-align:center!important;
+  text-indent:0!important;
+  font-family:inherit!important;
+  font-size:10px!important;
+  font-weight:500!important;
+  line-height:1.15!important;
+  letter-spacing:0!important;
+  white-space:nowrap!important;
+  border-radius:7px!important;
+}
