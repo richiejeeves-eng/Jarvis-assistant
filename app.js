@@ -429,7 +429,7 @@ async function send() {
 
   try {
     if (!activeConversationId) await createConversation(message);
-    await saveConversationMessage("user", message);
+    saveConversationMessage("user", message).catch(error => console.warn("User message save failed:", error));
     history.push({ role: "user", text: message });
     const modelHistory = history.slice(-11, -1).slice(-10);
 
@@ -461,11 +461,11 @@ async function send() {
 
     thinking.textContent = data.reply;
     window.lastResponseSpeaker = data.speaker || (activeAdvisers.length === 1 ? activeAdvisers[0] : "jeeves");
-    const assistantMessageId = await saveConversationMessage("assistant", data.reply);
-    addFeedbackControls(thinking, assistantMessageId, activeConversationId);
+    const savedConversationId = activeConversationId;
+    saveConversationMessage("assistant", data.reply).then(id => addFeedbackControls(thinking, id, savedConversationId)).catch(error => console.warn("Assistant message save failed:", error));
     history.push({ role: "model", text: data.reply });
     history = history.slice(-10);
-    await refreshConversationList(activeConversationId, false);
+    refreshConversationList(activeConversationId, false).catch(error => console.warn("Conversation list refresh failed:", error));
 
     if (data.saved) addNote("💾 Saved to memory: " + data.saved);
     if (data.task) {
