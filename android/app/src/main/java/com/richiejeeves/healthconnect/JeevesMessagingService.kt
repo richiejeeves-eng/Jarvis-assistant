@@ -5,6 +5,7 @@ import com.google.firebase.messaging.RemoteMessage
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.ExistingWorkPolicy
+import androidx.work.OutOfQuotaPolicy
 
 class JeevesMessagingService : FirebaseMessagingService() {
     override fun onNewToken(token: String) {
@@ -13,7 +14,9 @@ class JeevesMessagingService : FirebaseMessagingService() {
 
     override fun onMessageReceived(message: RemoteMessage) {
         if (message.data["action"] == "health_sync") {
-            val work = OneTimeWorkRequestBuilder<HealthSyncWorker>().build()
+            val work = OneTimeWorkRequestBuilder<HealthSyncWorker>()
+                .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+                .build()
             WorkManager.getInstance(applicationContext)
                 .enqueueUniqueWork("jeeves-health-connect-sync", ExistingWorkPolicy.KEEP, work)
         }
