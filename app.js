@@ -52,7 +52,6 @@ function newChat() {
   history = [];
   document.getElementById("conversationSelect").value = "";
   document.getElementById("chat").textContent = "";
-  addMessage("New conversation. How can I help?", "bot");
 }
 
 function clearChat() {
@@ -464,20 +463,11 @@ db.auth.onAuthStateChange(function (event, session) {
     if (session) {
       setTimeout(async function () {
         await refreshConversationList(null, false);
-        const picker = document.getElementById("conversationSelect");
-        if (!activeConversationId && picker.options.length > 1) {
-          const { data } = await db
-            .from("conversations")
-            .select("id")
-            .order("updated_at", { ascending: false })
-            .limit(1)
-            .maybeSingle();
-          if (data && !activeConversationId) {
-            picker.value = data.id;
-            await openConversation(data.id);
-          }
-        }
-        setTimeout(maybeRunMorningBriefing, 1200);
+        // Start every workspace visit with a blank chat.
+        // Previous conversations remain available in the selector.
+        document.getElementById("chat").textContent = "";
+        history = [];
+        activeConversationId = null;
       }, 0);
     }
   } else if (event === "SIGNED_OUT") {
