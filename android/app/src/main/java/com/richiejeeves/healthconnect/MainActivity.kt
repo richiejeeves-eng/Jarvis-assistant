@@ -9,6 +9,12 @@ import androidx.activity.ComponentActivity
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.lifecycleScope
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
+import java.util.concurrent.TimeUnit
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.HealthConnectFeatures
 import androidx.health.connect.client.permission.HealthPermission.Companion.PERMISSION_READ_HEALTH_DATA_IN_BACKGROUND
@@ -44,7 +50,6 @@ class MainActivity : ComponentActivity() {
     private lateinit var status: TextView
     private lateinit var permissionLauncher: ActivityResultLauncher<Set<String>>
     private var healthClient: HealthConnectClient? = null
-    private var syncRequestJob: Job? = null
     private val requestedPermissions by lazy {
         setOf(
             HealthPermission.getReadPermission(StepsRecord::class),
@@ -84,78 +89,55 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        startSyncRequestListener()
+        scheduleBackgroundSync()
         registerFirebaseDevice()
-    }
-
-    override fun onPause() {
-        syncRequestJob?.cancel()
-        syncRequestJob = null
-        super.onPause()
     }
 
     private fun registerFirebaseDevice() {
         if (prefs.getString("refresh_token", null) == null) return
-        FirebaseMessaging.getInstance().token.addOnSuccessListener { fcmToken ->
-            lifecycleScope.launch {
-                try {
-                    val access = validAccessToken()
-                    val user = withContext(Dispatchers.IO) {
-                        JSONObject(restRequest("GET", "$supabaseUrl/auth/v1/user", null, access))
+        FirebaseMessaging.getInstance().isAutoInitEnabled = true
+        FirebaseMessaging.getInstance().token
+            .addOnSuccessListener { fcmToken ->
+                lifecycleScope.launch {
+                    try {
+                        val access = validAccessToken()
+                        val user = withContext(Dispatchers.IO) {
+                            JSONObject(restRequest("GET", "$supabaseUrl/auth/v1/user", null, access))
+                        }
+                        val payload = JSONObject()
+                            .put("user_id", user.getString("id"))
+                            .put("token", fcmToken)
+                            .put("platform", "android")
+                            .put("updated_at", Instant.now().toString())
+                        withContext(Dispatchers.IO) {
+                            restRequest("POST", "$supabaseUrl/rest/v1/health_device_tokens?on_conflict=token", payload, access)
+                        }
+                        status.text = "Jeeves Health connected. Firebase device registered."
+                    } catch (e: Exception) {
+                        status.text = "Firebase registration failed: ${e.message ?: "Unknown error"}"
                     }
-                    val payload = JSONObject()
-                        .put("user_id", user.getString("id"))
-                        .put("token", fcmToken)
-                        .put("platform", "android")
-                        .put("updated_at", Instant.now().toString())
-                    withContext(Dispatchers.IO) {
-                        restRequest("POST", "$supabaseUrl/rest/v1/health_device_tokens?on_conflict=token", payload, access)
-                    }
-                    status.text = "Jeeves Health connected. Background sync device registered."
-                } catch (e: Exception) {
-                    status.text = "Signed in. Device notification registration will retry when Jeeves Health opens."
                 }
             }
-        }
+            .addOnFailureListener { error ->
+                status.text = "Firebase token error: ${error.message ?: "Google services unavailable"}"
+            }
     }
 
-    private fun startSyncRequestListener() {
-        syncRequestJob?.cancel()
-        syncRequestJob = lifecycleScope.launch {
-            while (isActive) {
-                try {
-                    if (prefs.getString("refresh_token", null) != null && healthClient != null) {
-                        val token = validAccessToken()
-                        val pending = withContext(Dispatchers.IO) {
-                            JSONArray(restRequest(
-                                "GET",
-                                "$supabaseUrl/rest/v1/health_sync_requests?select=id&status=eq.queued&order=requested_at.asc&limit=1",
-                                null,
-                                token
-                            ))
-                        }
-                        if (pending.length() > 0) {
-                            val requestId = pending.getJSONObject(0).getString("id")
-                            val requestUrl = "$supabaseUrl/rest/v1/health_sync_requests?id=eq.$requestId"
-                            status.text = "Jeeves requested a health sync. Reading Health Connect…"
-                            status.text = "Jeeves requested a health sync. Reading Health Connect…"
-                            val succeeded = performSync()
-                            val completion = JSONObject()
-                                .put("status", if (succeeded) "completed" else "failed")
-                                .put("completed_at", Instant.now().toString())
-                            if (!succeeded) completion.put("error", "Health Connect sync failed. Check Jeeves Health for details.")
-                            withContext(Dispatchers.IO) {
-                                restRequest("PATCH", requestUrl, completion, token)
-                            }
-                        }
-                    }
-                } catch (e: Exception) {
-                    if (isActive && e !is kotlinx.coroutines.CancellationException) {
-                        status.text = "Waiting for Jeeves sync request…"
-                    }
-                }
-                delay(15000)
-            }
+    private fun scheduleBackgroundSync() {
+        val manager = WorkManager.getInstance(applicationContext)
+        val periodic = PeriodicWorkRequestBuilder<HealthSyncWorker>(15, TimeUnit.MINUTES).build()
+        manager.enqueueUniquePeriodicWork(
+            "jeeves-health-sync-periodic",
+            ExistingPeriodicWorkPolicy.KEEP,
+            periodic
+        )
+        if (prefs.getString("refresh_token", null) != null) {
+            val immediate = OneTimeWorkRequestBuilder<HealthSyncWorker>().build()
+            manager.enqueueUniqueWork(
+                "jeeves-health-connect-sync",
+                ExistingWorkPolicy.KEEP,
+                immediate
+            )
         }
     }
 
@@ -261,6 +243,7 @@ class MainActivity : ComponentActivity() {
                 passwordInput.text.clear()
                 status.text = "Signed in as $email. Connect Health Connect next."
                 registerFirebaseDevice()
+                scheduleBackgroundSync()
             } catch (e: Exception) {
                 status.text = "Sign-in failed: ${e.message ?: "Check your details and try again."}"
             }
