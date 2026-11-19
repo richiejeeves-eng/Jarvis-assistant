@@ -33,14 +33,14 @@ function getVoices() {
 
 function updateSpeakButtons() {
   const speakButton = document.getElementById("speakbtn");
-  if (speakButton) { speakButton.textContent = speakOn ? "🔊" : "🔇"; speakButton.setAttribute("aria-label", speakOn ? "Turn voice off" : "Turn voice on"); speakButton.title = speakOn ? "Voice on" : "Voice off"; speakButton.setAttribute("aria-pressed", String(speakOn)); }
+  if (speakButton) { speakButton.textContent = speakOn ? "Voice on" : "Voice off"; speakButton.setAttribute("aria-label", speakOn ? "Turn voice off" : "Turn voice on"); speakButton.title = speakOn ? "Voice on" : "Voice off"; speakButton.setAttribute("aria-pressed", String(speakOn)); }
   const styleButton = document.getElementById("stylebtn");
-  if (styleButton) { styleButton.textContent = "🎭"; styleButton.setAttribute("aria-label", "Change voice style · current: " + PROFILES[profileIndex % PROFILES.length].name); styleButton.title = "Voice style: " + PROFILES[profileIndex % PROFILES.length].name; }
+  if (styleButton) { styleButton.textContent = "Voice style"; styleButton.setAttribute("aria-label", "Change voice style · current: " + PROFILES[profileIndex % PROFILES.length].name); styleButton.title = "Voice style: " + PROFILES[profileIndex % PROFILES.length].name; }
   const voiceButton = document.getElementById("voicebtn");
   if (voiceButton) {
     const voices = getVoices();
     const index = voices.findIndex(function (v) { return v.voiceURI === voiceURI; });
-    voiceButton.textContent = "🗣"; voiceButton.setAttribute("aria-label", useElevenLabs ? "Voice provider: Jeeves ElevenLabs" : "Device voice " + (index + 1) + " of " + voices.length); voiceButton.title = useElevenLabs ? "Jeeves · ElevenLabs" : "Device voice " + (index + 1) + "/" + voices.length;
+    voiceButton.textContent = "Voice source"; voiceButton.setAttribute("aria-label", useElevenLabs ? "Voice provider: Jeeves ElevenLabs" : "Device voice " + (index + 1) + " of " + voices.length); voiceButton.title = useElevenLabs ? "Jeeves · ElevenLabs" : "Device voice " + (index + 1) + "/" + voices.length;
   }
 }
 
@@ -141,8 +141,9 @@ function makeToolButton(id, handler) {
   const button = document.createElement("button");
   button.id = id;
   button.onclick = handler;
-  button.className = "tool-icon";
-  button.setAttribute("data-description", id === "stylebtn" ? "Change spoken voice style" : "Change spoken voice");
+  button.className = "jeeves-tool-button";
+  button.textContent = id === "stylebtn" ? "Voice style" : "Voice source";
+  button.setAttribute("aria-label", id === "stylebtn" ? "Change spoken voice style" : "Change spoken voice source");
   document.getElementById("tools").appendChild(button);
 }
 
