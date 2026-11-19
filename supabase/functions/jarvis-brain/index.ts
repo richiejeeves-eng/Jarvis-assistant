@@ -30,6 +30,8 @@ Deno.serve(async (req) => {
 
     const body = await req.json();
     const message = typeof body.message === "string" ? body.message.trim() : "";
+    const requestedAdvisers = Array.isArray(body.active_advisers) ? body.active_advisers : ["mind", "body", "soul"];
+    const activeAdvisers = ["mind", "body", "soul"].filter((name) => requestedAdvisers.includes(name));
     if (!message || message.length > 2000) {
       return json({ error: "Message must be 1 to 2000 characters." }, 400);
     }
@@ -213,20 +215,19 @@ Return a concise assessment with: reflection, relevant principles, ethical consi
     }] }];
 
     console.log("calling Jeeves Council: Mind, Body and Soul; model:", MODEL);
-    const [mindAdvice, bodyAdvice, soulAdvice] = await Promise.all([
-      askGemini(mindPrompt, adviserContents, false),
-      askGemini(bodyPrompt, adviserContents, false),
-      askGemini(soulPrompt, adviserContents, false),
-    ]);
+    const adviserJobs: Promise<string>[] = [];
+    if (activeAdvisers.includes("mind")) adviserJobs.push(askGemini(mindPrompt, adviserContents, false).then((v) => "MIND — independent specialist assessment:\\n" + v));
+    if (activeAdvisers.includes("body")) adviserJobs.push(askGemini(bodyPrompt, adviserContents, false).then((v) => "BODY — independent specialist assessment:\\n" + v));
+    if (activeAdvisers.includes("soul")) adviserJobs.push(askGemini(soulPrompt, adviserContents, false).then((v) => "SOUL — independent specialist assessment:\\n" + v));
+    const adviserAssessments = await Promise.all(adviserJobs);
+    const councilAdvice = adviserAssessments.length ? adviserAssessments.join("\\n\\n") : "No specialist advisers were selected. Respond using your own broad general knowledge as Jeeves.";
 
     const chiefPrompt =
       "You are JEEVES, the Chief of Staff and principal personal assistant. You have broad general knowledge across everyday life, work, technology, research, planning and practical problem-solving. You coordinate three independent specialist advisers: MIND (intellect and strategy), BODY (health and physical wellbeing), and SOUL (spirituality, values and meaning). " +
-      "Read their assessments, identify agreement and disagreement, resolve contradictions using evidence and sound judgement, and produce one coherent answer directly for the user. Do not pretend a specialist assessment is relevant when it is not. Do not merely concatenate their reports. You retain responsibility for the final synthesis and should use your own broad knowledge where helpful. Be concise, clear, discreet and action-oriented. " +
+      "Only the advisers selected for this request have contributed. Use their assessments where relevant, identify disagreement and resolve it using evidence and sound judgement. When none are selected, answer independently using your broad general knowledge. Do not invent advice from inactive advisers or merely concatenate reports. You retain responsibility for the final answer. Be concise, clear, discreet and action-oriented. " +
       "Respect the selected autonomy level (" + String(body.mode ?? 3) + "): offer advice at Level 1, structured planning/accountability at Level 2, and operational briefs/drafts at Level 3. Never claim to have taken external actions without tool confirmation; external actions require permission. " +
       sharedContext +
-      "\\n\\nMIND — independent specialist assessment:\\n" + mindAdvice +
-      "\\n\\nBODY — independent specialist assessment:\\n" + bodyAdvice +
-      "\\n\\nSOUL — independent specialist assessment:\\n" + soulAdvice +
+      "\\n\\nSelected Council assessments:\\n" + councilAdvice +
       "\\n\\nReturn JSON. reply: final answer to user, incorporating only relevant specialist advice. memory: ONE short durable fact/preference/goal from the latest user message (under 200 characters), or empty if none/already saved/question/small talk/to-do. Never save passwords, keys, card numbers or ID numbers. task_title: only if user explicitly asks for reminder/to-do, 2-6 words; otherwise empty. task_due_at: ISO 8601 with offset only when a due time was supplied; otherwise empty. You cannot mark tasks done; direct user to Show tasks.";
 
     const chiefRaw = await askGemini(chiefPrompt, [{ role: "user", parts: [{ text: message }] }], true);
