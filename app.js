@@ -269,6 +269,34 @@ async function refreshConversationList(selectedId, openSelected) {
   if (openSelected && selectedId) await openConversation(selectedId);
 }
 
+async function deleteConversation() {
+  const picker = document.getElementById("conversationSelect");
+  const id = picker.value;
+  if (!id || sendingMessage || conversationBusy) return;
+  const title = picker.options[picker.selectedIndex]?.textContent || "this conversation";
+  if (!window.confirm('Permanently delete "' + title + '" and all its messages? This cannot be undone.')) return;
+  const button = document.getElementById("deleteConversationBtn");
+  button.disabled = true;
+  try {
+    const { data, error } = await db.from("conversations").delete().eq("id", id).select("id").maybeSingle();
+    if (error) throw error;
+    if (!data) throw new Error("Conversation was not deleted. Check your access and try again.");
+    if (activeConversationId === id) {
+      conversationSwitchToken++;
+      conversationBusy = false;
+      activeConversationId = null;
+      history = [];
+      document.getElementById("chat").textContent = "";
+    }
+    await refreshConversationList(null, false);
+    addNote("Conversation deleted.");
+  } catch (error) {
+    addNote("Could not delete conversation: " + error.message);
+  } finally {
+    button.disabled = !picker.value || sendingMessage || conversationBusy;
+  }
+}
+
 async function openConversation(id) {
   if (!id) return;
   const token = ++conversationSwitchToken;
@@ -493,6 +521,8 @@ async function send() {
 }
 
 document.getElementById("conversationSelect").addEventListener("change", function (event) {
+  const deleteButton = document.getElementById("deleteConversationBtn");
+  if (deleteButton) deleteButton.disabled = !event.target.value || sendingMessage || conversationBusy;
   if (event.target.value) openConversation(event.target.value);
 });
 
