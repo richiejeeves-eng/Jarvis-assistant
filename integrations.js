@@ -210,8 +210,10 @@
         html += '<button class="integration-action" type="button" data-health-build>Open Jeeves Fitness ↗</button>';
       } else if (item.name === "Google Tasks") {
         html += '<button class="integration-action" type="button" data-google-tasks-connect>Connect & grant Google Tasks access ↗</button><button class="integration-action" type="button" data-google-tasks-sync hidden>Sync Google Tasks ↻</button>';
-      } else if (item.name === "Gmail" || item.name === "Google Drive") {
-        html += '<button class="integration-action" type="button" data-google-extend="' + item.name + '">Connect with Google ↗</button>';
+      } else if (item.name === "Gmail") {
+        html += '<button class="integration-action" type="button" data-google-extend="Gmail">Connect with Google ↗</button><button class="integration-action" type="button" data-gmail-recent hidden>Load recent emails ↻</button>';
+      } else if (item.name === "Google Drive") {
+        html += '<button class="integration-action" type="button" data-google-extend="Google Drive">Connect with Google ↗</button>';
       } else if (item.name === "Google Calendar") {
         html += '<button class="integration-action" type="button" data-calendar-connect>Connect Google Calendar ↗</button><div class="calendar-connected-actions" hidden><button class="integration-action" type="button" data-calendar-events>Refresh upcoming events</button><button class="integration-action secondary" type="button" data-calendar-disconnect>Disconnect</button><div class="calendar-event-list" data-calendar-event-list><p class="calendar-empty">Your upcoming events will appear here.</p></div></div>';
       } else if (item.kind === "setup" || item.kind === "planned") {
@@ -221,7 +223,7 @@
       }
       html += '<details class="integration-more"><summary>Additional information</summary><div class="integration-more-content">';
       if (item.name === "Gmail") {
-        html += '<p>Recent emails · read-only. Load recent message subjects, senders, dates and previews here.</p><button class="integration-action" type="button" data-gmail-recent hidden>Load recent emails ↻</button><div class="gmail-recent-list" data-gmail-recent-list><p class="calendar-empty">Connect Gmail to view recent emails.</p></div>';
+        html += '<p>Recent emails · read-only. Expand each message to see sender, date and preview.</p><div class="gmail-recent-list" data-gmail-recent-list><p class="calendar-empty">Use Load recent emails above to retrieve your messages.</p></div>';
       } else if (item.name === "Google Drive") {
         html += '<p>Browse recent Drive files and view file names, types, modified dates and links. Jeeves access remains read-only.</p><button class="integration-action" type="button" data-google-test="Google Drive" hidden>Check Drive connection ↻</button><div class="integration-test-result" data-test-result></div>';
       } else if (item.name === "Google Calendar") {
