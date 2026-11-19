@@ -163,7 +163,7 @@ async function showMemories() {
   scrollChat();
 }
 
-async function showTasks() {
+async function showTasks(filter = "open") {
   if (!(await requireSession())) return;
 
   const { data, error } = await db
@@ -178,16 +178,28 @@ async function showTasks() {
     return;
   }
 
-  if (data.length === 0) {
-    addMessage("No pending tasks.", "bot");
+  const now = new Date();
+  const start = new Date(now); start.setHours(0, 0, 0, 0);
+  const end = new Date(start); end.setDate(end.getDate() + 1);
+  const matching = data.filter(function (task) {
+    if (!task.due_at) return filter === "open";
+    const due = new Date(task.due_at);
+    if (filter === "overdue") return due < now;
+    if (filter === "today") return due >= start && due < end;
+    return true;
+  });
+  const headingText = filter === "overdue" ? "OVERDUE TASKS" : filter === "today" ? "TASKS DUE TODAY" : "YOUR OPEN TASKS";
+  if (matching.length === 0) {
+    addMessage(filter === "overdue" ? "No overdue tasks." : filter === "today" ? "No tasks due today." : "No pending tasks.", "bot");
+    scrollChat();
     return;
   }
 
-  const box = addMessage("YOUR TASKS", "bot");
+  const box = addMessage(headingText, "bot");
   box.classList.add("task-groups");
 
   const groups = new Map();
-  data.forEach(function (task) {
+  matching.forEach(function (task) {
     const group = task.group_name || (task.source === "google_tasks" ? "Google Tasks" : "Jeeves tasks");
     if (!groups.has(group)) groups.set(group, []);
     groups.get(group).push(task);
