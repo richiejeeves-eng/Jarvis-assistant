@@ -57,12 +57,16 @@ class HealthSyncWorker(context: Context, params: WorkerParameters) : CoroutineWo
 
                 val id = queue.getJSONObject(0).getString("id")
                 val itemUrl = "$base/rest/v1/health_sync_requests?id=eq.$id"
-                request(
+                val claimed = JSONArray(request(
                     "PATCH",
-                    itemUrl,
+                    "$itemUrl&status=eq.queued",
                     JSONObject().put("status", "processing").put("started_at", Instant.now().toString()).put("error", JSONObject.NULL),
                     token
-                )
+                ))
+                if (claimed.length() == 0) {
+                    processed++
+                    continue
+                }
 
                 try {
                     val client = HealthConnectClient.getOrCreate(applicationContext)
@@ -174,7 +178,7 @@ class HealthSyncWorker(context: Context, params: WorkerParameters) : CoroutineWo
         val connection = (URL(url).openConnection() as HttpURLConnection).apply {
             requestMethod = method; connectTimeout = 20000; readTimeout = 30000
             setRequestProperty("apikey", key); setRequestProperty("Content-Type", "application/json")
-            setRequestProperty("Prefer", "return=minimal")
+            setRequestProperty("Prefer", if (method == "PATCH") "return=representation" else "return=minimal")
             if (bearer != null) setRequestProperty("Authorization", "Bearer $bearer")
             if (body != null) doOutput = true
         }
