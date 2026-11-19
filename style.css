@@ -595,3 +595,9 @@ body.left-drawer-collapsed .main-area{margin-left:0}
 #chat .bot{border:0!important}
 #bar{border-top:0!important;box-shadow:none!important}
 footer{border-top:0!important}
+
+
+/* Sidebar header: JEEVES wordmark left, account control right; no close X. */
+.sidebar-account-block{justify-content:space-between!important;align-items:center!important;margin-bottom:28px!important;min-height:46px}
+.sidebar-wordmark{color:var(--gold-light);font:600 23px 'Playfair Display',serif;letter-spacing:2px;line-height:1}
+.sidebar-account-btn{margin-left:auto!important;flex:0 0 42px}
