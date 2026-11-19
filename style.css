@@ -176,5 +176,5 @@
 }
 
 /* Original Jeeves icons at the head of each page */
-.page-heading-icon{display:inline-block;width:34px;height:34px;flex:0 0 34px;object-fit:contain;vertical-align:middle;}
-.workspace-head h2,.section-heading h2,.executive-live-head h2{display:flex;align-items:center;gap:12px;}
+.page-heading-icon{display:block;width:20px;height:20px;flex:0 0 20px;object-fit:contain;margin:0 auto;}
+.workspace-head h2,.section-heading h2,.executive-live-head h2{display:flex;align-items:center;justify-content:center;gap:8px;text-align:center;}
