@@ -439,16 +439,14 @@ function maybeRunMorningBriefing() {
 
 async function send() {
   const input = document.getElementById("command");
-  const button = document.getElementById("sendbtn");
   const message = input.value.trim();
 
-  if (!message || conversationBusy || sendingMessage || button.disabled) return;
+  if (!message || conversationBusy || sendingMessage) return;
   if (!(await requireSession())) return;
 
   input.value = "";
   addMessage(message, "user");
   sendingMessage = true;
-  button.disabled = true;
   document.getElementById("newchatbtn").disabled = true;
   document.getElementById("conversationSelect").disabled = true;
   const activeAdvisers = Array.from(document.querySelectorAll(".council-toggle:checked")).map(function (el) { return el.dataset.adviser; });
@@ -512,13 +510,19 @@ async function send() {
   } finally {
     if (councilPanel) councilPanel.classList.remove("is-consulting", "consulting-mind", "consulting-body", "consulting-soul");
     sendingMessage = false;
-    button.disabled = false;
     document.getElementById("newchatbtn").disabled = false;
     const { data: currentSession } = await db.auth.getSession();
     document.getElementById("conversationSelect").disabled = !currentSession.session;
     input.focus();
   }
 }
+
+document.getElementById("command").addEventListener("keydown", function (event) {
+  if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
+    event.preventDefault();
+    send();
+  }
+});
 
 document.getElementById("conversationSelect").addEventListener("change", function (event) {
   const deleteButton = document.getElementById("deleteConversationBtn");
