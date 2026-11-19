@@ -530,11 +530,14 @@ async function send() {
   const activeAdvisers = Array.from(document.querySelectorAll(".council-toggle:checked")).map(function (el) { return el.dataset.adviser; });
   const adviserNames = activeAdvisers.map(function (name) { return name.toUpperCase(); });
   const thinking = addMessage(activeAdvisers.length ? "Jeeves is consulting " + adviserNames.join(", ") + "…" : "Jeeves is preparing your response…", "bot");
-  const councilPanel = document.querySelector(".council-panel");
-  if (councilPanel) {
-    councilPanel.classList.remove("consulting-mind", "consulting-body", "consulting-soul");
-    if (activeAdvisers.length === 1) councilPanel.classList.add("consulting-" + activeAdvisers[0]);
-    councilPanel.classList.toggle("is-consulting", activeAdvisers.length === 1);
+  const activeOrb = document.getElementById("active-council-orb");
+  if (activeOrb) {
+    const adviser = activeAdvisers.length === 1 ? activeAdvisers[0] : "";
+    activeOrb.className = "active-council-orb" + (adviser ? " active-" + adviser : "");
+    activeOrb.querySelector(".council-orb").className = "council-orb" + (adviser ? " " + adviser + "-orb" : "");
+    activeOrb.querySelector("b").textContent = adviser ? adviser.toUpperCase() : "";
+    activeOrb.classList.toggle("visible", activeAdvisers.length > 0);
+    activeOrb.setAttribute("aria-hidden", activeAdvisers.length ? "false" : "true");
   }
 
   try {
@@ -586,7 +589,7 @@ async function send() {
   } catch (error) {
     thinking.textContent = "Could not save or send this message: " + error.message;
   } finally {
-    if (councilPanel) councilPanel.classList.remove("is-consulting", "consulting-mind", "consulting-body", "consulting-soul");
+    if (activeOrb) { activeOrb.classList.remove("visible", "active-mind", "active-body", "active-soul"); activeOrb.setAttribute("aria-hidden", "true"); }
     sendingMessage = false;
     document.getElementById("newchatbtn").disabled = false;
     const { data: currentSession } = await db.auth.getSession();
