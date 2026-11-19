@@ -306,3 +306,36 @@
 .executive-live-head>#executive-refresh{
   align-self:center!important;
 }
+
+
+/* Live Account Data: force the complete heading block into the horizontal centre. */
+#view-live-data .executive-live-head{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr)!important;
+  justify-items:center!important;
+  align-items:center!important;
+  text-align:center!important;
+}
+#view-live-data .executive-live-head>div:first-child{
+  grid-column:1!important;
+  grid-row:1!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:100%!important;
+  text-align:center!important;
+}
+#view-live-data .executive-live-head .eyebrow,
+#view-live-data .executive-live-head h2,
+#view-live-data .executive-live-head #executive-updated{
+  display:block!important;
+  width:100%!important;
+  text-align:center!important;
+}
+#view-live-data .executive-live-head #executive-refresh{
+  grid-column:1!important;
+  grid-row:2!important;
+  justify-self:center!important;
+  align-self:center!important;
+}
