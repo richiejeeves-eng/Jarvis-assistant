@@ -1,6 +1,6 @@
 {
-  "name": "Jeeves Assistant",
-  "short_name": "Jeeves",
+  "name": "JEEVES · AI Butler",
+  "short_name": "JEEVES",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
@@ -8,10 +8,10 @@
   "theme_color": "#0b0c10",
   "icons": [
     {
-      "src": "jeeves_app_icon_transparent.png",
+      "src": "a_high_contrast_luxurious_logo_on_black_the_same.png?v=4",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ]
 }
