@@ -26,13 +26,13 @@
 <section class="workspace"><img class="operations-banner" src="jeeves_app_icon_transparent.png" alt="Jeeves Assistant"><div class="workspace-head"><div><div class="eyebrow">PRIVATE AGENT WORKSPACE</div></div><div class="workspace-tools"><button onclick="showMemories()">Memory</button><button id="newchatbtn" onclick="newChat()">＋ New chat</button></div></div>
 <section class="council-panel" aria-label="Jeeves Council of specialist advisers">
   <div class="council-panel-heading">
-    <div class="eyebrow">THE JEEVES COUNCIL</div>
+    <div class="eyebrow council-title"><span class="council-orb jeeves-orb" aria-hidden="true"></span>THE JEEVES COUNCIL</div>
     <p>Select which advisers contribute to Jeeves’ response.</p>
   </div>
   <div class="council-panel-grid">
-    <label class="council-member mind"><input class="council-toggle" type="checkbox" data-adviser="mind" checked><span class="council-number">01</span><span class="council-member-copy"><b>MIND</b><small>Intellect · strategy</small></span></label>
-    <label class="council-member body"><input class="council-toggle" type="checkbox" data-adviser="body" checked><span class="council-number">02</span><span class="council-member-copy"><b>BODY</b><small>Health · fitness</small></span></label>
-    <label class="council-member soul"><input class="council-toggle" type="checkbox" data-adviser="soul" checked><span class="council-number">03</span><span class="council-member-copy"><b>SOUL</b><small>Wisdom · purpose</small></span></label>
+    <label class="council-member mind"><input class="council-toggle" type="checkbox" data-adviser="mind" checked><span class="council-orb mind-orb" aria-hidden="true"></span><span class="council-member-copy"><b>MIND</b><small>Intellect · strategy</small></span></label>
+    <label class="council-member body"><input class="council-toggle" type="checkbox" data-adviser="body" checked><span class="council-orb body-orb" aria-hidden="true"></span><span class="council-member-copy"><b>BODY</b><small>Health · fitness</small></span></label>
+    <label class="council-member soul"><input class="council-toggle" type="checkbox" data-adviser="soul" checked><span class="council-orb soul-orb" aria-hidden="true"></span><span class="council-member-copy"><b>SOUL</b><small>Wisdom · purpose</small></span></label>
   </div>
   <div class="council-panel-foot">Selected advisers inform Jeeves. Turn all three off for Jeeves-only responses.</div>
 </section>
