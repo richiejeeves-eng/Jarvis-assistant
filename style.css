@@ -555,3 +555,7 @@ body.left-drawer-collapsed .main-area{margin-left:0}
 @keyframes active-orb-pulse{0%,100%{transform:scale(1);opacity:.72}50%{transform:scale(1.13);opacity:1}}
 @keyframes active-orb-float{0%,100%{translate:0 0}50%{translate:0 -5px}}
 @media(prefers-reduced-motion:reduce){.active-council-orb .council-orb,.active-council-orb .council-orb:before{animation:none}}
+
+
+/* Keep the full-screen conversation workspace exclusive to the main Command page. */
+.workspace[hidden]{display:none!important}
