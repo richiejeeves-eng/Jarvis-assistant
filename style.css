@@ -22,3 +22,24 @@
 .integration-action[hidden],.calendar-connected-actions[hidden]{display:none!important}
 .calendar-connected-actions{display:grid;gap:7px}
 .integration-action.secondary{background:transparent;border-color:#ffffff20;color:var(--silver)}
+
+/* Live Executive Brief */
+.executive-live{margin:0 0 30px;padding:19px;background:linear-gradient(145deg,rgba(26,32,41,.94),rgba(13,17,23,.97));border:1px solid #c5a05930;border-radius:16px;box-shadow:0 15px 35px #0003}
+.executive-live-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:15px}
+.executive-live-head h2{font:600 23px 'Playfair Display',serif;margin:5px 0}
+.executive-live-head p{font-size:10px;color:var(--silver);margin:5px 0 0}
+.executive-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
+.executive-metrics article{padding:13px;border:1px solid #ffffff12;border-radius:11px;background:#090c1190}
+.executive-metrics article span{display:block;font-size:8px;letter-spacing:1px;color:#9ca3af}
+.executive-metrics article strong{display:block;margin-top:7px;font:600 25px 'Playfair Display',serif;color:var(--gold-light);font-variant-numeric:tabular-nums}
+.executive-task-panel{margin-top:16px;padding-top:13px;border-top:1px solid #ffffff12}
+.executive-task-heading{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:7px}
+.executive-task-heading h3{font:600 16px 'Playfair Display',serif;margin:0}
+.executive-task-heading button{border:0;background:none;color:var(--gold-light);font-size:9px}
+.executive-task-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 2px;border-top:1px solid #ffffff0d}
+.executive-task-row strong{font-size:11px;font-weight:500;overflow-wrap:anywhere}
+.executive-task-row span{flex-shrink:0;font-size:9px;color:#a5acb5}
+.executive-task-row span.is-overdue{color:#e39a7e}
+.executive-empty{font-size:10px;color:var(--silver);line-height:1.5}
+#executive-refresh:disabled{opacity:.5;cursor:wait}
+@media(max-width:600px){.executive-live{padding:14px}.executive-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.executive-live-head h2{font-size:21px}.executive-task-row{align-items:flex-start;flex-direction:column;gap:4px}}
