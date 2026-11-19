@@ -492,3 +492,9 @@ body.left-drawer-collapsed .main-area{margin-left:0}
  .composer-foot{right:12px;bottom:calc(61px + env(safe-area-inset-bottom))}
  .council-panel{margin-left:2px!important}
 }
+
+
+.message-actions{display:flex;flex-wrap:wrap;gap:5px;align-self:flex-start;margin:-4px 0 10px 7px;max-width:92%}
+.message-actions button{min-height:29px;padding:5px 9px;border:1px solid rgba(197,160,89,.24);border-radius:7px;background:#171d26;color:#d8c69e;font-size:10px;cursor:pointer}
+.message-actions button:hover{background:#28251f;border-color:rgba(197,160,89,.58)}
+.msg.user+.message-actions{align-self:flex-end;margin-right:7px}
