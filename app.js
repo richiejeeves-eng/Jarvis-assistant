@@ -1,3 +1,29 @@
+// Jeeves Council autonomy selector — all three specialists remain active at every level.
+const JEEVES_COUNCIL_LEVELS = {
+  1: { name: "Adviser-led", label: "Level 1 · Adviser", description: "Council advises; user directs." },
+  2: { name: "Organiser-led", label: "Level 2 · Organiser", description: "Council plans and tracks with approval." },
+  3: { name: "Operations-led", label: "Level 3 · Operations", description: "Council prepares coordinated work for approval." }
+};
+window.jeevesModeLevel = Number(localStorage.getItem("jeeves-council-level") || 3);
+window.jeevesMode = JEEVES_COUNCIL_LEVELS[window.jeevesModeLevel]?.name || "Operations-led";
+function setAssistanceLevel(level) {
+  const chosen = JEEVES_COUNCIL_LEVELS[Number(level)];
+  if (!chosen) return;
+  window.jeevesModeLevel = Number(level);
+  window.jeevesMode = chosen.name;
+  localStorage.setItem("jeeves-council-level", String(level));
+  document.querySelectorAll(".level-btn").forEach(function(button) {
+    const active = Number(button.dataset.level) === Number(level);
+    button.classList.toggle("selected", active);
+    button.setAttribute("aria-pressed", active ? "true" : "false");
+  });
+  const note = document.querySelector(".autonomy p");
+  if (note) note.textContent = chosen.description + " All three Jeeves Council members remain active.";
+}
+document.addEventListener("DOMContentLoaded", function() {
+  setAssistanceLevel(window.jeevesModeLevel);
+});
+
 const SUPABASE_URL = "https://aelsipdtezvhjkwsshqx.supabase.co";
 const SUPABASE_KEY = "sb_publishable_JbN0kUdtX6d5J8bWAPbz4w_syw2aG4K";
 
@@ -407,7 +433,8 @@ async function send() {
 
     const { data, error } = await db.functions.invoke("jarvis-brain", {
       body: {
-        message: (window.jeevesMode ? "[Assistant mode: " + window.jeevesMode + "]\\n" : "") + message,
+        message: message,
+        mode: window.jeevesModeLevel || 3,
         history: modelHistory,
         now: new Date().toString(),
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
