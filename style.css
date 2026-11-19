@@ -354,3 +354,44 @@
 
 /* Integrated monthly Google Calendar */
 .calendar-panel{margin:22px 0 28px;padding:18px;border:1px solid rgba(214,184,118,.25);border-radius:18px;background:linear-gradient(145deg,#11151f,#090b10)}.calendar-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}.calendar-toolbar h3{margin:0;font-size:18px;color:#e7d1a0}.calendar-toolbar button{width:42px;height:40px;border-radius:10px;border:1px solid rgba(214,184,118,.3);background:#171922;color:#e7d1a0;font-size:25px}.jeeves-calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}.jeeves-calendar-grid>span{min-width:0;text-align:center;padding:8px 0;color:#a9aab2;font-size:11px}.jeeves-calendar-grid>button{position:relative;min-width:0;aspect-ratio:1;border:1px solid #252832;border-radius:9px;background:#11141b;color:#eee;font-size:13px}.jeeves-calendar-grid>button.today{border-color:#d6b878}.jeeves-calendar-grid>button.selected{background:#3a3020;border-color:#d6b878;color:#ffe3a8}.jeeves-calendar-grid>button.has-events:after{content:'';position:absolute;bottom:4px;left:calc(50% - 3px);width:6px;height:6px;border-radius:50%;background:#d6b878}.calendar-day-events{margin:16px 0;padding-top:14px;border-top:1px solid #292a30;color:#d5d5dc;font-size:14px;min-height:42px}.calendar-day-event{padding:9px 0;border-bottom:1px solid #292a30}.calendar-day-event strong{display:block;color:#f1dfb8}.calendar-day-event small{color:#a5a6ae}@media(max-width:420px){.calendar-panel{padding:12px}.jeeves-calendar-grid{gap:3px}.jeeves-calendar-grid>button{border-radius:7px;font-size:12px}}
+
+
+/* Final unified composer menu typography and alignment */
+.composer-tools-menu[open] #tools.lower-tools{
+  box-sizing:border-box!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:stretch!important;
+  justify-content:flex-start!important;
+  width:260px!important;
+  max-width:calc(100vw - 72px)!important;
+  gap:6px!important;
+  padding:9px!important;
+}
+.composer-tools-menu[open] #tools.lower-tools>button,
+.composer-tools-menu[open] #tools.lower-tools>button *,
+.composer-tools-menu[open] #tools.lower-tools>#camerabtn,
+.composer-tools-menu[open] #tools.lower-tools>#locationbtn,
+.composer-tools-menu[open] #tools.lower-tools>#locbtn{
+  box-sizing:border-box!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:100%!important;
+  min-width:0!important;
+  max-width:none!important;
+  height:40px!important;
+  min-height:40px!important;
+  max-height:40px!important;
+  flex:0 0 40px!important;
+  margin:0!important;
+  padding:4px 8px!important;
+  font-family:Inter,'Plus Jakarta Sans',Arial,sans-serif!important;
+  font-size:11px!important;
+  font-weight:500!important;
+  line-height:1.2!important;
+  letter-spacing:0!important;
+  text-align:center!important;
+  text-indent:0!important;
+  white-space:nowrap!important;
+}
