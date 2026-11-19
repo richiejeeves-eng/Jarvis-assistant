@@ -33,7 +33,7 @@
   }
 
   async function calendarAction(action, extra) {
-    if (!window.db || !db.functions) {
+    if (typeof db === "undefined" || !db.functions) {
       note("Jeeves connection service is not ready. Refresh and try again.");
       return null;
     }
