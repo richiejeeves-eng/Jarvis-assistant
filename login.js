@@ -1,4 +1,13 @@
 const loginDb = window.supabase.createClient("https://aelsipdtezvhjkwsshqx.supabase.co","sb_publishable_JbN0kUdtX6d5J8bWAPbz4w_syw2aG4K");
+const loginSession = document.getElementById("login-session");
+const loginForm = document.getElementById("login-form");
+const loginCurrent = document.getElementById("login-current");
+function showLoginSession(session){
+  const signedIn = !!session;
+  loginSession.hidden = !signedIn;
+  loginForm.hidden = signedIn;
+  if(signedIn) loginCurrent.textContent = "Currently signed in as " + session.user.email + ". Sign out to use a different account.";
+}
 const loginMessage = (message) => { document.getElementById("login-message").textContent = message; };
 const loginEmail = () => document.getElementById("login-email").value.trim();
 const loginPassword = () => document.getElementById("login-password").value;
@@ -19,5 +28,12 @@ async function jeevesForgotPassword(){
   const {error}=await loginDb.auth.resetPasswordForEmail(loginEmail(),{redirectTo:window.location.origin+window.location.pathname.replace(/login\.html$/,"index.html")});
   loginMessage(error?"Password reset failed: "+error.message:"If that email has an account, a password reset link is on its way.");
 }
-loginDb.auth.getSession().then(({data})=>{if(data.session)window.location.replace("index.html");});
+async function jeevesSignOut(){
+  const {error}=await loginDb.auth.signOut();
+  if(error){loginMessage("Sign-out failed: "+error.message);return;}
+  showLoginSession(null);
+  loginMessage("Signed out. You can now sign in with another account.");
+}
+loginDb.auth.getSession().then(({data})=>showLoginSession(data.session));
+loginDb.auth.onAuthStateChange((_event,session)=>showLoginSession(session));
 document.addEventListener("keydown",event=>{if(event.key==="Enter")jeevesSignIn();});
