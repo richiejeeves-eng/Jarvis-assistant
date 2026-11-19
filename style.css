@@ -638,3 +638,28 @@ footer{border-top:0!important}
 /* Geometric Jeeves emblem in the sidebar brand slot. */
 .sidebar-wordmark{display:flex;align-items:center;justify-content:flex-start;min-width:0;width:100%;height:58px}
 .sidebar-wordmark img{display:block;width:58px;height:58px;max-width:100%;object-fit:contain;object-position:left center}
+
+
+/* Council: refined editorial selector, no orb motifs. */
+.council-drawer-card{padding:16px!important;border:1px solid rgba(214,184,118,.22)!important;border-radius:15px!important;background:linear-gradient(145deg,#1b1c21 0%,#101218 75%)!important;box-shadow:inset 0 1px 0 #ffffff0a,0 12px 30px #0003!important}
+.council-section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.council-section-head>label{color:#dfbe7d!important;font-size:10px!important;letter-spacing:2px!important;font-weight:800!important}
+.council-section-head>span{font-size:8px;letter-spacing:1.4px;color:#777e89}
+.council-section-intro{margin:0 0 14px!important;color:#9298a2!important;font-size:10px!important;line-height:1.5!important}
+.council-drawer-card .council-menu-content{gap:7px!important}
+.council-drawer-card .council-menu-member{position:relative;display:flex;align-items:center;gap:12px;min-height:58px;padding:9px 11px!important;border:1px solid #ffffff12!important;border-radius:11px!important;background:linear-gradient(100deg,#ffffff08,#ffffff02)!important;transition:border-color .2s,background .2s,transform .2s}
+.council-drawer-card .council-menu-member:hover{transform:translateX(2px);border-color:#d6b87866!important;background:#d6b8780d!important}
+.council-drawer-card .council-menu-member input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:2}
+.council-index{display:grid;place-items:center;width:30px;height:30px;flex:0 0 30px;border-radius:8px;background:#d6b87812;border:1px solid #d6b8782b;color:#d9bd86;font:600 10px ui-monospace,monospace}
+.council-member-detail{display:grid;gap:3px;min-width:0}
+.council-member-detail b{color:#eee2c7;font-size:10px;letter-spacing:1.6px}
+.council-member-detail small{color:#858c97;font-size:9px;letter-spacing:.15px}
+.council-check{margin-left:auto;color:#dfbe7d;font-size:14px;opacity:.3;transition:opacity .2s}
+.council-menu-member:has(input:checked){border-color:#c5a05965!important;background:linear-gradient(100deg,#c5a05918,#c5a05905)!important}
+.council-menu-member:has(input:checked) .council-index{background:#c5a05924;border-color:#d6b87866;color:#f0d59b}
+.council-menu-member:has(input:checked) .council-check{opacity:1}
+.council-menu-member:has(input:not(:checked)){opacity:.48}
+.council-menu-member:focus-within{outline:1px solid #dfbe7d;outline-offset:2px}
+@media(max-width:800px){.council-drawer-card{padding:14px!important}.council-drawer-card .council-menu-member{min-height:54px}}
+/* Council identity is typographic; only the separate voice interface uses an orb. */
+.active-council-orb{display:none!important}
