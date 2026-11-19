@@ -168,10 +168,10 @@ async function showTasks() {
 
   const { data, error } = await db
     .from("tasks")
-    .select("id, title, due_at, source, google_task_id, google_tasklist_id")
+    .select("id, title, due_at, source, google_task_id, google_tasklist_id, group_name")
     .eq("status", "pending")
     .order("due_at", { ascending: true, nullsFirst: false })
-    .limit(20);
+    .limit(200);
 
   if (error) {
     addMessage("Task error: " + error.message, "bot");
@@ -184,70 +184,75 @@ async function showTasks() {
   }
 
   const box = addMessage("YOUR TASKS", "bot");
+  box.classList.add("task-groups");
 
+  const groups = new Map();
   data.forEach(function (task) {
-    const row = document.createElement("div");
-    row.className = "taskrow";
-
-    const label = document.createElement("span");
-    let text = "• " + task.title;
-    if (task.due_at) {
-      text += "\n   due " + new Date(task.due_at).toLocaleString();
-    }
-    label.textContent = text + (task.source === "google_tasks" ? "\n   ↳ Google Tasks" : "");
-
-    const buttons = document.createElement("div");
-
-    const doneButton = makeButton("Done", async function () {
-      if (task.google_task_id && task.google_tasklist_id) {
-        const remote = await db.functions.invoke("google-calendar", {
-          body: { action: "completeTask", google_task_id: task.google_task_id, google_tasklist_id: task.google_tasklist_id }
-        });
-        if (remote.error) {
-          addMessage("Could not complete Google Task: " + remote.error.message, "bot");
-          return;
-        }
-      }
-      const { error: updateError } = await db
-        .from("tasks")
-        .update({ status: "done" })
-        .eq("id", task.id);
-
-      if (updateError) {
-        addMessage("Task error: " + updateError.message, "bot");
-        return;
-      }
-
-      label.className = "done";
-      buttons.remove();
-      if (typeof speak === "function") speak("Completed: " + task.title);
-      checkAlerts();
-    });
-
-    const deleteButton = makeButton("Delete", async function () {
-      if (!confirm("Delete this task?")) return;
-
-      const { error: deleteError } = await db
-        .from("tasks")
-        .delete()
-        .eq("id", task.id);
-
-      if (deleteError) {
-        addMessage("Task error: " + deleteError.message, "bot");
-        return;
-      }
-
-      row.remove();
-      checkAlerts();
-    });
-
-    buttons.appendChild(doneButton);
-    buttons.appendChild(deleteButton);
-    row.appendChild(label);
-    row.appendChild(buttons);
-    box.appendChild(row);
+    const group = task.group_name || (task.source === "google_tasks" ? "Google Tasks" : "Jeeves tasks");
+    if (!groups.has(group)) groups.set(group, []);
+    groups.get(group).push(task);
   });
 
+  groups.forEach(function (tasks, groupName) {
+    const section = document.createElement("section");
+    section.className = "task-group";
+
+    const heading = document.createElement("h3");
+    heading.className = "task-group-heading";
+    heading.textContent = groupName + " (" + tasks.length + ")";
+    section.appendChild(heading);
+
+    tasks.forEach(function (task) {
+      const row = document.createElement("div");
+      row.className = "taskrow";
+
+      const label = document.createElement("span");
+      let text = "• " + task.title;
+      if (task.due_at) text += "\n   due " + new Date(task.due_at).toLocaleString();
+      label.textContent = text + (task.source === "google_tasks" ? "\n   ↳ Google Tasks" : "");
+
+      const buttons = document.createElement("div");
+
+      const doneButton = makeButton("Done", async function () {
+        if (task.google_task_id && task.google_tasklist_id) {
+          const remote = await db.functions.invoke("google-calendar", {
+            body: { action: "completeTask", google_task_id: task.google_task_id, google_tasklist_id: task.google_tasklist_id }
+          });
+          if (remote.error) {
+            addMessage("Could not complete Google Task: " + remote.error.message, "bot");
+            return;
+          }
+        }
+        const { error: updateError } = await db.from("tasks").update({ status: "done" }).eq("id", task.id);
+        if (updateError) {
+          addMessage("Task error: " + updateError.message, "bot");
+          return;
+        }
+        label.className = "done";
+        buttons.remove();
+        if (typeof speak === "function") speak("Completed: " + task.title);
+        checkAlerts();
+      });
+
+      const deleteButton = makeButton("Delete", async function () {
+        if (!confirm("Delete this task?")) return;
+        const { error: deleteError } = await db.from("tasks").delete().eq("id", task.id);
+        if (deleteError) {
+          addMessage("Task error: " + deleteError.message, "bot");
+          return;
+        }
+        row.remove();
+        heading.textContent = groupName + " (" + section.querySelectorAll(".taskrow").length + ")";
+        checkAlerts();
+      });
+
+      buttons.append(doneButton, deleteButton);
+      row.append(label, buttons);
+      section.appendChild(row);
+    });
+
+    box.appendChild(section);
+  });
   scrollChat();
 }
 
