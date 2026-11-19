@@ -225,7 +225,7 @@
       if (item.name === "Gmail") {
         html += '<p>Recent emails. Open a message in Gmail or reply securely from Jeeves.</p><div class="gmail-recent-list" data-gmail-recent-list><p class="calendar-empty">Use Load recent emails above to retrieve your messages.</p></div>';
       } else if (item.name === "Google Drive") {
-        html += '<p>Browse recent Drive files and view file names, types, modified dates and links. Jeeves access remains read-only.</p><button class="integration-action" type="button" data-google-test="Google Drive" hidden>Check Drive connection ↻</button><div class="integration-test-result" data-test-result></div>';
+        html += '<p>Browse recent Drive files and view file names, types, modified dates and links. Jeeves access remains read-only.</p><button class="integration-action" type="button" data-google-test="Google Drive" hidden>Browse recent Drive files ↻</button><div class="integration-test-result" data-test-result></div>';
       } else if (item.name === "Google Calendar") {
         html += '<p>View upcoming events, dates, times and locations. Use Refresh upcoming events to retrieve the latest schedule.</p>';
       } else if (item.name === "Google Tasks") {
@@ -262,10 +262,32 @@
         try {
           const data = await calendarAction("driveFiles");
           const result = target.parentElement.querySelector("[data-test-result]");
-          result.textContent = "Verified: " + (data.files || []).length + " recent Drive files returned.";
-          note("Google Drive connection verified successfully.");
+          result.replaceChildren();
+          const files = data.files || [];
+          if (!files.length) {
+            result.textContent = "No recent Drive files found.";
+          } else {
+            const heading = document.createElement("p");
+            heading.textContent = "Recent Google Drive files";
+            result.appendChild(heading);
+            files.forEach(function (file) {
+              const row = document.createElement("p");
+              row.className = "drive-file-row";
+              const link = document.createElement("a");
+              link.textContent = file.name || "Untitled file";
+              link.href = file.webViewLink || ("https://drive.google.com/open?id=" + encodeURIComponent(file.id));
+              link.target = "_blank";
+              link.rel = "noopener noreferrer";
+              row.appendChild(link);
+              const meta = document.createElement("span");
+              meta.textContent = [file.mimeType || "", file.modifiedTime ? new Date(file.modifiedTime).toLocaleDateString() : ""].filter(Boolean).join(" · ");
+              row.appendChild(meta);
+              result.appendChild(row);
+            });
+          }
+          note("Google Drive loaded " + files.length + " recent files.");
         } catch (error) { note("Google Drive test failed: " + error.message); }
-        finally { target.disabled = false; target.textContent = "Check Drive connection ↻"; }
+        finally { target.disabled = false; target.textContent = "Browse recent Drive files ↻"; }
       });
     });
     const gmailRecentButton = root.querySelector("[data-gmail-action]");
