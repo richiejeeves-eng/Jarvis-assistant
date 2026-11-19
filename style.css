@@ -621,3 +621,14 @@ footer{border-top:0!important}
 .council-drawer-card .council-menu-member:has(input:not(:checked)){background:transparent!important}
 .council-drawer-card .council-menu-member .council-orb{flex:0 0 24px;width:24px;height:24px}
 .council-drawer-card .council-menu-member b{font-size:10px;letter-spacing:1.2px}
+
+
+/* Jeeves voice orb stands alone: remove the square voice-stage panel, keep the orb. */
+.voice-stage{
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+  box-shadow:none!important;
+}
