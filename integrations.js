@@ -289,11 +289,14 @@
             messages.slice(0, 10).forEach(function (message) {
               const row = document.createElement("a");
               row.className = "gmail-recent-row";
-              row.target = "_blank";
-              row.rel = "noopener noreferrer";
               row.href = message.id
                 ? "https://mail.google.com/mail/u/0/#all/" + encodeURIComponent(message.id)
-                : (message.url || message.webLink || "https://mail.google.com/mail/u/0/#all");
+                : "https://mail.google.com/mail/u/0/#all";
+              row.setAttribute("aria-label", "Open email: " + (message.subject || "No subject"));
+              row.addEventListener("click", function (event) {
+                // Keep navigation in the current webview; some Android webviews block target=_blank.
+                event.stopPropagation();
+              });
               const subject = document.createElement("strong");
               subject.textContent = message.subject || "(No subject)";
               const meta = document.createElement("span");
