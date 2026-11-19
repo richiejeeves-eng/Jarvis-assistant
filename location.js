@@ -17,7 +17,7 @@
       const input = document.getElementById("command");
       const question = input.value.trim();
       const locationText = "My current location is latitude " + latitude + ", longitude " + longitude + " (accuracy approximately " + accuracy + " metres).";
-      input.value = question ? question + "\\n\\n" + locationText : locationText + " Please use this location for my next request.";
+      input.value = question ? question + "\n\n" + locationText : locationText + " Please use this location for my next request.";
       if (typeof quickPrompt === "function") quickPrompt(input.value);
       else input.focus();
       if (typeof addNote === "function") addNote("Your location has been added to the message. Review it, then press Send.");
