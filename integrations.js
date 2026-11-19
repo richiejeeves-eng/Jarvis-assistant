@@ -137,7 +137,7 @@
       disconnectCalendar(event.currentTarget);
     });
 
-    if (window.db && db.auth) {
+    if (typeof db !== "undefined" && db.auth) {
       calendarAction("status").then(function (status) {
         const tile = root.querySelector('[data-tile="Google Calendar"]');
         if (!tile || !status) return;
