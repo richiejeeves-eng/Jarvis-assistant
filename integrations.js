@@ -211,7 +211,7 @@
       } else if (item.name === "Google Tasks") {
         html += '<button class="integration-action" type="button" data-google-tasks-connect>Connect & grant Google Tasks access ↗</button><button class="integration-action" type="button" data-google-tasks-sync hidden>Sync Google Tasks ↻</button>';
       } else if (item.name === "Gmail") {
-        html += '<button class="integration-action" type="button" data-google-extend="Gmail">Connect with Google ↗</button><button class="integration-action" type="button" data-gmail-recent hidden>Load recent emails ↻</button>';
+        html += '<button class="integration-action" type="button" data-gmail-action>Connect Gmail & grant access ↗</button>';
       } else if (item.name === "Google Drive") {
         html += '<button class="integration-action" type="button" data-google-extend="Google Drive">Connect with Google ↗</button>';
       } else if (item.name === "Google Calendar") {
@@ -268,10 +268,11 @@
         finally { target.disabled = false; target.textContent = "Check Drive connection ↻"; }
       });
     });
-    const gmailRecentButton = root.querySelector("[data-gmail-recent]");
+    const gmailRecentButton = root.querySelector("[data-gmail-action]");
     if (gmailRecentButton) {
       gmailRecentButton.addEventListener("click", async function () {
         const target = gmailRecentButton;
+        if (target.dataset.connected !== "true") { connectCalendar(target, "Gmail"); return; }
         const list = root.querySelector("[data-gmail-recent-list]");
         target.disabled = true;
         target.textContent = "Loading recent emails…";
@@ -352,12 +353,12 @@
           const badge = tile.querySelector("[data-status]");
           const connect = tile.querySelector("[data-google-extend]");
           const test = tile.querySelector("[data-google-test]");
-          const recent = tile.querySelector("[data-gmail-recent]");
+          const recent = tile.querySelector("[data-gmail-action]");
           badge.textContent = enabled ? "Connected" : (status.connected ? "Permission needed" : "Not connected");
           badge.className = "integration-status " + (enabled ? "ready" : "setup");
           connect.hidden = !!enabled;
           if (test) test.hidden = !enabled;
-          if (recent) recent.hidden = !enabled;
+          if (recent) { recent.hidden = false; recent.dataset.connected = enabled ? "true" : "false"; recent.textContent = enabled ? "Load recent emails ↻" : "Connect Gmail & grant access ↗"; }
         });
         if (status.tasks_enabled) {
             tasksBadge.textContent = "Connected";
