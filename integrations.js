@@ -5,7 +5,7 @@
     { group: "CORE SERVICES", name: "ElevenLabs", detail: "Jeeves voice generation via jeeves-voice", status: "Configured", kind: "ready", icon: "♫" },
     { group: "GOOGLE WORKSPACE", name: "Google Calendar", detail: "Read upcoming events and create approved events", status: "OAuth setup required", kind: "setup", icon: "◷" },
     { group: "GOOGLE WORKSPACE", name: "Google Tasks", detail: "Import Google Tasks into Jeeves and sync completion", status: "Additional permission required", kind: "setup", icon: "✓" },
-    { group: "GOOGLE WORKSPACE", name: "Gmail", detail: "Read recent email metadata and snippets (read-only)", status: "Awaiting authorisation", kind: "setup", icon: "✉" },
+    { group: "GOOGLE WORKSPACE", name: "Gmail", detail: "Read emails and send replies from Jeeves", status: "Awaiting authorisation", kind: "setup", icon: "✉" },
     { group: "GOOGLE WORKSPACE", name: "Google Drive", detail: "List files and metadata (read-only)", status: "Awaiting authorisation", kind: "setup", icon: "▧" },
     { group: "HEALTH & FITNESS", name: "Health Connect", detail: "Sync source for Jeeves Fitness · steps, heart rate, sleep, weight, body fat and blood pressure", status: "Managed in Jeeves Fitness", kind: "ready", icon: "⌁" },
   ];
@@ -223,7 +223,7 @@
       }
       html += '<details class="integration-more"><summary>Additional information</summary><div class="integration-more-content">';
       if (item.name === "Gmail") {
-        html += '<p>Recent emails · read-only. Expand each message to see sender, date and preview.</p><div class="gmail-recent-list" data-gmail-recent-list><p class="calendar-empty">Use Load recent emails above to retrieve your messages.</p></div>';
+        html += '<p>Recent emails. Open a message in Gmail or reply securely from Jeeves.</p><div class="gmail-recent-list" data-gmail-recent-list><p class="calendar-empty">Use Load recent emails above to retrieve your messages.</p></div>';
       } else if (item.name === "Google Drive") {
         html += '<p>Browse recent Drive files and view file names, types, modified dates and links. Jeeves access remains read-only.</p><button class="integration-action" type="button" data-google-test="Google Drive" hidden>Check Drive connection ↻</button><div class="integration-test-result" data-test-result></div>';
       } else if (item.name === "Google Calendar") {
@@ -241,7 +241,7 @@
     root.innerHTML = html;
 
     const style = document.createElement("style");
-    style.textContent = ".calendar-event-list,.gmail-recent-list{margin-top:12px;border-top:1px solid #ffffff16;padding-top:5px}.calendar-event-row,.gmail-recent-row{display:grid;gap:5px;padding:10px 2px;border-bottom:1px solid #ffffff10}.gmail-recent-row{color:inherit;text-decoration:none;cursor:pointer}.gmail-recent-row:hover strong{text-decoration:underline;color:#dfbe7d}.calendar-event-row strong,.gmail-recent-row strong{font:600 12px Georgia,serif;color:#f4f4f6}.calendar-event-row span,.gmail-recent-row span{font-size:10px;color:#dfbe7d}.calendar-event-row small,.calendar-empty,.gmail-recent-row p{font-size:11px;color:#9ca3af;line-height:1.5}.calendar-empty{margin:8px 0}.integration-more{margin-top:14px;border-top:1px solid #ffffff16;padding-top:10px}.integration-more summary{color:#d8bd8a;font-size:12px;cursor:pointer;list-style:none}.integration-more summary::-webkit-details-marker{display:none}.integration-more summary:after{content:'＋';float:right;color:#d8bd8a}.integration-more[open] summary:after{content:'−'}.integration-more-content{padding-top:10px}.integration-more-content>p{font-size:12px;line-height:1.55;color:#aeb2bb;margin:4px 0 12px}";
+    style.textContent = ".calendar-event-list,.gmail-recent-list{margin-top:12px;border-top:1px solid #ffffff16;padding-top:5px}.calendar-event-row,.gmail-recent-row{display:grid;gap:5px;padding:10px 2px;border-bottom:1px solid #ffffff10}.gmail-recent-row{color:inherit;text-decoration:none;cursor:pointer}.gmail-recent-row:hover strong{text-decoration:underline;color:#dfbe7d}.gmail-message-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}.gmail-reply-composer{display:grid;gap:8px;margin-top:10px}.gmail-reply-composer[hidden]{display:none}.gmail-reply-composer textarea{width:100%;box-sizing:border-box;background:#111318;color:#f4f4f6;border:1px solid #ffffff25;border-radius:8px;padding:10px;font:inherit;resize:vertical}.calendar-event-row strong,.gmail-recent-row strong{font:600 12px Georgia,serif;color:#f4f4f6}.calendar-event-row span,.gmail-recent-row span{font-size:10px;color:#dfbe7d}.calendar-event-row small,.calendar-empty,.gmail-recent-row p{font-size:11px;color:#9ca3af;line-height:1.5}.calendar-empty{margin:8px 0}.integration-more{margin-top:14px;border-top:1px solid #ffffff16;padding-top:10px}.integration-more summary{color:#d8bd8a;font-size:12px;cursor:pointer;list-style:none}.integration-more summary::-webkit-details-marker{display:none}.integration-more summary:after{content:'＋';float:right;color:#d8bd8a}.integration-more[open] summary:after{content:'−'}.integration-more-content{padding-top:10px}.integration-more-content>p{font-size:12px;line-height:1.55;color:#aeb2bb;margin:4px 0 12px}";
     if (!document.getElementById("calendar-event-styles")) {
       style.id = "calendar-event-styles";
       document.head.appendChild(style);
@@ -287,30 +287,22 @@
             list.appendChild(empty);
           } else {
             messages.slice(0, 10).forEach(function (message) {
-              const row = document.createElement("a");
-              row.className = "gmail-recent-row";
-              row.href = message.id
-                ? "https://mail.google.com/mail/u/0/#all/" + encodeURIComponent(message.id)
-                : "https://mail.google.com/mail/u/0/#all";
-              row.target = "_blank";
-              row.rel = "noopener noreferrer";
-              row.setAttribute("aria-label", "Open email in Gmail: " + (message.subject || "No subject"));
-              row.addEventListener("click", function (event) {
-                event.stopPropagation();
-                // Explicitly open the external Gmail URL from the user gesture (Android PWA/webview).
-                const gmailUrl = row.href;
-                const opened = window.open(gmailUrl, "_blank");
-                if (!opened) window.location.href = gmailUrl;
-                event.preventDefault();
-              });
-              const subject = document.createElement("strong");
-              subject.textContent = message.subject || "(No subject)";
-              const meta = document.createElement("span");
-              meta.textContent = [message.from || message.sender || "Unknown sender", message.date || ""].filter(Boolean).join(" · ");
-              const preview = document.createElement("p");
-              preview.textContent = message.snippet || message.preview || "No preview available.";
-              row.append(subject, meta, preview);
-              list.appendChild(row);
+              const row = document.createElement("div"); row.className = "gmail-recent-row";
+              const subject = document.createElement("strong"); subject.textContent = message.subject || "(No subject)";
+              const meta = document.createElement("span"); meta.textContent = [message.from || message.sender || "Unknown sender", message.date || ""].filter(Boolean).join(" · ");
+              const preview = document.createElement("p"); preview.textContent = message.snippet || message.preview || "No preview available.";
+              const actions = document.createElement("div"); actions.className = "gmail-message-actions";
+              const open = document.createElement("a"); open.className = "integration-action secondary"; open.textContent = "Open in Gmail ↗"; open.href = "https://mail.google.com/mail/u/0/#all/" + encodeURIComponent(message.id || ""); open.target = "_blank"; open.rel = "noopener noreferrer";
+              const reply = document.createElement("button"); reply.type = "button"; reply.className = "integration-action"; reply.textContent = "Reply";
+              const composer = document.createElement("div"); composer.className = "gmail-reply-composer"; composer.hidden = true;
+              const editor = document.createElement("textarea"); editor.rows = 4; editor.maxLength = 20000; editor.placeholder = "Write your reply…"; editor.setAttribute("aria-label", "Reply to " + (message.from || "sender"));
+              const send = document.createElement("button"); send.type = "button"; send.className = "integration-action"; send.textContent = "Send reply";
+              const cancel = document.createElement("button"); cancel.type = "button"; cancel.className = "integration-action secondary"; cancel.textContent = "Cancel";
+              const feedback = document.createElement("p"); feedback.className = "calendar-empty";
+              reply.addEventListener("click", function () { composer.hidden = !composer.hidden; if (!composer.hidden) editor.focus(); });
+              cancel.addEventListener("click", function () { composer.hidden = true; editor.value = ""; feedback.textContent = ""; });
+              send.addEventListener("click", async function () { if (!editor.value.trim()) { feedback.textContent = "Write a reply first."; return; } send.disabled = true; send.textContent = "Sending…"; feedback.textContent = ""; try { await calendarAction("gmailReply", { message_id: message.id, body: editor.value }); feedback.textContent = "Reply sent."; editor.value = ""; composer.hidden = true; note("Gmail reply sent successfully."); } catch (error) { feedback.textContent = "Reply not sent: " + error.message; note("Gmail reply failed: " + error.message); } finally { send.disabled = false; send.textContent = "Send reply"; } });
+              actions.append(open, reply); composer.append(editor, send, cancel, feedback); row.append(subject, meta, preview, actions, composer); list.appendChild(row);
             });
           }
           note("Gmail returned " + messages.length + " recent messages.");
