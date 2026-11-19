@@ -175,6 +175,26 @@
     }
   }
 
+  function updateEcosystem(status) {
+    const set = function (name, label, connected) {
+      const item = document.querySelector('[data-eco="' + name + '"]');
+      if (!item) return;
+      const state = item.querySelector("i");
+      if (state) state.textContent = label;
+      item.classList.toggle("eco-connected", !!connected);
+      item.classList.toggle("eco-pending", !connected);
+    };
+    set("Google Calendar", status?.connected ? "Connected" : "Not connected", !!status?.connected);
+    set("Google Tasks", status?.tasks_enabled ? "Connected" : (status?.connected ? "Permission needed" : "Not connected"), !!status?.tasks_enabled);
+    const summary = document.getElementById("eco-summary");
+    if (summary) {
+      const count = 3 + (status?.connected ? 1 : 0) + (status?.tasks_enabled ? 1 : 0);
+      summary.textContent = count + " / 5 ACTIVE";
+    }
+    const updated = document.getElementById("eco-updated");
+    if (updated) updated.textContent = status ? "Live connection status · just checked." : "Sign in to verify Google connections.";
+  }
+
   function render() {
     const root = document.getElementById("integrations-manager");
     if (!root) return;
@@ -230,6 +250,7 @@
 
     if (typeof db !== "undefined" && db.auth) {
       calendarAction("status").then(function (status) {
+        updateEcosystem(status);
         const tile = root.querySelector('[data-tile="Google Calendar"]');
         if (!tile || !status) return;
         const badge = tile.querySelector("[data-status]");
@@ -264,6 +285,7 @@
           actions.hidden = true;
         }
       }).catch(function (error) {
+        updateEcosystem(null);
         const tile = root.querySelector('[data-tile="Google Calendar"]');
         if (tile) tile.querySelector("[data-status]").textContent = error.message.includes("sign in") ? "Sign in required" : "Setup required";
       });
