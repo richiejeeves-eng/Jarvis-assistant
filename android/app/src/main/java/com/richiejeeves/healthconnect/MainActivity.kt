@@ -48,6 +48,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var emailInput: EditText
     private lateinit var passwordInput: EditText
     private lateinit var status: TextView
+    private lateinit var firebaseStatus: TextView
     private lateinit var permissionLauncher: ActivityResultLauncher<Set<String>>
     private var healthClient: HealthConnectClient? = null
     private val requestedPermissions by lazy {
@@ -94,7 +95,12 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun registerFirebaseDevice() {
-        if (prefs.getString("refresh_token", null) == null) return
+        if (!::firebaseStatus.isInitialized) return
+        if (prefs.getString("refresh_token", null) == null) {
+            firebaseStatus.text = "Firebase: sign in to register this device."
+            return
+        }
+        firebaseStatus.text = "Firebase: requesting device token…"
         FirebaseMessaging.getInstance().isAutoInitEnabled = true
         FirebaseMessaging.getInstance().token
             .addOnSuccessListener { fcmToken ->
@@ -112,14 +118,14 @@ class MainActivity : ComponentActivity() {
                         withContext(Dispatchers.IO) {
                             restRequest("POST", "$supabaseUrl/rest/v1/health_device_tokens?on_conflict=token", payload, access)
                         }
-                        status.text = "Jeeves Health connected. Firebase device registered."
+                        firebaseStatus.text = "Firebase: device registered successfully."
                     } catch (e: Exception) {
-                        status.text = "Firebase registration failed: ${e.message ?: "Unknown error"}"
+                        firebaseStatus.text = "Firebase registration failed: ${e.message ?: "Unknown error"}"
                     }
                 }
             }
             .addOnFailureListener { error ->
-                status.text = "Firebase token error: ${error.message ?: "Google services unavailable"}"
+                firebaseStatus.text = "Firebase token error: ${error.message ?: "Google services unavailable"}"
             }
     }
 
@@ -190,9 +196,12 @@ class MainActivity : ComponentActivity() {
         content.addView(actionButton("Sign out") {
             prefs.edit().clear().apply()
             status.text = "Signed out. Your Health Connect permissions remain under your control."
+            firebaseStatus.text = "Firebase: sign in to register this device."
         })
         status = label("Checking Health Connect…", 14f, Color.rgb(205, 205, 205))
         content.addView(status)
+        firebaseStatus = label("Firebase: checking device registration…", 14f, Color.rgb(205, 205, 205))
+        content.addView(firebaseStatus)
         content.addView(label("Data requested: steps, heart rate, sleep, weight, body fat and blood pressure. Read-only access. Up to 30 days per sync.", 13f, Color.GRAY))
         scroll.addView(content)
         root.addView(scroll)
