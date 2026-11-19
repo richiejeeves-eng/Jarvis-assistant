@@ -63,14 +63,42 @@
       if (refreshButton) refreshButton.disabled = false;
     }
   }
+  async function openAccountView(kind) {
+    const title = $("account-detail-title"), subtitle = $("account-detail-subtitle"), host = $("account-detail-content");
+    if (!host) return;
+    const labels = { open:["Open tasks","All currently pending tasks"], overdue:["Overdue tasks","Pending tasks past their due date"], today:["Due today","Pending tasks due today"], memories:["Saved memories","Your saved memory entries"] };
+    const info = labels[kind] || labels.open;
+    if(title) title.textContent=info[0];
+    if(subtitle) subtitle.textContent=info[1];
+    host.textContent="Loading your account data…";
+    try {
+      const {data:sessionData,error:sessionError}=await db.auth.getSession();
+      if(sessionError) throw sessionError;
+      if(!sessionData.session){host.textContent="Sign in to view this private account data.";return;}
+      if(kind==="memories"){
+        const {data,error}=await db.from("memories").select("id,content,category,created_at").order("created_at",{ascending:false}).limit(100);
+        if(error) throw error;
+        host.replaceChildren();
+        if(!data?.length){host.textContent="No saved memories yet.";return;}
+        data.forEach(item=>{const card=document.createElement("article");card.className="priority-card";const tag=document.createElement("span");tag.className="tag";tag.textContent=item.category||"uncategorised";const body=document.createElement("p");body.textContent=item.content||"";card.append(tag,body);host.appendChild(card);});
+        return;
+      }
+      const {data,error}=await db.from("tasks").select("id,title,due_at,source,group_name").eq("status","pending").order("due_at",{ascending:true,nullsFirst:false}).limit(200);
+      if(error) throw error;
+      const now=new Date(),start=new Date(now);start.setHours(0,0,0,0);const end=new Date(start);end.setDate(end.getDate()+1);
+      const tasks=(data||[]).filter(task=>{if(kind==="overdue")return !!task.due_at&&new Date(task.due_at)<now;if(kind==="today")return !!task.due_at&&new Date(task.due_at)>=start&&new Date(task.due_at)<end;return true;});
+      host.replaceChildren();
+      if(!tasks.length){host.textContent=kind==="overdue"?"No overdue tasks.":kind==="today"?"No tasks due today.":"No open tasks.";return;}
+      tasks.forEach(task=>{const row=document.createElement("article");row.className="executive-task-row";const name=document.createElement("strong");name.textContent=task.title||"Untitled task";const due=document.createElement("span");due.textContent=dateText(task.due_at);if(task.due_at&&new Date(task.due_at)<now)due.className="is-overdue";row.append(name,due);host.appendChild(row);});
+    } catch(error) { host.textContent="Could not load account data: "+(error.message||"Unknown error"); }
+  }
   document.addEventListener("DOMContentLoaded", () => {
     $("executive-refresh")?.addEventListener("click", refresh);
     $("executive-view-tasks")?.addEventListener("click", () => { if (typeof showTasks === "function") showTasks("open"); });
     document.querySelectorAll("[data-metric-action]").forEach((card) => {
       const activate = () => {
         const action = card.dataset.metricAction;
-        if (action === "memories") { if (typeof showMemories === "function") showMemories(); }
-        else if (typeof showTasks === "function") showTasks(action);
+        if (typeof switchTab === "function") switchTab("account-" + action);
       };
       card.addEventListener("click", activate);
       card.addEventListener("keydown", (event) => {
@@ -82,5 +110,6 @@
       if (["SIGNED_IN","SIGNED_OUT","TOKEN_REFRESHED","INITIAL_SESSION"].includes(event)) setTimeout(refresh, 100);
     });
   });
+  window.openJeevesAccountView = openAccountView;
   window.refreshJeevesExecutiveBrief = refresh;
 })();
