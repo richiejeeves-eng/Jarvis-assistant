@@ -193,3 +193,8 @@
 .workspace .composer-foot{text-align:center;justify-content:center;}
 /* Page headers retain their icon without a text title */
 .workspace-head h2,.section-heading h2,.executive-live-head h2{justify-content:center;text-align:center;}
+
+
+/* Centre icon-only page headers consistently */
+.workspace-head h2,.section-heading h2,.executive-live-head h2{width:100%;display:flex;align-items:center;justify-content:center;text-align:center;margin-left:auto;margin-right:auto;}
+.page-heading-icon{display:block;margin:0 auto;}
