@@ -284,14 +284,14 @@
             list.appendChild(empty);
           } else {
             messages.slice(0, 10).forEach(function (message) {
-              const row = document.createElement("article");
+              const row = document.createElement("details");
               row.className = "gmail-recent-row";
-              const subject = document.createElement("strong");
+              const subject = document.createElement("summary");
               subject.textContent = message.subject || "(No subject)";
               const meta = document.createElement("span");
               meta.textContent = [message.from || message.sender || "Unknown sender", message.date || ""].filter(Boolean).join(" · ");
               const preview = document.createElement("p");
-              preview.textContent = message.snippet || message.preview || "";
+              preview.textContent = message.snippet || message.preview || "No preview available.";
               row.append(subject, meta, preview);
               list.appendChild(row);
             });
