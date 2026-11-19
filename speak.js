@@ -128,6 +128,11 @@ async function speakNow(text, speaker) {
   return speakWithBrowser(text, speaker);
 }
 
+window.jeevesStopSpeaking = function () {
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+  if (currentAudio) { currentAudio.pause(); currentAudio.currentTime = 0; currentAudio = null; }
+};
+
 function speak(text, speaker) {
   if (!speakOn || !text) return Promise.resolve();
   return speakNow(text, speaker || "jeeves");
