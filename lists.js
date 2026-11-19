@@ -1,11 +1,21 @@
+window.jeevesListCache = window.jeevesListCache || {};
+async function getListRows(key, query, force) {
+  const cached = window.jeevesListCache[key];
+  if (!force && cached && Date.now() - cached.time < 30000) return { data: cached.data, error: null };
+  const result = await query();
+  if (!result.error) window.jeevesListCache[key] = { data: result.data || [], time: Date.now() };
+  return result;
+}
+function invalidateListCache(key) { if (window.jeevesListCache) delete window.jeevesListCache[key]; }
+
 async function showMemories() {
   if (!(await requireSession())) return;
 
-  const { data, error } = await db
+  const { data, error } = await getListRows("memories", () => db
     .from("memories")
     .select("id, content, category, created_at")
     .order("created_at", { ascending: false })
-    .limit(100);
+    .limit(100));
 
   if (error) {
     addMessage("Memory error: " + error.message, "bot");
@@ -57,6 +67,7 @@ async function showMemories() {
       addNote("Could not add memory: " + insertError.message);
       return;
     }
+    invalidateListCache("memories");
     addNote("Memory added.");
     await showMemories();
   });
@@ -132,6 +143,7 @@ async function showMemories() {
           addNote("Could not update memory: " + updateError.message);
           return;
         }
+        invalidateListCache("memories");
         item.content = revised.trim().slice(0, 2000);
         item.category = revisedCategory.trim().slice(0, 60) || "personal";
         addNote("Memory updated.");
@@ -145,6 +157,7 @@ async function showMemories() {
           addNote("Could not delete memory: " + deleteError.message);
           return;
         }
+        invalidateListCache("memories");
         const index = data.findIndex(function (memory) { return memory.id === item.id; });
         if (index !== -1) data.splice(index, 1);
         addNote("Memory deleted.");
@@ -166,12 +179,12 @@ async function showMemories() {
 async function showTasks(filter = "open") {
   if (!(await requireSession())) return;
 
-  const { data, error } = await db
+  const { data, error } = await getListRows("tasks", () => db
     .from("tasks")
     .select("id, title, due_at, source, google_task_id, google_tasklist_id, group_name")
     .eq("status", "pending")
     .order("due_at", { ascending: true, nullsFirst: false })
-    .limit(200);
+    .limit(200));
 
   if (error) {
     addMessage("Task error: " + error.message, "bot");
@@ -236,6 +249,7 @@ async function showTasks(filter = "open") {
           }
         }
         const { error: updateError } = await db.from("tasks").update({ status: "done" }).eq("id", task.id);
+        invalidateListCache("tasks");
         if (updateError) {
           addMessage("Task error: " + updateError.message, "bot");
           return;
@@ -248,11 +262,20 @@ async function showTasks(filter = "open") {
 
       const deleteButton = makeButton("Delete", async function () {
         if (!confirm("Delete this task?")) return;
-        const { error: deleteError } = await db.from("tasks").delete().eq("id", task.id);
-        if (deleteError) {
-          addMessage("Task error: " + deleteError.message, "bot");
-          return;
+        if (task.source === "google_tasks") {
+          const remote = await db.functions.invoke("google-calendar", { body: { action: "deleteTask", task_id: task.id } });
+          if (remote.error || remote.data?.error) {
+            addMessage("Google Task delete failed: " + (remote.data?.error || remote.error.message), "bot");
+            return;
+          }
+        } else {
+          const { error: deleteError } = await db.from("tasks").delete().eq("id", task.id);
+          if (deleteError) {
+            addMessage("Task error: " + deleteError.message, "bot");
+            return;
+          }
         }
+        invalidateListCache("tasks");
         row.remove();
         heading.textContent = groupName + " (" + section.querySelectorAll(".taskrow").length + ")";
         checkAlerts();
