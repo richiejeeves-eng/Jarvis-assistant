@@ -19,6 +19,9 @@ import androidx.health.connect.client.time.TimeRangeFilter
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -38,6 +41,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var status: TextView
     private lateinit var permissionLauncher: ActivityResultLauncher<Set<String>>
     private var healthClient: HealthConnectClient? = null
+    private var syncRequestJob: Job? = null
     private val requestedPermissions by lazy {
         setOf(
             HealthPermission.getReadPermission(StepsRecord::class),
@@ -73,6 +77,81 @@ class MainActivity : ComponentActivity() {
         } else {
             status.text = "Health Connect is not available. Install or update Health Connect, then reopen Jeeves Health."
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        startSyncRequestListener()
+    }
+
+    override fun onPause() {
+        syncRequestJob?.cancel()
+        syncRequestJob = null
+        super.onPause()
+    }
+
+    private fun startSyncRequestListener() {
+        syncRequestJob?.cancel()
+        syncRequestJob = lifecycleScope.launch {
+            while (isActive) {
+                try {
+                    if (prefs.getString("refresh_token", null) != null && healthClient != null) {
+                        val token = validAccessToken()
+                        val pending = withContext(Dispatchers.IO) {
+                            JSONArray(restRequest(
+                                "GET",
+                                "$supabaseUrl/rest/v1/health_sync_requests?select=id&status=eq.queued&order=requested_at.asc&limit=1",
+                                null,
+                                token
+                            ))
+                        }
+                        if (pending.length() > 0) {
+                            val requestId = pending.getJSONObject(0).getString("id")
+                            val requestUrl = "$supabaseUrl/rest/v1/health_sync_requests?id=eq.$requestId"
+                            withContext(Dispatchers.IO) {
+                                restRequest("PATCH", requestUrl,
+                                    JSONObject().put("status", "processing").put("started_at", Instant.now().toString()), token)
+                            }
+                            status.text = "Jeeves requested a health sync. Reading Health Connect…"
+                            val succeeded = performSync()
+                            val completion = JSONObject()
+                                .put("status", if (succeeded) "completed" else "failed")
+                                .put("completed_at", Instant.now().toString())
+                            if (!succeeded) completion.put("error", "Health Connect sync failed. Check Jeeves Health for details.")
+                            withContext(Dispatchers.IO) {
+                                restRequest("PATCH", requestUrl, completion, token)
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    if (isActive && e !is kotlinx.coroutines.CancellationException) {
+                        status.text = "Waiting for Jeeves sync request…"
+                    }
+                }
+                delay(15000)
+            }
+        }
+    }
+
+    private fun restRequest(method: String, url: String, body: JSONObject?, bearer: String): String {
+        val connection = (URL(url).openConnection() as HttpURLConnection).apply {
+            requestMethod = method
+            connectTimeout = 15000
+            readTimeout = 20000
+            setRequestProperty("apikey", publishableKey)
+            setRequestProperty("Authorization", "Bearer $bearer")
+            setRequestProperty("Content-Type", "application/json")
+            setRequestProperty("Prefer", "return=minimal")
+            if (body != null) doOutput = true
+        }
+        if (body != null) connection.outputStream.use {
+            it.write(body.toString().toByteArray(Charsets.UTF_8))
+        }
+        val code = connection.responseCode
+        val stream = if (code in 200..299) connection.inputStream else connection.errorStream
+        val response = stream?.bufferedReader()?.use { it.readText() } ?: ""
+        if (code !in 200..299) throw IllegalStateException("HTTP $code: $response")
+        return response
     }
 
     private fun buildScreen() {
@@ -180,19 +259,22 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun syncNow() {
+        lifecycleScope.launch { performSync() }
+    }
+
+    private suspend fun performSync(): Boolean {
         if (healthClient == null) {
             status.text = "Health Connect is unavailable."
-            return
+            return false
         }
         status.text = "Reading approved records…"
-        lifecycleScope.launch {
-            try {
-                val token = validAccessToken()
-                val records = readHealthRecords()
-                if (records.length() == 0) {
-                    status.text = "No records found in the approved categories for the last 30 days."
-                    return@launch
-                }
+        return try {
+            val token = validAccessToken()
+            val records = readHealthRecords()
+            if (records.length() == 0) {
+                status.text = "No records found in the approved categories for the last 30 days."
+                true
+            } else {
                 val batchSize = 100
                 val totalBatches = (records.length() + batchSize - 1) / batchSize
                 var syncedTotal = 0
@@ -201,9 +283,7 @@ class MainActivity : ComponentActivity() {
                     batchNumber++
                     val batch = JSONArray()
                     val end = minOf(start + batchSize, records.length())
-                    for (index in start until end) {
-                        batch.put(records.getJSONObject(index))
-                    }
+                    for (index in start until end) batch.put(records.getJSONObject(index))
                     status.text = "Uploading health data: batch $batchNumber of $totalBatches…"
                     val result = withContext(Dispatchers.IO) {
                         postJson("$supabaseUrl/functions/v1/health-sync",
@@ -212,9 +292,11 @@ class MainActivity : ComponentActivity() {
                     syncedTotal += result.optInt("synced")
                 }
                 status.text = "Sync complete: $syncedTotal records sent to Jeeves."
-            } catch (e: Exception) {
-                status.text = "Sync failed: ${e.message ?: "Please try again."}"
+                true
             }
+        } catch (e: Exception) {
+            status.text = "Sync failed: ${e.message ?: "Please try again."}"
+            false
         }
     }
 
