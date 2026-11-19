@@ -423,7 +423,9 @@ async function send() {
   button.disabled = true;
   document.getElementById("newchatbtn").disabled = true;
   document.getElementById("conversationSelect").disabled = true;
-  const thinking = addMessage("Jeeves is consulting Mind, Body and Soul…", "bot");
+  const activeAdvisers = Array.from(document.querySelectorAll(".council-toggle:checked")).map(function (el) { return el.dataset.adviser; });
+  const adviserNames = activeAdvisers.map(function (name) { return name.toUpperCase(); });
+  const thinking = addMessage(activeAdvisers.length ? "Jeeves is consulting " + adviserNames.join(", ") + "…" : "Jeeves is preparing your response…", "bot");
 
   try {
     if (!activeConversationId) await createConversation(message);
@@ -435,6 +437,7 @@ async function send() {
       body: {
         message: message,
         mode: window.jeevesModeLevel || 3,
+        active_advisers: activeAdvisers,
         history: modelHistory,
         now: new Date().toString(),
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
