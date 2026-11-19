@@ -439,3 +439,16 @@
 #conversationbar #deleteConversationBtn:disabled{opacity:.38;cursor:not-allowed}
 #conversationbar #deleteConversationBtn:not(:disabled):active{background:#482522}
 @media(max-width:390px){#conversationbar{gap:5px}#conversationbar #deleteConversationBtn{padding:10px 8px;font-size:9px}}
+
+
+/* Discreet edge tabs advertise the two slide-out drawers. */
+.drawer-edge-tab{position:fixed;top:50%;z-index:52;display:flex;align-items:center;justify-content:center;width:17px;height:58px;padding:0;border:1px solid rgba(214,184,118,.48);background:linear-gradient(180deg,rgba(39,34,25,.96),rgba(17,20,27,.97));color:#e4c584;box-shadow:0 3px 14px #0008;transform:translateY(-50%);cursor:pointer;transition:width .18s,background .18s,border-color .18s;}
+.drawer-edge-tab span{font-size:19px;line-height:1;font-weight:400}
+.drawer-edge-tab:hover{width:23px;background:#33291d;border-color:#dfbe7d}
+.drawer-edge-tab-left{left:0;border-left:0;border-radius:0 9px 9px 0}
+.drawer-edge-tab-right{right:0;border-right:0;border-radius:9px 0 0 9px}
+.drawer-edge-tab-left.is-open span{transform:rotate(180deg)}
+.drawer-edge-tab-right.is-open span{transform:rotate(180deg)}
+body.left-drawer-collapsed .left-sidebar{transform:translateX(-105%)}
+body.left-drawer-collapsed .main-area{margin-left:0}
+@media(max-width:800px){.drawer-edge-tab{width:15px;height:50px;z-index:49;opacity:.92}.drawer-edge-tab-left{top:58%;}.drawer-edge-tab-right{top:58%;}.drawer-edge-tab-left.is-open{z-index:53;left:min(300px,86vw)}body.left-drawer-collapsed .left-sidebar{transform:translateX(-105%)}body.left-drawer-collapsed .main-area{margin-left:0}}
