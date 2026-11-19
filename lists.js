@@ -72,7 +72,22 @@ async function showMemories() {
     await showMemories();
   });
 
-  toolbar.append(search, category, addButton);
+  const clearButton = makeButton("Clear all", async function () {
+    if (!(data || []).length) return;
+    if (!window.confirm("Permanently delete ALL saved memories? This cannot be undone.")) return;
+    const { error: clearError } = await db.from("memories").delete().not("id", "is", null);
+    if (clearError) {
+      addNote("Could not clear memories: " + clearError.message);
+      return;
+    }
+    invalidateListCache("memories");
+    data.splice(0, data.length);
+    addNote("All saved memories deleted.");
+    render();
+  });
+  clearButton.classList.add("memory-clear-all");
+
+  toolbar.append(search, category, addButton, clearButton);
   box.appendChild(toolbar);
 
   const count = document.createElement("p");
