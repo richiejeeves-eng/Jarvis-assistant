@@ -53,6 +53,9 @@ class HealthSyncWorker(context: Context, params: WorkerParameters) : CoroutineWo
                     HealthPermission.getReadPermission(BloodPressureRecord::class)
                 )
                 if (required.none { it in granted }) throw IllegalStateException("Health Connect permissions are not granted.")
+                if (PERMISSION_READ_HEALTH_DATA_IN_BACKGROUND !in granted) {
+                    throw IllegalStateException("Enable Health Connect background access in Jeeves Health > Connect Health Connect.")
+                }
                 val records = readRecords(client, granted)
                 var synced = 0
                 for (start in 0 until records.length() step 100) {
