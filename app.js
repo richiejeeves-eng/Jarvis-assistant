@@ -423,7 +423,7 @@ async function send() {
   button.disabled = true;
   document.getElementById("newchatbtn").disabled = true;
   document.getElementById("conversationSelect").disabled = true;
-  const thinking = addMessage("JARVIS is thinking...", "bot");
+  const thinking = addMessage("Jeeves is consulting Mind, Body and Soul…", "bot");
 
   try {
     if (!activeConversationId) await createConversation(message);
