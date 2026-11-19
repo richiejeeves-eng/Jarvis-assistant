@@ -502,7 +502,7 @@ async function send() {
 
   input.value = "";
   input.dispatchEvent(new Event("input", { bubbles: true }));
-  addMessage(message, "user");
+  const userBubble = addMessage(message, "user");
   sendingMessage = true;
   document.getElementById("newchatbtn").disabled = true;
   document.getElementById("conversationSelect").disabled = true;
@@ -518,7 +518,6 @@ async function send() {
 
   try {
     if (!activeConversationId) await createConversation(message);
-    const userBubble = document.querySelector("#chat .msg.user:last-of-type");
     saveConversationMessage("user", message).then(id => { if (userBubble) userBubble.dataset.messageId = id; }).catch(error => console.warn("User message save failed:", error));
     history.push({ role: "user", text: message });
     const modelHistory = history.slice(-11, -1).slice(-10);
