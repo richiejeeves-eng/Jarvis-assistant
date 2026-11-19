@@ -22,10 +22,10 @@
 <section id="executive-live" class="executive-live" aria-live="polite">
   <div class="executive-live-head"><div><div class="eyebrow">LIVE ACCOUNT DATA</div><h2>Your operating picture</h2><p id="executive-updated">Sign in to load your private data.</p></div><button type="button" id="executive-refresh" class="text-btn">Refresh ↻</button></div>
   <div class="executive-metrics">
-    <article><span>OPEN TASKS</span><strong id="metric-open">—</strong></article>
-    <article><span>OVERDUE</span><strong id="metric-overdue">—</strong></article>
-    <article><span>DUE TODAY</span><strong id="metric-today">—</strong></article>
-    <article><span>SAVED MEMORIES</span><strong id="metric-memories">—</strong></article>
+    <article class="executive-metric-link" role="button" tabindex="0" data-metric-action="open" aria-label="Open open tasks"><span>OPEN TASKS</span><strong id="metric-open">—</strong></article>
+    <article class="executive-metric-link" role="button" tabindex="0" data-metric-action="overdue" aria-label="View overdue tasks"><span>OVERDUE</span><strong id="metric-overdue">—</strong></article>
+    <article class="executive-metric-link" role="button" tabindex="0" data-metric-action="today" aria-label="View tasks due today"><span>DUE TODAY</span><strong id="metric-today">—</strong></article>
+    <article class="executive-metric-link" role="button" tabindex="0" data-metric-action="memories" aria-label="Open saved memories"><span>SAVED MEMORIES</span><strong id="metric-memories">—</strong></article>
   </div>
   <div class="executive-task-panel"><div class="executive-task-heading"><h3>Next actions</h3><button type="button" id="executive-view-tasks">Manage tasks ↗</button></div><div id="executive-task-list"><p>Waiting for account data…</p></div></div>
 </section>
