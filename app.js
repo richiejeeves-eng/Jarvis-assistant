@@ -127,6 +127,7 @@ function newChat() {
   activeConversationId = null;
   history = [];
   document.getElementById("conversationSelect").value = "";
+  renderChatLog();
   document.getElementById("chat").textContent = "";
 }
 
@@ -281,53 +282,72 @@ async function requireSession() {
   return true;
 }
 
+function renderChatLog() {
+  const list = document.getElementById("chat-log-list");
+  const picker = document.getElementById("conversationSelect");
+  const deleteButton = document.getElementById("chat-log-delete");
+  if (!list || !picker) return;
+  list.textContent = "";
+  const options = Array.from(picker.options).filter(option => option.value && option.value !== "__new__");
+  if (!options.length) {
+    const empty = document.createElement("p");
+    empty.className = "chat-log-empty";
+    empty.textContent = picker.disabled ? "Sign in to load chats" : "No saved chats yet";
+    list.appendChild(empty);
+  }
+  options.forEach(function(option) {
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = "chat-log-item" + (picker.value === option.value ? " active" : "");
+    item.textContent = option.textContent || "Untitled chat";
+    item.title = item.textContent;
+    item.onclick = function() {
+      picker.value = option.value;
+      picker.dispatchEvent(new Event("change", { bubbles: true }));
+    };
+    list.appendChild(item);
+  });
+  if (deleteButton) deleteButton.disabled = !picker.value || picker.value === "__new__";
+}
+
 async function refreshConversationList(selectedId, openSelected) {
   const picker = document.getElementById("conversationSelect");
   const { data: sessionData } = await db.auth.getSession();
   if (!sessionData.session) {
     picker.innerHTML = '<option value="">Sign in to load conversations</option>';
     picker.disabled = true;
+    renderChatLog();
     return;
   }
-
-  const { data, error } = await db
-    .from("conversations")
+  const { data, error } = await db.from("conversations")
     .select("id, title, updated_at")
     .order("updated_at", { ascending: false })
-    .limit(40);
-
+    .limit(100);
   if (error) {
     addNote("Could not load conversation history: " + error.message);
     return;
   }
-
   picker.innerHTML = "";
   const newOption = document.createElement("option");
   newOption.value = "__new__";
   newOption.textContent = "＋ New chat";
   picker.appendChild(newOption);
-
-  const placeholder = document.createElement("option");
-  placeholder.value = "";
-  placeholder.textContent = "Choose a previous conversation";
-  picker.appendChild(placeholder);
-
-  (data || []).forEach(function (conversation) {
+  (data || []).forEach(function(conversation) {
     const option = document.createElement("option");
     option.value = conversation.id;
-    option.textContent = conversation.title;
+    option.textContent = conversation.title || "Untitled chat";
     picker.appendChild(option);
   });
-
   picker.disabled = sendingMessage;
   picker.value = selectedId || "";
+  renderChatLog();
   if (openSelected && selectedId) await openConversation(selectedId);
 }
 
 async function deleteConversation() {
   const picker = document.getElementById("conversationSelect");
   const id = picker.value;
-  if (!id || sendingMessage || conversationBusy) return;
+  if (!id || id === "__new__" || sendingMessage || conversationBusy) return;
   const title = picker.options[picker.selectedIndex]?.textContent || "this conversation";
   if (!window.confirm('Permanently delete "' + title + '" and all its messages? This cannot be undone.')) return;
   const button = document.getElementById("deleteConversationBtn");
@@ -344,6 +364,7 @@ async function deleteConversation() {
       document.getElementById("chat").textContent = "";
     }
     await refreshConversationList(null, false);
+    renderChatLog();
     addNote("Conversation deleted.");
   } catch (error) {
     addNote("Could not delete conversation: " + error.message);
@@ -590,6 +611,7 @@ document.getElementById("conversationSelect").addEventListener("change", functio
     return;
   }
   if (deleteButton) deleteButton.disabled = !selected || sendingMessage || conversationBusy;
+  renderChatLog();
   if (selected) openConversation(selected);
 });
 
@@ -614,6 +636,7 @@ db.auth.onAuthStateChange(function (event, session) {
     document.getElementById("chat").textContent = "";
     document.getElementById("conversationSelect").innerHTML = '<option value="">Sign in to load conversations</option>';
     document.getElementById("conversationSelect").disabled = true;
+    renderChatLog();
     addMessage("Signed out. Sign in to access your saved conversations.", "bot");
   }
 });
