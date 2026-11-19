@@ -269,3 +269,40 @@
   white-space:nowrap!important;
   border-radius:7px!important;
 }
+
+
+/* Centre the Live Account Data heading, icon and status as one group. */
+.executive-live-head{
+  position:relative!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:center!important;
+  justify-content:center!important;
+  text-align:center!important;
+  gap:10px!important;
+}
+.executive-live-head>div:first-child{
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:100%!important;
+  min-width:0!important;
+  text-align:center!important;
+}
+.executive-live-head .eyebrow,
+.executive-live-head h2,
+.executive-live-head p{
+  width:100%!important;
+  text-align:center!important;
+  margin-left:auto!important;
+  margin-right:auto!important;
+}
+.executive-live-head h2{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+}
+.executive-live-head>#executive-refresh{
+  align-self:center!important;
+}
