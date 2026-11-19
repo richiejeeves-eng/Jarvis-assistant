@@ -188,8 +188,8 @@
     set("Google Tasks", status?.tasks_enabled ? "Connected" : (status?.connected ? "Permission needed" : "Not connected"), !!status?.tasks_enabled);
     const summary = document.getElementById("eco-summary");
     if (summary) {
-      const count = 3 + (status?.connected ? 1 : 0) + (status?.tasks_enabled ? 1 : 0);
-      summary.textContent = count + " / 5 ACTIVE";
+      const count = 1 + (status?.connected ? 1 : 0) + (status?.tasks_enabled ? 1 : 0);
+      summary.textContent = count + " / 3 ACTIVE";
     }
     const updated = document.getElementById("eco-updated");
     if (updated) updated.textContent = status ? "Live connection status · just checked." : "Sign in to verify Google connections.";
