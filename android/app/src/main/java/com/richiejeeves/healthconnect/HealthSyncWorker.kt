@@ -36,42 +36,74 @@ class HealthSyncWorker(context: Context, params: WorkerParameters) : CoroutineWo
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         try {
             val token = validToken()
-            val queue = JSONArray(request("GET", "$base/rest/v1/health_sync_requests?select=id&status=eq.queued&order=requested_at.asc&limit=1", null, token))
-            if (queue.length() == 0) return@withContext Result.success()
-            val id = queue.getJSONObject(0).getString("id")
-            val itemUrl = "$base/rest/v1/health_sync_requests?id=eq.$id"
-            request("PATCH", itemUrl, JSONObject().put("status", "processing").put("started_at", Instant.now().toString()), token)
+            // Recover requests abandoned by a process death or force-stop.
+            val staleBefore = Instant.now().minus(10, ChronoUnit.MINUTES).toString()
+            request(
+                "PATCH",
+                "$base/rest/v1/health_sync_requests?status=eq.processing&started_at=lt.$staleBefore",
+                JSONObject().put("status", "queued").put("started_at", JSONObject.NULL).put("error", JSONObject.NULL),
+                token
+            )
 
-            try {
-                val client = HealthConnectClient.getOrCreate(applicationContext)
-                val granted = client.permissionController.getGrantedPermissions()
-                val required = listOf(
-                    HealthPermission.getReadPermission(StepsRecord::class),
-                    HealthPermission.getReadPermission(HeartRateRecord::class),
-                    HealthPermission.getReadPermission(SleepSessionRecord::class),
-                    HealthPermission.getReadPermission(WeightRecord::class),
-                    HealthPermission.getReadPermission(BodyFatRecord::class),
-                    HealthPermission.getReadPermission(BloodPressureRecord::class)
+            var processed = 0
+            while (processed < 10) {
+                val queue = JSONArray(request(
+                    "GET",
+                    "$base/rest/v1/health_sync_requests?select=id&status=eq.queued&order=requested_at.asc&limit=1",
+                    null,
+                    token
+                ))
+                if (queue.length() == 0) break
+
+                val id = queue.getJSONObject(0).getString("id")
+                val itemUrl = "$base/rest/v1/health_sync_requests?id=eq.$id"
+                request(
+                    "PATCH",
+                    itemUrl,
+                    JSONObject().put("status", "processing").put("started_at", Instant.now().toString()).put("error", JSONObject.NULL),
+                    token
                 )
-                if (required.none { it in granted }) throw IllegalStateException("Health Connect permissions are not granted.")
-                if (PERMISSION_READ_HEALTH_DATA_IN_BACKGROUND !in granted) {
-                    throw IllegalStateException("Enable Health Connect background access in Jeeves Health > Connect Health Connect.")
+
+                try {
+                    val client = HealthConnectClient.getOrCreate(applicationContext)
+                    val granted = client.permissionController.getGrantedPermissions()
+                    val required = listOf(
+                        HealthPermission.getReadPermission(StepsRecord::class),
+                        HealthPermission.getReadPermission(HeartRateRecord::class),
+                        HealthPermission.getReadPermission(SleepSessionRecord::class),
+                        HealthPermission.getReadPermission(WeightRecord::class),
+                        HealthPermission.getReadPermission(BodyFatRecord::class),
+                        HealthPermission.getReadPermission(BloodPressureRecord::class)
+                    )
+                    if (required.none { it in granted }) throw IllegalStateException("Health Connect permissions are not granted.")
+                    if (PERMISSION_READ_HEALTH_DATA_IN_BACKGROUND !in granted) {
+                        throw IllegalStateException("Enable Health Connect background access in Jeeves Health > Connect Health Connect.")
+                    }
+
+                    val records = readRecords(client, granted)
+                    for (batchStart in 0 until records.length() step 100) {
+                        val batch = JSONArray()
+                        for (i in batchStart until minOf(batchStart + 100, records.length())) {
+                            batch.put(records.getJSONObject(i))
+                        }
+                        request("POST", "$base/functions/v1/health-sync", JSONObject().put("records", batch), token)
+                    }
+                    request(
+                        "PATCH",
+                        itemUrl,
+                        JSONObject().put("status", "completed").put("completed_at", Instant.now().toString()).put("error", JSONObject.NULL),
+                        token
+                    )
+                } catch (error: Exception) {
+                    request(
+                        "PATCH",
+                        itemUrl,
+                        JSONObject().put("status", "failed").put("completed_at", Instant.now().toString())
+                            .put("error", (error.message ?: "Background sync failed").take(500)),
+                        token
+                    )
                 }
-                val records = readRecords(client, granted)
-                var synced = 0
-                for (start in 0 until records.length() step 100) {
-                    val batch = JSONArray()
-                    for (i in start until minOf(start + 100, records.length())) batch.put(records.getJSONObject(i))
-                    val result = JSONObject(request("POST", "$base/functions/v1/health-sync", JSONObject().put("records", batch), token))
-                    synced += result.optInt("synced")
-                }
-                request("PATCH", itemUrl, JSONObject().put("status", "completed")
-                    .put("completed_at", Instant.now().toString()).put("error", JSONObject.NULL), token)
-            } catch (error: Exception) {
-                request("PATCH", itemUrl, JSONObject().put("status", "failed")
-                    .put("completed_at", Instant.now().toString())
-                    .put("error", (error.message ?: "Background sync failed").take(500)), token)
-                return@withContext Result.failure()
+                processed++
             }
             Result.success()
         } catch (error: Exception) {
