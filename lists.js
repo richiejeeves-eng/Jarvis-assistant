@@ -168,7 +168,7 @@ async function showTasks() {
 
   const { data, error } = await db
     .from("tasks")
-    .select("id, title, due_at")
+    .select("id, title, due_at, source, google_task_id, google_tasklist_id")
     .eq("status", "pending")
     .order("due_at", { ascending: true, nullsFirst: false })
     .limit(20);
@@ -194,11 +194,20 @@ async function showTasks() {
     if (task.due_at) {
       text += "\n   due " + new Date(task.due_at).toLocaleString();
     }
-    label.textContent = text;
+    label.textContent = text + (task.source === "google_tasks" ? "\n   ↳ Google Tasks" : "");
 
     const buttons = document.createElement("div");
 
     const doneButton = makeButton("Done", async function () {
+      if (task.google_task_id && task.google_tasklist_id) {
+        const remote = await db.functions.invoke("google-calendar", {
+          body: { action: "completeTask", google_task_id: task.google_task_id, google_tasklist_id: task.google_tasklist_id }
+        });
+        if (remote.error) {
+          addMessage("Could not complete Google Task: " + remote.error.message, "bot");
+          return;
+        }
+      }
       const { error: updateError } = await db
         .from("tasks")
         .update({ status: "done" })
