@@ -44,3 +44,9 @@ body{background:radial-gradient(ellipse at 55% -18%,rgba(212,175,118,.075),trans
 footer{border-top-color:var(--line)}
 @media(max-width:1100px){.left-sidebar{width:230px}.main-area{margin-left:230px;padding:24px 20px}}
 @media(max-width:800px){.left-sidebar{width:min(300px,86vw)}.main-area{margin:0;padding:22px 15px 28px}.main-header h1{font-size:34px}.workspace{padding:14px}}
+
+/* Interactive live account metrics */
+.executive-metric-link{cursor:pointer;transition:border-color .18s,background .18s,transform .18s}
+.executive-metric-link:hover,.executive-metric-link:focus-visible{border-color:var(--gold);background:rgba(212,175,118,.07);transform:translateY(-2px);outline:none}
+.executive-metric-link:focus-visible{box-shadow:0 0 0 2px rgba(212,175,118,.25)}
+.executive-metric-link::after{content:"OPEN ↗";display:block;margin-top:7px;font:9px 'JetBrains Mono',monospace;letter-spacing:1px;color:var(--gold)}
