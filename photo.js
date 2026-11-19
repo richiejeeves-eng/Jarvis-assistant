@@ -92,7 +92,7 @@
   button.onclick = function () { fileInput.click(); };
 
   const cameraButton = document.getElementById("camerabtn");
-  if (cameraButton) cameraButton.addEventListener("click", function () { fileInput.click(); });
+  if (cameraButton) { cameraButton.textContent = "Camera"; cameraButton.className = "jeeves-tool-button"; cameraButton.setAttribute("aria-label", "Open camera or choose a photo"); cameraButton.addEventListener("click", function () { fileInput.click(); }); }
   else {
     const toolsBar = document.getElementById("tools");
     if (toolsBar) toolsBar.appendChild(button);
