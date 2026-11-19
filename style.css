@@ -134,25 +134,26 @@
 #tools.lower-tools{display:flex!important;justify-content:center!important;align-items:stretch!important;gap:8px!important;width:100%;}
 #tools.lower-tools>button{display:flex!important;flex:1 1 140px!important;min-width:0!important;max-width:220px!important;min-height:42px!important;height:auto!important;align-items:center!important;justify-content:center!important;text-align:center!important;text-indent:0!important;padding:9px 12px!important;margin:0!important;line-height:1.3!important;}
 
-/* Compact, screen-friendly composer tools menu */
+/* Compact single-column composer tools menu */
 .composer-tools-menu[open] #tools.lower-tools{
   display:grid!important;
-  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  grid-template-columns:minmax(0,1fr)!important;
   align-items:stretch!important;
   justify-content:stretch!important;
-  gap:6px!important;
-  width:min(100%,420px)!important;
+  gap:5px!important;
+  width:min(100%,260px)!important;
   max-width:100%!important;
   padding:0!important;
 }
 .composer-tools-menu[open] #tools.lower-tools>button{
+  display:flex!important;
   width:100%!important;
   min-width:0!important;
   max-width:none!important;
-  min-height:34px!important;
-  height:34px!important;
+  min-height:32px!important;
+  height:32px!important;
   flex:none!important;
-  padding:5px 6px!important;
+  padding:4px 8px!important;
   margin:0!important;
   border-radius:7px!important;
   font-size:10px!important;
@@ -161,16 +162,4 @@
   text-align:center!important;
   justify-content:center!important;
   align-items:center!important;
-}
-@media(max-width:600px){
-  .composer-tools-menu[open] #tools.lower-tools{
-    grid-template-columns:repeat(2,minmax(0,1fr))!important;
-    gap:5px!important;
-  }
-  .composer-tools-menu[open] #tools.lower-tools>button{
-    min-height:32px!important;
-    height:32px!important;
-    padding:4px 5px!important;
-    font-size:10px!important;
-  }
 }
