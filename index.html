@@ -6,7 +6,7 @@
 <title>Jeeves Assist</title>
 <link rel="manifest" href="manifest.json?v=2">
 <link rel="icon" type="image/png" href="jeeves_app_icon_transparent.png?v=3">
-<link rel="stylesheet" href="style.css?v=2.0.15">
+<link rel="stylesheet" href="style.css?v=2.0.16">
 <link rel="stylesheet" href="executive.css?v=1.0.2">
 <link rel="stylesheet" href="council.css?v=1.0.0">
 <link rel="stylesheet" href="voice-controls.css?v=1.0.3">
@@ -117,6 +117,6 @@ document.getElementById('command').addEventListener('keydown',e=>{if(e.key==='En
 </script>
 <script src="app.js?v=2.3.2"></script><script src="auth.js?v=1.8.0"></script><script src="lists.js?v=1.9.4"></script><script src="voice.js?v=2.1.4"></script><script src="jeeves.js?v=1.8.2"></script><script src="speak.js?v=2.1.1"></script><script src="photo.js?v=2.0.4"></script><script src="location.js?v=1.0.1"></script><script src="integrations.js?v=1.5.8"></script><script src="executive.js?v=1.1.1"></script><script src="fitness.js?v=1.0.1"></script><script>if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js?v=1.2.0');
 // Edge swipes open drawers; reverse swipes close them. Ignore controls and vertical scrolling.
-(function(){let sx=0,sy=0,origin=null;const skip='input,textarea,select,button,a,[contenteditable="true"],[data-no-swipe]';document.addEventListener('touchstart',e=>{const t=e.changedTouches[0];sx=t.clientX;sy=t.clientY;origin=e.target;},{passive:true});document.addEventListener('touchend',e=>{if(!origin||origin.closest(skip)){origin=null;return;}const t=e.changedTouches[0],dx=t.clientX-sx,dy=t.clientY-sy;if(Math.abs(dx)<85||Math.abs(dx)<Math.abs(dy)*1.4){origin=null;return;}const sidebar=document.getElementById('left-sidebar'),drawer=document.getElementById('right-drawer');if(dx<0&&sidebar?.classList.contains('open'))toggleMobileSidebar(false);else if(dx>0&&drawer?.classList.contains('open'))toggleRightDrawer();else if(dx>0&&sx<=32)toggleMobileSidebar(true);else if(dx<0&&sx>=innerWidth-32)toggleRightDrawer();origin=null;},{passive:true});})();
+(function(){let sx=0,sy=0;const skip='input,textarea,select,[contenteditable="true"],[data-no-swipe]';document.addEventListener('touchstart',e=>{const t=e.changedTouches[0];sx=t.clientX;sy=t.clientY;},{passive:true});document.addEventListener('touchend',e=>{const t=e.changedTouches[0],dx=t.clientX-sx,dy=t.clientY-sy;if(Math.abs(dx)<55||Math.abs(dx)<Math.abs(dy)*1.2)return;const sidebar=document.getElementById('left-sidebar'),drawer=document.getElementById('right-drawer');if(e.target.closest(skip))return;if(dx<0&&sidebar?.classList.contains('open'))toggleMobileSidebar(false);else if(dx>0&&drawer?.classList.contains('open'))toggleRightDrawer();else if(dx>0&&sx<=76)toggleMobileSidebar(true);else if(dx<0&&sx>=innerWidth-76)toggleRightDrawer();},{passive:true});})();
 </script></body>
 </html>
