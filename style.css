@@ -129,3 +129,7 @@
 
 /* Saved-location action uses a readable text label. */
 #bar #tools #locbtn{display:flex!important;align-items:center!important;justify-content:flex-start!important;width:100%!important;min-width:100%!important;min-height:42px!important;height:auto!important;padding:10px 14px!important;font-size:12px!important;line-height:1.35!important;text-align:left!important}
+
+/* Consistent centred text controls in the Jeeves tools menu */
+#tools.lower-tools{display:flex!important;justify-content:center!important;align-items:stretch!important;gap:8px!important;width:100%;}
+#tools.lower-tools>button{display:flex!important;flex:1 1 140px!important;min-width:0!important;max-width:220px!important;min-height:42px!important;height:auto!important;align-items:center!important;justify-content:center!important;text-align:center!important;text-indent:0!important;padding:9px 12px!important;margin:0!important;line-height:1.3!important;}
