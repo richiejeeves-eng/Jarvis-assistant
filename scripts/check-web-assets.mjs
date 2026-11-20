@@ -7,14 +7,14 @@ const failures = [];
 
 function checkPage(page, expectedEntry) {
   const html = read(page);
-  const scripts = [...html.matchAll(/<script\\b[^>]*\\bsrc=["']([^"']+)["']/g)].map((match) => match[1]);
-  const styles = [...html.matchAll(/<link\\b[^>]*\\brel=["']stylesheet["'][^>]*\\bhref=["']([^"']+)["']/g)].map((match) => match[1]);
-  const localScripts = scripts.filter((src) => !/^https?:\\/\\//i.test(src));
-  const localStyles = styles.filter((href) => !/^https?:\\/\\//i.test(href));
-  const paths = localScripts.map((src) => src.split("?")[0].replace(/^\\.\\//, ""));
+  const scripts = [...html.matchAll(/<script\b[^>]*\bsrc=["']([^"']+)["']/g)].map((match) => match[1]);
+  const styles = [...html.matchAll(/<link\b[^>]*\brel=["']stylesheet["'][^>]*\bhref=["']([^"']+)["']/g)].map((match) => match[1]);
+  const localScripts = scripts.filter((src) => !/^https?:\/\//i.test(src));
+  const localStyles = styles.filter((href) => !/^https?:\/\//i.test(href));
+  const paths = localScripts.map((src) => src.split("?")[0].replace(/^\.\//, ""));
 
   if (new Set(paths).size !== paths.length) failures.push(page + ": duplicate local script reference");
-  for (const path of [...paths, ...localStyles.map((href) => href.split("?")[0].replace(/^\\.\\//, ""))]) {
+  for (const path of [...paths, ...localStyles.map((href) => href.split("?")[0].replace(/^\.\//, ""))]) {
     if (!existsSync(join(root, path))) failures.push(page + ": missing local asset " + path);
   }
 
@@ -29,7 +29,7 @@ function checkPage(page, expectedEntry) {
 const workspace = checkPage("index.html", "app.js");
 const login = checkPage("login.html", "login.js");
 const sw = read("sw.js");
-const shell = [...sw.matchAll(/"\\.\\/([^"]+)"/g)].map((match) => match[1]);
+const shell = [...sw.matchAll(/"\.\/([^"]+)"/g)].map((match) => match[1]);
 for (const path of [...workspace.paths, ...login.paths]) {
   if (!shell.includes(path)) failures.push("sw.js: offline shell is missing " + path);
 }
@@ -48,7 +48,7 @@ if (!read("login.js").includes("window.JEEVES_CONFIG.supabaseUrl")) {
 }
 
 if (failures.length) {
-  console.error(failures.join("\\n"));
+  console.error(failures.join("\n"));
   process.exitCode = 1;
 } else {
   console.log("Web assets, script order, SDK versions and offline shell are consistent.");
