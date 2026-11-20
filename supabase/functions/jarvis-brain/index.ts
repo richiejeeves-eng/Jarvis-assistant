@@ -312,6 +312,10 @@ Return a concise assessment with: reflection, relevant principles, ethical consi
       taskTitle = taskTitle.slice(0, 80);
     }
 
+    // Model output is never enough to create a durable memory: require explicit user intent.
+    const explicitlyAskedToRemember = /\\b(remember|save|store|keep in mind)\\b/i.test(message);
+    if (!explicitlyAskedToRemember) memory = "";
+
     let saved = "";
     if (memory) {
       const { error: saveError } = await supabase
