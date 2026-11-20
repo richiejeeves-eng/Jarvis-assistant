@@ -49,7 +49,7 @@ class HealthSyncWorker(context: Context, params: WorkerParameters) : CoroutineWo
             val staleBefore = Instant.now().minus(10, ChronoUnit.MINUTES).toString()
             request(
                 "PATCH",
-                "$JeevesSupabaseConfig.URL/rest/v1/health_sync_requests?status=eq.processing&started_at=lt.$staleBefore",
+                "${JeevesSupabaseConfig.URL}/rest/v1/health_sync_requests?status=eq.processing&started_at=lt.$staleBefore",
                 JSONObject().put("status", "queued").put("started_at", JSONObject.NULL).put("error", JSONObject.NULL),
                 token
             )
@@ -58,14 +58,14 @@ class HealthSyncWorker(context: Context, params: WorkerParameters) : CoroutineWo
             while (processed < 10) {
                 val queue = JSONArray(request(
                     "GET",
-                    "$JeevesSupabaseConfig.URL/rest/v1/health_sync_requests?select=id&status=eq.queued&order=requested_at.asc&limit=1",
+                    "${JeevesSupabaseConfig.URL}/rest/v1/health_sync_requests?select=id&status=eq.queued&order=requested_at.asc&limit=1",
                     null,
                     token
                 ))
                 if (queue.length() == 0) break
 
                 val id = queue.getJSONObject(0).getString("id")
-                val itemUrl = "$JeevesSupabaseConfig.URL/rest/v1/health_sync_requests?id=eq.$id"
+                val itemUrl = "${JeevesSupabaseConfig.URL}/rest/v1/health_sync_requests?id=eq.$id"
                 val claimed = JSONArray(request(
                     "PATCH",
                     "$itemUrl&status=eq.queued",
@@ -84,7 +84,7 @@ class HealthSyncWorker(context: Context, params: WorkerParameters) : CoroutineWo
                         for (i in batchStart until minOf(batchStart + 100, records.length())) {
                             batch.put(records.getJSONObject(i))
                         }
-                        request("POST", "$JeevesSupabaseConfig.URL/functions/v1/health-sync", JSONObject().put("records", batch), token)
+                        request("POST", "${JeevesSupabaseConfig.URL}/functions/v1/health-sync", JSONObject().put("records", batch), token)
                     }
                     request(
                         "PATCH",
@@ -113,7 +113,7 @@ class HealthSyncWorker(context: Context, params: WorkerParameters) : CoroutineWo
         val current = prefs.getString("access_token", null)
         if (current != null && prefs.getLong("expires_at", 0) > System.currentTimeMillis() / 1000) return current
         val refresh = prefs.getString("refresh_token", null) ?: throw IllegalStateException("Sign in to Jeeves Health to enable background sync.")
-        val json = JSONObject(request("POST", "$JeevesSupabaseConfig.URL/auth/v1/token?grant_type=refresh_token",
+        val json = JSONObject(request("POST", "${JeevesSupabaseConfig.URL}/auth/v1/token?grant_type=refresh_token",
             JSONObject().put("refresh_token", refresh), null))
         prefs.edit().putString("access_token", json.getString("access_token"))
             .putString("refresh_token", json.getString("refresh_token"))
