@@ -526,7 +526,8 @@ async function send() {
   input.dispatchEvent(new Event("input", { bubbles: true }));
   const userBubble = addMessage(message, "user");
   sendingMessage = true;
-  document.getElementById("newchatbtn").disabled = true;
+  const newChatButton = document.getElementById("newchatbtn");
+  if (newChatButton) newChatButton.disabled = true;
   document.getElementById("conversationSelect").disabled = true;
   const activeAdvisers = Array.from(document.querySelectorAll(".council-toggle:checked")).map(function (el) { return el.dataset.adviser; });
   const adviserNames = activeAdvisers.map(function (name) { return name.toUpperCase(); });
@@ -582,7 +583,7 @@ async function send() {
     thinking.textContent = "Could not save or send this message: " + error.message;
   } finally {
     sendingMessage = false;
-    document.getElementById("newchatbtn").disabled = false;
+    if (newChatButton) newChatButton.disabled = false;
     const { data: currentSession } = await db.auth.getSession();
     document.getElementById("conversationSelect").disabled = !currentSession.session;
     input.focus();
