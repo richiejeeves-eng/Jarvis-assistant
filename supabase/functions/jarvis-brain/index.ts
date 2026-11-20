@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
     }
     if (allowed !== true) return respond({ error: "Request limit reached. Please wait a minute before trying again." }, 429);
 
-    const apiKey = Deno.env.get("GEMINI_API_KEY");
+    const apiKey = Deno.env.get("GEMINI_API_KEY") ?? "";
     if (!apiKey) {
       return respond({ error: "GEMINI_API_KEY secret is not set yet." }, 500);
     }
@@ -108,7 +108,7 @@ Deno.serve(async (req) => {
     });
     if (searchError) console.log("memory search error:", searchError.message);
 
-    const merged = (relevant ?? [])
+    const merged: string[] = (relevant ?? [])
       .filter((m: { content?: unknown }) => m && typeof m.content === "string")
       .slice(0, 5)
       .map((m: { content: string }) => m.content.slice(0, 200));
