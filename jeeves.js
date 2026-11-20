@@ -30,9 +30,6 @@ function applyTheme(id) {
     document.documentElement.setAttribute("data-theme", theme.id);
   }
 
-  const button = document.getElementById("themebtn");
-  if (button) { button.textContent = "◐"; button.setAttribute("aria-label", "Change theme · current: " + theme.label); button.title = "Theme: " + theme.label; }
-
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute("content", theme.color);
 
