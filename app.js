@@ -535,7 +535,8 @@ async function send() {
 
   try {
     if (!activeConversationId) await createConversation(message);
-    saveConversationMessage("user", message).then(id => { if (userBubble) userBubble.dataset.messageId = id; }).catch(error => console.warn("User message save failed:", error));
+    const userMessageId = await saveConversationMessage("user", message);
+    if (userBubble) userBubble.dataset.messageId = userMessageId;
     history.push({ role: "user", text: message });
     const modelHistory = history.slice(-11, -1).slice(-10);
 
@@ -568,7 +569,9 @@ async function send() {
     thinking.textContent = data.reply;
     window.lastResponseSpeaker = data.speaker || (activeAdvisers.length === 1 ? activeAdvisers[0] : "jeeves");
     const savedConversationId = activeConversationId;
-    saveConversationMessage("assistant", data.reply).then(id => { thinking.dataset.messageId = id; addFeedbackControls(thinking, id, savedConversationId); }).catch(error => console.warn("Assistant message save failed:", error));
+    const assistantMessageId = await saveConversationMessage("assistant", data.reply);
+    thinking.dataset.messageId = assistantMessageId;
+    addFeedbackControls(thinking, assistantMessageId, savedConversationId);
     history.push({ role: "model", text: data.reply });
     history = history.slice(-10);
     refreshConversationList(activeConversationId, false).catch(error => console.warn("Conversation list refresh failed:", error));
