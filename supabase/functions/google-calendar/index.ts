@@ -454,7 +454,7 @@ async function handleAction(req: Request, origin: string | null) {
   if (action === "events") {
     const rangeStart = typeof body.timeMin === "string" && Number.isFinite(Date.parse(body.timeMin)) ? new Date(body.timeMin) : new Date();
     const rangeEnd = typeof body.timeMax === "string" && Number.isFinite(Date.parse(body.timeMax)) ? new Date(body.timeMax) : new Date(Date.now() + 90 * 86400000);
-    if (rangeEnd <= rangeStart || rangeEnd - rangeStart > 370 * 86400000) throw new Error("Invalid calendar date range.");
+    if (rangeEnd <= rangeStart || rangeEnd.getTime() - rangeStart.getTime() > 370 * 86400000) throw new Error("Invalid calendar date range.");
     const params = new URLSearchParams({
       timeMin: rangeStart.toISOString(),
       timeMax: rangeEnd.toISOString(),
