@@ -42,6 +42,16 @@ Deno.serve(async (req: Request) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser(authorization.slice(7));
     if (authError || !user) return json({ error: "Invalid or expired session." }, 401, origin);
 
+    const { data: allowed, error: rateLimitError } = await supabase.rpc("consume_jeeves_voice_request", {
+      p_window_seconds: 60,
+      p_max_requests: 12,
+    });
+    if (rateLimitError) {
+      console.error("Voice rate limit check failed:", rateLimitError.message);
+      return json({ error: "Voice service is temporarily unavailable." }, 503, origin);
+    }
+    if (allowed !== true) return json({ error: "Voice request limit reached. Please wait a minute." }, 429, origin);
+
     const apiKey = Deno.env.get("ELEVENLABS_API_KEY");
     if (!apiKey) return json({ error: "Voice service is not configured." }, 503, origin);
 
