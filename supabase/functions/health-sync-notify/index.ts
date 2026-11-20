@@ -1,12 +1,23 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-const cors = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-api-version",
-  "Access-Control-Max-Age": "86400",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Content-Type": "application/json",
-};
+const allowedOrigins = new Set([
+  "https://richiejeeves-eng.github.io",
+  "http://localhost:8000",
+  "http://127.0.0.1:8000",
+]);
+
+function corsHeaders(origin: string | null) {
+  return {
+    "Access-Control-Allow-Origin": origin && allowedOrigins.has(origin)
+      ? origin
+      : "https://richiejeeves-eng.github.io",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-api-version",
+    "Access-Control-Max-Age": "86400",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Vary": "Origin",
+    "Content-Type": "application/json",
+  };
+}
 
 function base64url(input: Uint8Array | string): string {
   const bytes = typeof input === "string" ? new TextEncoder().encode(input) : input;
@@ -54,16 +65,17 @@ async function firebaseAccessToken(account: Record<string, string>): Promise<str
 }
 
 Deno.serve(async (req: Request) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
-  if (req.method !== "POST") return new Response(JSON.stringify({ error: "POST required" }), { status: 405, headers: cors });
+  const origin = req.headers.get("Origin");
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders(origin) });
+  if (req.method !== "POST") return new Response(JSON.stringify({ error: "POST required" }), { status: 405, headers: corsHeaders(origin) });
   try {
     const authorization = req.headers.get("Authorization") || "";
-    if (!authorization.startsWith("Bearer ")) return new Response(JSON.stringify({ error: "Sign in required" }), { status: 401, headers: cors });
+    if (!authorization.startsWith("Bearer ")) return new Response(JSON.stringify({ error: "Sign in required" }), { status: 401, headers: corsHeaders(origin) });
     const url = Deno.env.get("SUPABASE_URL")!;
     const anon = Deno.env.get("SUPABASE_ANON_KEY")!;
     const authClient = createClient(url, anon, { global: { headers: { Authorization: authorization } } });
     const { data: { user }, error: authError } = await authClient.auth.getUser(authorization.slice(7));
-    if (authError || !user) return new Response(JSON.stringify({ error: "Invalid session" }), { status: 401, headers: cors });
+    if (authError || !user) return new Response(JSON.stringify({ error: "Invalid session" }), { status: 401, headers: corsHeaders(origin) });
 
     const accountText = Deno.env.get("FIREBASE_SERVICE_ACCOUNT_JSON");
     if (!accountText) throw new Error("Firebase service account secret is not configured.");
@@ -77,7 +89,7 @@ Deno.serve(async (req: Request) => {
     const { data: tokens, error: tokenError } = await admin
       .from("health_device_tokens").select("token").eq("user_id", user.id);
     if (tokenError) throw tokenError;
-    if (!tokens?.length) return new Response(JSON.stringify({ sent: 0, message: "No registered Android devices yet." }), { headers: cors });
+    if (!tokens?.length) return new Response(JSON.stringify({ sent: 0, message: "No registered Android devices yet." }), { headers: corsHeaders(origin) });
 
     const body = await req.json().catch(() => ({}));
     const requestId = typeof body.request_id === "string" ? body.request_id : "";
@@ -102,8 +114,8 @@ Deno.serve(async (req: Request) => {
       return { ok: response.ok, result };
     }));
     const sent = results.filter(r => r.ok).length;
-    return new Response(JSON.stringify({ sent, total: results.length, results }), { headers: cors });
+    return new Response(JSON.stringify({ sent, total: results.length, results }), { headers: corsHeaders(origin) });
   } catch (error) {
-    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Notification failed" }), { status: 500, headers: cors });
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Notification failed" }), { status: 500, headers: corsHeaders(origin) });
   }
 });
