@@ -5,9 +5,6 @@ import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.permission.HealthPermission.Companion.PERMISSION_READ_HEALTH_DATA_IN_BACKGROUND
 import androidx.health.connect.client.records.*
-import androidx.health.connect.client.request.AggregateRequest
-import androidx.health.connect.client.request.ReadRecordsRequest
-import androidx.health.connect.client.time.TimeRangeFilter
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import androidx.work.CoroutineWorker
@@ -19,8 +16,6 @@ import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 
 class HealthSyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
