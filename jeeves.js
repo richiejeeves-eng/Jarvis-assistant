@@ -104,9 +104,3 @@ locationButton.setAttribute("data-description", "Save or update your location");
 locationButton.onclick = useMyLocation;
 const toolsBar = document.getElementById("tools");
 if (toolsBar) toolsBar.appendChild(locationButton);
-
-["photo.js?v=1.0.1"].forEach(function (src) {
-  const script = document.createElement("script");
-  script.src = src;
-  document.body.appendChild(script);
-});
