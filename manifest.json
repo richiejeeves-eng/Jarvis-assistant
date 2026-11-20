@@ -6,12 +6,4 @@
   "display": "standalone",
   "background_color": "#0b0c10",
   "theme_color": "#0b0c10",
-  "icons": [
-    {
-      "src": "a_high_contrast_luxurious_logo_on_black_the_same.png?v=3",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    }
-  ]
-}
+  }
