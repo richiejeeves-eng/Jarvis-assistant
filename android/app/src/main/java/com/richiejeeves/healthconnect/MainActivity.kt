@@ -129,11 +129,11 @@ class MainActivity : ComponentActivity() {
         try {
             val token = validAccessToken()
             val queue = withContext(Dispatchers.IO) {
-                JSONArray(restRequest("GET", "$JeevesSupabaseConfig.URL/rest/v1/health_sync_requests?select=id&status=eq.queued&order=requested_at.asc&limit=1", null, token))
+                JSONArray(restRequest("GET", "${JeevesSupabaseConfig.URL}/rest/v1/health_sync_requests?select=id&status=eq.queued&order=requested_at.asc&limit=1", null, token))
             }
             if (queue.length() == 0) return
             val id = queue.getJSONObject(0).getString("id")
-            val itemUrl = "$JeevesSupabaseConfig.URL/rest/v1/health_sync_requests?id=eq.$id&status=eq.queued"
+            val itemUrl = "${JeevesSupabaseConfig.URL}/rest/v1/health_sync_requests?id=eq.$id&status=eq.queued"
             val claimed = withContext(Dispatchers.IO) {
                 JSONArray(restRequest("PATCH", itemUrl, JSONObject().put("status", "processing").put("started_at", Instant.now().toString()).put("error", JSONObject.NULL), token))
             }
@@ -142,10 +142,10 @@ class MainActivity : ComponentActivity() {
             try {
                 val synced = performSync()
                 if (!synced) throw IllegalStateException(status.text.toString())
-                withContext(Dispatchers.IO) { restRequest("PATCH", "$JeevesSupabaseConfig.URL/rest/v1/health_sync_requests?id=eq.$id", JSONObject().put("status", "completed").put("completed_at", Instant.now().toString()).put("error", JSONObject.NULL), token) }
+                withContext(Dispatchers.IO) { restRequest("PATCH", "${JeevesSupabaseConfig.URL}/rest/v1/health_sync_requests?id=eq.$id", JSONObject().put("status", "completed").put("completed_at", Instant.now().toString()).put("error", JSONObject.NULL), token) }
                 status.text = "Desktop health sync completed."
             } catch (e: Exception) {
-                withContext(Dispatchers.IO) { restRequest("PATCH", "$JeevesSupabaseConfig.URL/rest/v1/health_sync_requests?id=eq.$id", JSONObject().put("status", "failed").put("completed_at", Instant.now().toString()).put("error", (e.message ?: "Foreground sync failed").take(500)), token) }
+                withContext(Dispatchers.IO) { restRequest("PATCH", "${JeevesSupabaseConfig.URL}/rest/v1/health_sync_requests?id=eq.$id", JSONObject().put("status", "failed").put("completed_at", Instant.now().toString()).put("error", (e.message ?: "Foreground sync failed").take(500)), token) }
                 status.text = "Desktop health sync failed: ${e.message ?: "Unknown error"}"
             }
         } finally { processingQueueRequest = false }
@@ -166,7 +166,7 @@ class MainActivity : ComponentActivity() {
                     try {
                         val access = validAccessToken()
                         val user = withContext(Dispatchers.IO) {
-                            JSONObject(restRequest("GET", "$JeevesSupabaseConfig.URL/auth/v1/user", null, access))
+                            JSONObject(restRequest("GET", "${JeevesSupabaseConfig.URL}/auth/v1/user", null, access))
                         }
                         val payload = JSONObject()
                             .put("user_id", user.getString("id"))
@@ -174,7 +174,7 @@ class MainActivity : ComponentActivity() {
                             .put("platform", "android")
                             .put("updated_at", Instant.now().toString())
                         withContext(Dispatchers.IO) {
-                            restRequest("POST", "$JeevesSupabaseConfig.URL/rest/v1/health_device_tokens?on_conflict=token", payload, access)
+                            restRequest("POST", "${JeevesSupabaseConfig.URL}/rest/v1/health_device_tokens?on_conflict=token", payload, access)
                         }
                         firebaseStatus.text = "Firebase: device registered successfully."
                     } catch (e: Exception) {
@@ -336,7 +336,7 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch {
             try {
                 val result = withContext(Dispatchers.IO) {
-                    postJson("$JeevesSupabaseConfig.URL/auth/v1/token?grant_type=password",
+                    postJson("${JeevesSupabaseConfig.URL}/auth/v1/token?grant_type=password",
                         JSONObject().put("email", email).put("password", password), null)
                 }
                 saveSession(result)
@@ -365,7 +365,7 @@ class MainActivity : ComponentActivity() {
         val expires = prefs.getLong("expires_at", 0)
         if (current != null && expires > System.currentTimeMillis() / 1000) return@withContext current
         val refresh = prefs.getString("refresh_token", null) ?: throw IllegalStateException("Sign in to Jeeves first.")
-        val json = postJson("$JeevesSupabaseConfig.URL/auth/v1/token?grant_type=refresh_token",
+        val json = postJson("${JeevesSupabaseConfig.URL}/auth/v1/token?grant_type=refresh_token",
             JSONObject().put("refresh_token", refresh), null)
         saveSession(json)
         json.getString("access_token")
@@ -400,7 +400,7 @@ class MainActivity : ComponentActivity() {
                     for (index in start until end) batch.put(records.getJSONObject(index))
                     status.text = "Uploading health data: batch $batchNumber of $totalBatches…"
                     val result = withContext(Dispatchers.IO) {
-                        postJson("$JeevesSupabaseConfig.URL/functions/v1/health-sync",
+                        postJson("${JeevesSupabaseConfig.URL}/functions/v1/health-sync",
                             JSONObject().put("records", batch), token)
                     }
                     syncedTotal += result.optInt("synced")
