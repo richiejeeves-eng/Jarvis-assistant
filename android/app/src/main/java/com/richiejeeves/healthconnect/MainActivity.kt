@@ -431,18 +431,23 @@ class MainActivity : ComponentActivity() {
         val output = JSONArray()
 
         if (HealthPermission.getReadPermission(StepsRecord::class) in granted) {
-            val start = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant()
-            val aggregate = client.aggregate(
-                AggregateRequest(setOf(StepsRecord.COUNT_TOTAL), TimeRangeFilter.between(start, now))
-            )
-            val count = aggregate[StepsRecord.COUNT_TOTAL] ?: 0L
-            if (count > 0) addRecord(output, "steps", "steps-${LocalDate.now()}",
-                start, now, JSONObject().put("count", count), "Health Connect", null)
+            val today = LocalDate.now()
+            for (daysAgo in 29 downTo 0) {
+                val day = today.minusDays(daysAgo.toLong())
+                val start = day.atStartOfDay(ZoneId.systemDefault()).toInstant()
+                val end = minOf(day.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant(), now)
+                if (end <= start) continue
+                val aggregate = client.aggregate(
+                    AggregateRequest(setOf(StepsRecord.COUNT_TOTAL), TimeRangeFilter.between(start, end))
+                )
+                val count = aggregate[StepsRecord.COUNT_TOTAL] ?: 0L
+                if (count > 0) addRecord(output, "steps", "steps-$day",
+                    start, end, JSONObject().put("count", count), "Health Connect", null)
+            }
         }
 
         if (HealthPermission.getReadPermission(HeartRateRecord::class) in granted) {
-            val page = client.readRecords(ReadRecordsRequest(HeartRateRecord::class, timeRangeFilter = range, pageSize = 1000))
-            page.records.forEach { r ->
+            readAllRecords(client, HeartRateRecord::class, range).forEach { r ->
                 val samples = JSONArray()
                 r.samples.forEach { s -> samples.put(JSONObject().put("bpm", s.beatsPerMinute).put("time", s.time.toString())) }
                 addRecord(output, "heart_rate", r.metadata.id, r.startTime, r.endTime,
@@ -451,8 +456,7 @@ class MainActivity : ComponentActivity() {
         }
 
         if (HealthPermission.getReadPermission(SleepSessionRecord::class) in granted) {
-            val page = client.readRecords(ReadRecordsRequest(SleepSessionRecord::class, timeRangeFilter = range, pageSize = 1000))
-            page.records.forEach { r ->
+            readAllRecords(client, SleepSessionRecord::class, range).forEach { r ->
                 addRecord(output, "sleep", r.metadata.id, r.startTime, r.endTime,
                     JSONObject().put("duration_minutes", ChronoUnit.MINUTES.between(r.startTime, r.endTime))
                         .put("stage_count", r.stages.size), r.metadata.dataOrigin.packageName, r.metadata.device?.model)
@@ -460,24 +464,21 @@ class MainActivity : ComponentActivity() {
         }
 
         if (HealthPermission.getReadPermission(WeightRecord::class) in granted) {
-            val page = client.readRecords(ReadRecordsRequest(WeightRecord::class, timeRangeFilter = range, pageSize = 1000))
-            page.records.forEach { r ->
+            readAllRecords(client, WeightRecord::class, range).forEach { r ->
                 addRecord(output, "weight", r.metadata.id, r.time, r.time,
                     JSONObject().put("kg", r.weight.inKilograms), r.metadata.dataOrigin.packageName, r.metadata.device?.model)
             }
         }
 
         if (HealthPermission.getReadPermission(BodyFatRecord::class) in granted) {
-            val page = client.readRecords(ReadRecordsRequest(BodyFatRecord::class, timeRangeFilter = range, pageSize = 1000))
-            page.records.forEach { r ->
+            readAllRecords(client, BodyFatRecord::class, range).forEach { r ->
                 addRecord(output, "body_fat", r.metadata.id, r.time, r.time,
                     JSONObject().put("percentage", r.percentage.value), r.metadata.dataOrigin.packageName, r.metadata.device?.model)
             }
         }
 
         if (HealthPermission.getReadPermission(BloodPressureRecord::class) in granted) {
-            val page = client.readRecords(ReadRecordsRequest(BloodPressureRecord::class, timeRangeFilter = range, pageSize = 1000))
-            page.records.forEach { r ->
+            readAllRecords(client, BloodPressureRecord::class, range).forEach { r ->
                 addRecord(output, "blood_pressure", r.metadata.id, r.time, r.time,
                     JSONObject().put("systolic_mmhg", r.systolic.inMillimetersOfMercury)
                         .put("diastolic_mmhg", r.diastolic.inMillimetersOfMercury)
@@ -486,6 +487,23 @@ class MainActivity : ComponentActivity() {
             }
         }
         return output
+    }
+
+    private suspend fun <T : Record> readAllRecords(
+        client: HealthConnectClient,
+        recordType: kotlin.reflect.KClass<T>,
+        range: TimeRangeFilter
+    ): List<T> {
+        val records = mutableListOf<T>()
+        var pageToken: String? = null
+        do {
+            val page = client.readRecords(
+                ReadRecordsRequest(recordType, timeRangeFilter = range, pageSize = 1000, pageToken = pageToken)
+            )
+            records.addAll(page.records)
+            pageToken = page.pageToken
+        } while (pageToken != null)
+        return records
     }
 
     private fun addRecord(

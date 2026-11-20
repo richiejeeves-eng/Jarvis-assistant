@@ -139,40 +139,63 @@ class HealthSyncWorker(context: Context, params: WorkerParameters) : CoroutineWo
                 .put("source_app", source ?: JSONObject.NULL).put("source_device", device ?: JSONObject.NULL))
         }
         if (HealthPermission.getReadPermission(StepsRecord::class) in granted) {
-            val start = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant()
-            val total = client.aggregate(AggregateRequest(setOf(StepsRecord.COUNT_TOTAL), TimeRangeFilter.between(start, now)))[StepsRecord.COUNT_TOTAL] ?: 0L
-            if (total > 0) add("steps", "steps-${LocalDate.now()}", start, now, JSONObject().put("count", total), "Health Connect", null)
+            val today = LocalDate.now()
+            for (daysAgo in 29 downTo 0) {
+                val day = today.minusDays(daysAgo.toLong())
+                val start = day.atStartOfDay(ZoneId.systemDefault()).toInstant()
+                val end = minOf(day.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant(), now)
+                if (end <= start) continue
+                val total = client.aggregate(AggregateRequest(setOf(StepsRecord.COUNT_TOTAL), TimeRangeFilter.between(start, end)))[StepsRecord.COUNT_TOTAL] ?: 0L
+                if (total > 0) add("steps", "steps-$day", start, end, JSONObject().put("count", total), "Health Connect", null)
+            }
         }
         if (HealthPermission.getReadPermission(HeartRateRecord::class) in granted) {
-            client.readRecords(ReadRecordsRequest(HeartRateRecord::class, timeRangeFilter = range, pageSize = 1000)).records.forEach { r ->
+            readAllRecords(client, HeartRateRecord::class, range).forEach { r ->
                 val samples = JSONArray()
                 r.samples.forEach { s -> samples.put(JSONObject().put("bpm", s.beatsPerMinute).put("time", s.time.toString())) }
                 add("heart_rate", r.metadata.id, r.startTime, r.endTime, JSONObject().put("samples", samples), r.metadata.dataOrigin.packageName, r.metadata.device?.model)
             }
         }
         if (HealthPermission.getReadPermission(SleepSessionRecord::class) in granted) {
-            client.readRecords(ReadRecordsRequest(SleepSessionRecord::class, timeRangeFilter = range, pageSize = 1000)).records.forEach { r ->
+            readAllRecords(client, SleepSessionRecord::class, range).forEach { r ->
                 add("sleep", r.metadata.id, r.startTime, r.endTime, JSONObject().put("duration_minutes", ChronoUnit.MINUTES.between(r.startTime, r.endTime)).put("stage_count", r.stages.size), r.metadata.dataOrigin.packageName, r.metadata.device?.model)
             }
         }
         if (HealthPermission.getReadPermission(WeightRecord::class) in granted) {
-            client.readRecords(ReadRecordsRequest(WeightRecord::class, timeRangeFilter = range, pageSize = 1000)).records.forEach { r ->
+            readAllRecords(client, WeightRecord::class, range).forEach { r ->
                 add("weight", r.metadata.id, r.time, r.time, JSONObject().put("kg", r.weight.inKilograms), r.metadata.dataOrigin.packageName, r.metadata.device?.model)
             }
         }
         if (HealthPermission.getReadPermission(BodyFatRecord::class) in granted) {
-            client.readRecords(ReadRecordsRequest(BodyFatRecord::class, timeRangeFilter = range, pageSize = 1000)).records.forEach { r ->
+            readAllRecords(client, BodyFatRecord::class, range).forEach { r ->
                 add("body_fat", r.metadata.id, r.time, r.time, JSONObject().put("percentage", r.percentage.value), r.metadata.dataOrigin.packageName, r.metadata.device?.model)
             }
         }
         if (HealthPermission.getReadPermission(BloodPressureRecord::class) in granted) {
-            client.readRecords(ReadRecordsRequest(BloodPressureRecord::class, timeRangeFilter = range, pageSize = 1000)).records.forEach { r ->
+            readAllRecords(client, BloodPressureRecord::class, range).forEach { r ->
                 add("blood_pressure", r.metadata.id, r.time, r.time, JSONObject().put("systolic_mmhg", r.systolic.inMillimetersOfMercury)
                     .put("diastolic_mmhg", r.diastolic.inMillimetersOfMercury).put("measurement_location", r.measurementLocation),
                     r.metadata.dataOrigin.packageName, r.metadata.device?.model)
             }
         }
         return out
+    }
+
+    private suspend fun <T : Record> readAllRecords(
+        client: HealthConnectClient,
+        recordType: kotlin.reflect.KClass<T>,
+        range: TimeRangeFilter
+    ): List<T> {
+        val records = mutableListOf<T>()
+        var pageToken: String? = null
+        do {
+            val page = client.readRecords(
+                ReadRecordsRequest(recordType, timeRangeFilter = range, pageSize = 1000, pageToken = pageToken)
+            )
+            records.addAll(page.records)
+            pageToken = page.pageToken
+        } while (pageToken != null)
+        return records
     }
 
     private fun request(method: String, url: String, body: JSONObject?, bearer: String?): String {
