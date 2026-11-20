@@ -526,7 +526,7 @@ async function send() {
   input.dispatchEvent(new Event("input", { bubbles: true }));
   const userBubble = addMessage(message, "user");
   sendingMessage = true;
-  const newChatButton = document.getElementById("newchatbtn");
+  const newChatButton = document.querySelector(".new-chat-top");
   if (newChatButton) newChatButton.disabled = true;
   document.getElementById("conversationSelect").disabled = true;
   const activeAdvisers = Array.from(document.querySelectorAll(".council-toggle:checked")).map(function (el) { return el.dataset.adviser; });
