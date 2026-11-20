@@ -16,7 +16,6 @@ const APP_SHELL = [
   "./jeeves.js",
   "./speak.js",
   "./photo.js",
-  "./location.js",
   "./integrations.js",
   "./executive.js",
   "./fitness.js",
