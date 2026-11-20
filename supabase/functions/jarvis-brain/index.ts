@@ -48,10 +48,7 @@ Deno.serve(async (req) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.slice(7));
     if (authError || !user) return respond({ error: "Invalid or expired session" }, 401);
 
-    const { data: allowed, error: rateLimitError } = await supabase.rpc("consume_jeeves_ai_request", {
-      p_window_seconds: 60,
-      p_max_requests: 6,
-    });
+    const { data: allowed, error: rateLimitError } = await supabase.rpc("consume_jeeves_ai_request");
     if (rateLimitError) {
       console.log("AI rate limit check failed:", rateLimitError.message);
       return respond({ error: "AI service is temporarily unavailable. Please try again shortly." }, 503);
@@ -63,7 +60,22 @@ Deno.serve(async (req) => {
       return respond({ error: "GEMINI_API_KEY secret is not set yet." }, 500);
     }
 
-    const body = await req.json();
+    const MAX_BODY_BYTES = 4_500_000;
+    const declaredLength = Number(req.headers.get("content-length") ?? "0");
+    if (Number.isFinite(declaredLength) && declaredLength > MAX_BODY_BYTES) {
+      return respond({ error: "Request body is too large." }, 413);
+    }
+    const rawBody = await req.text();
+    if (new TextEncoder().encode(rawBody).byteLength > MAX_BODY_BYTES) {
+      return respond({ error: "Request body is too large." }, 413);
+    }
+    let body: Record<string, any>;
+    try {
+      body = JSON.parse(rawBody);
+      if (!body || typeof body !== "object" || Array.isArray(body)) throw new Error("Invalid body");
+    } catch (_error) {
+      return respond({ error: "Invalid JSON request body." }, 400);
+    }
     if (body.ping === true) return respond({ ok: true });
     const message = typeof body.message === "string" ? body.message.trim() : "";
     let imagePart: { inlineData: { mimeType: string; data: string } } | null = null;
