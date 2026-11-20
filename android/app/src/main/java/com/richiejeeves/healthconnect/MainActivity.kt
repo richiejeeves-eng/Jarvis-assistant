@@ -392,7 +392,8 @@ class MainActivity : ComponentActivity() {
         status.text = "Reading approved records…"
         return try {
             val token = validAccessToken()
-            val records = readHealthRecords()
+            val client = healthClient ?: throw IllegalStateException("Health Connect unavailable.")
+            val records = HealthRecordReader.read(client, client.permissionController.getGrantedPermissions())
             if (records.length() == 0) {
                 status.text = "No records found in the approved categories for the last 30 days."
                 true
@@ -420,104 +421,6 @@ class MainActivity : ComponentActivity() {
             status.text = "Sync failed: ${e.message ?: "Please try again."}"
             false
         }
-    }
-
-    private suspend fun readHealthRecords(): JSONArray {
-        val client = healthClient ?: throw IllegalStateException("Health Connect unavailable.")
-        val granted = client.permissionController.getGrantedPermissions()
-        val since = Instant.now().minus(30, ChronoUnit.DAYS)
-        val now = Instant.now()
-        val range = TimeRangeFilter.between(since, now)
-        val output = JSONArray()
-
-        if (HealthPermission.getReadPermission(StepsRecord::class) in granted) {
-            val today = LocalDate.now()
-            for (daysAgo in 29 downTo 0) {
-                val day = today.minusDays(daysAgo.toLong())
-                val start = day.atStartOfDay(ZoneId.systemDefault()).toInstant()
-                val end = minOf(day.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant(), now)
-                if (end <= start) continue
-                val aggregate = client.aggregate(
-                    AggregateRequest(setOf(StepsRecord.COUNT_TOTAL), TimeRangeFilter.between(start, end))
-                )
-                val count = aggregate[StepsRecord.COUNT_TOTAL] ?: 0L
-                if (count > 0) addRecord(output, "steps", "steps-$day",
-                    start, end, JSONObject().put("count", count), "Health Connect", null)
-            }
-        }
-
-        if (HealthPermission.getReadPermission(HeartRateRecord::class) in granted) {
-            readAllRecords(client, HeartRateRecord::class, range).forEach { r ->
-                val samples = JSONArray()
-                r.samples.forEach { s -> samples.put(JSONObject().put("bpm", s.beatsPerMinute).put("time", s.time.toString())) }
-                addRecord(output, "heart_rate", r.metadata.id, r.startTime, r.endTime,
-                    JSONObject().put("samples", samples), r.metadata.dataOrigin.packageName, r.metadata.device?.model)
-            }
-        }
-
-        if (HealthPermission.getReadPermission(SleepSessionRecord::class) in granted) {
-            readAllRecords(client, SleepSessionRecord::class, range).forEach { r ->
-                addRecord(output, "sleep", r.metadata.id, r.startTime, r.endTime,
-                    JSONObject().put("duration_minutes", ChronoUnit.MINUTES.between(r.startTime, r.endTime))
-                        .put("stage_count", r.stages.size), r.metadata.dataOrigin.packageName, r.metadata.device?.model)
-            }
-        }
-
-        if (HealthPermission.getReadPermission(WeightRecord::class) in granted) {
-            readAllRecords(client, WeightRecord::class, range).forEach { r ->
-                addRecord(output, "weight", r.metadata.id, r.time, r.time,
-                    JSONObject().put("kg", r.weight.inKilograms), r.metadata.dataOrigin.packageName, r.metadata.device?.model)
-            }
-        }
-
-        if (HealthPermission.getReadPermission(BodyFatRecord::class) in granted) {
-            readAllRecords(client, BodyFatRecord::class, range).forEach { r ->
-                addRecord(output, "body_fat", r.metadata.id, r.time, r.time,
-                    JSONObject().put("percentage", r.percentage.value), r.metadata.dataOrigin.packageName, r.metadata.device?.model)
-            }
-        }
-
-        if (HealthPermission.getReadPermission(BloodPressureRecord::class) in granted) {
-            readAllRecords(client, BloodPressureRecord::class, range).forEach { r ->
-                addRecord(output, "blood_pressure", r.metadata.id, r.time, r.time,
-                    JSONObject().put("systolic_mmhg", r.systolic.inMillimetersOfMercury)
-                        .put("diastolic_mmhg", r.diastolic.inMillimetersOfMercury)
-                        .put("measurement_location", r.measurementLocation),
-                    r.metadata.dataOrigin.packageName, r.metadata.device?.model)
-            }
-        }
-        return output
-    }
-
-    private suspend fun <T : Record> readAllRecords(
-        client: HealthConnectClient,
-        recordType: kotlin.reflect.KClass<T>,
-        range: TimeRangeFilter
-    ): List<T> {
-        val records = mutableListOf<T>()
-        var pageToken: String? = null
-        do {
-            val page = client.readRecords(
-                ReadRecordsRequest(recordType, timeRangeFilter = range, pageSize = 1000, pageToken = pageToken)
-            )
-            records.addAll(page.records)
-            pageToken = page.pageToken
-        } while (pageToken != null)
-        return records
-    }
-
-    private fun addRecord(
-        array: JSONArray, type: String, id: String, start: Instant, end: Instant,
-        value: JSONObject, source: String?, device: String?
-    ) {
-        array.put(JSONObject()
-            .put("record_type", type)
-            .put("external_id", id.ifBlank { "${type}-${start}" })
-            .put("start_time", start.toString())
-            .put("end_time", end.toString())
-            .put("value", value)
-            .put("source_app", source ?: JSONObject.NULL)
-            .put("source_device", device ?: JSONObject.NULL))
     }
 
     private fun postJson(url: String, body: JSONObject, bearer: String?): JSONObject {
