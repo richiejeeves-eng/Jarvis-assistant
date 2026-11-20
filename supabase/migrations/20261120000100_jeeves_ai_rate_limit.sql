@@ -36,13 +36,13 @@ begin
     floor(extract(epoch from clock_timestamp()) / p_window_seconds) * p_window_seconds
   );
 
-  insert into public.jeeves_ai_request_limits(user_id, window_started_at, request_count)
+  insert into public.jeeves_ai_request_limits as current_limit(user_id, window_started_at, request_count)
   values (v_user_id, v_window, 1)
   on conflict (user_id) do update
     set window_started_at = excluded.window_started_at,
         request_count = case
-          when public.jeeves_ai_request_limits.window_started_at = excluded.window_started_at
-            then public.jeeves_ai_request_limits.request_count + 1
+          when current_limit.window_started_at = excluded.window_started_at
+            then current_limit.request_count + 1
           else 1
         end
   returning request_count into v_count;
