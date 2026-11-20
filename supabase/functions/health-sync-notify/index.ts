@@ -78,22 +78,47 @@ Deno.serve(async (req: Request) => {
     const { data: { user }, error: authError } = await authClient.auth.getUser(authorization.slice(7));
     if (authError || !user) return new Response(JSON.stringify({ error: "Invalid session" }), { status: 401, headers: corsHeaders(origin) });
 
+    const body = await req.json().catch(() => ({}));
+    const requestId = typeof body.request_id === "string" ? body.request_id : "";
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requestId)) {
+      return new Response(JSON.stringify({ error: "A valid health sync request ID is required." }), { status: 400, headers: corsHeaders(origin) });
+    }
+
+    const { data: allowed, error: rateLimitError } = await authClient.rpc("consume_jeeves_notification_request");
+    if (rateLimitError) {
+      console.error("Notification rate limit check failed:", rateLimitError.message);
+      return new Response(JSON.stringify({ error: "Notification service is temporarily unavailable." }), { status: 503, headers: corsHeaders(origin) });
+    }
+    if (allowed !== true) {
+      return new Response(JSON.stringify({ error: "Notification limit reached. Please wait a minute." }), { status: 429, headers: corsHeaders(origin) });
+    }
+
+    const adminKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("SERVICE_ROLE_KEY");
+    if (!adminKey) throw new Error("Supabase service role key is unavailable.");
+    const admin = createClient(url, adminKey);
+    const { data: requestRow, error: requestError } = await admin
+      .from("health_sync_requests")
+      .select("id")
+      .eq("id", requestId)
+      .eq("user_id", user.id)
+      .in("status", ["queued", "processing"])
+      .maybeSingle();
+    if (requestError) throw requestError;
+    if (!requestRow) {
+      return new Response(JSON.stringify({ error: "Health sync request not found or no longer active." }), { status: 404, headers: corsHeaders(origin) });
+    }
+
     const accountText = Deno.env.get("FIREBASE_SERVICE_ACCOUNT_JSON");
     if (!accountText) throw new Error("Firebase service account secret is not configured.");
     const account = JSON.parse(accountText);
     const projectId = account.project_id;
     if (!projectId || !account.client_email || !account.private_key) throw new Error("Firebase service account JSON is incomplete.");
 
-    const adminKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("SERVICE_ROLE_KEY");
-    if (!adminKey) throw new Error("Supabase service role key is unavailable.");
-    const admin = createClient(url, adminKey);
     const { data: tokens, error: tokenError } = await admin
       .from("health_device_tokens").select("token").eq("user_id", user.id);
     if (tokenError) throw tokenError;
     if (!tokens?.length) return new Response(JSON.stringify({ sent: 0, message: "No registered Android devices yet." }), { headers: corsHeaders(origin) });
 
-    const body = await req.json().catch(() => ({}));
-    const requestId = typeof body.request_id === "string" ? body.request_id : "";
     const accessToken = await firebaseAccessToken(account);
     const results = await Promise.all(tokens.map(async ({ token }: { token: string }) => {
       const response = await fetch(`https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`, {
