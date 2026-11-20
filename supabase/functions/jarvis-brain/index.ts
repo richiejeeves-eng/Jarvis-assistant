@@ -313,7 +313,10 @@ Return a concise assessment with: reflection, relevant principles, ethical consi
     }
 
     // Model output is never enough to create a durable memory: require explicit user intent.
-    const explicitlyAskedToRemember = /\\b(remember|save|store|keep in mind)\\b/i.test(message);
+    const memoryIntent = /\b(remember|save|store|keep in mind)\b/i.test(message);
+    const memoryOptOut = /\b(?:don't|do not|never|not)\s+(?:ever\s+)?(?:remember|save|store|keep in mind)\b/i.test(message) ||
+      /\b(?:don't|do not)\s+(?:want|need)\s+(?:you to\s+)?(?:remember|save|store)\b/i.test(message);
+    const explicitlyAskedToRemember = memoryIntent && !memoryOptOut;
     if (!explicitlyAskedToRemember) memory = "";
 
     let saved = "";
