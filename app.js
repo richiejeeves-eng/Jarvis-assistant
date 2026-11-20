@@ -1,5 +1,15 @@
 window.jeevesModeLevel = 3;
 
+const SUPABASE_URL = window.JEEVES_CONFIG.supabaseUrl;
+const SUPABASE_KEY = window.JEEVES_CONFIG.supabasePublishableKey;
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let history = [];
+let activeConversationId = null;
+let conversationSwitchToken = 0;
+let conversationBusy = false;
+let sendingMessage = false;
+
 function showStatus(text) {
   document.getElementById("authstatus").textContent = text;
 }
