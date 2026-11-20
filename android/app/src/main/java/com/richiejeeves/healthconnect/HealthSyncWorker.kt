@@ -19,8 +19,6 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 
 class HealthSyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
-    private val base = "https://aelsipdtezvhjkwsshqx.supabase.co"
-    private val key = "sb_publishable_JbN0kUdtX6d5J8bWAPbz4w_syw2aG4K"
     private val prefs by lazy {
         val master = MasterKey.Builder(applicationContext).setKeyScheme(MasterKey.KeyScheme.AES256_GCM).build()
         EncryptedSharedPreferences.create(applicationContext, "jeeves_auth", master,
@@ -51,7 +49,7 @@ class HealthSyncWorker(context: Context, params: WorkerParameters) : CoroutineWo
             val staleBefore = Instant.now().minus(10, ChronoUnit.MINUTES).toString()
             request(
                 "PATCH",
-                "$base/rest/v1/health_sync_requests?status=eq.processing&started_at=lt.$staleBefore",
+                "$JeevesSupabaseConfig.URL/rest/v1/health_sync_requests?status=eq.processing&started_at=lt.$staleBefore",
                 JSONObject().put("status", "queued").put("started_at", JSONObject.NULL).put("error", JSONObject.NULL),
                 token
             )
@@ -60,14 +58,14 @@ class HealthSyncWorker(context: Context, params: WorkerParameters) : CoroutineWo
             while (processed < 10) {
                 val queue = JSONArray(request(
                     "GET",
-                    "$base/rest/v1/health_sync_requests?select=id&status=eq.queued&order=requested_at.asc&limit=1",
+                    "$JeevesSupabaseConfig.URL/rest/v1/health_sync_requests?select=id&status=eq.queued&order=requested_at.asc&limit=1",
                     null,
                     token
                 ))
                 if (queue.length() == 0) break
 
                 val id = queue.getJSONObject(0).getString("id")
-                val itemUrl = "$base/rest/v1/health_sync_requests?id=eq.$id"
+                val itemUrl = "$JeevesSupabaseConfig.URL/rest/v1/health_sync_requests?id=eq.$id"
                 val claimed = JSONArray(request(
                     "PATCH",
                     "$itemUrl&status=eq.queued",
@@ -86,7 +84,7 @@ class HealthSyncWorker(context: Context, params: WorkerParameters) : CoroutineWo
                         for (i in batchStart until minOf(batchStart + 100, records.length())) {
                             batch.put(records.getJSONObject(i))
                         }
-                        request("POST", "$base/functions/v1/health-sync", JSONObject().put("records", batch), token)
+                        request("POST", "$JeevesSupabaseConfig.URL/functions/v1/health-sync", JSONObject().put("records", batch), token)
                     }
                     request(
                         "PATCH",
@@ -115,7 +113,7 @@ class HealthSyncWorker(context: Context, params: WorkerParameters) : CoroutineWo
         val current = prefs.getString("access_token", null)
         if (current != null && prefs.getLong("expires_at", 0) > System.currentTimeMillis() / 1000) return current
         val refresh = prefs.getString("refresh_token", null) ?: throw IllegalStateException("Sign in to Jeeves Health to enable background sync.")
-        val json = JSONObject(request("POST", "$base/auth/v1/token?grant_type=refresh_token",
+        val json = JSONObject(request("POST", "$JeevesSupabaseConfig.URL/auth/v1/token?grant_type=refresh_token",
             JSONObject().put("refresh_token", refresh), null))
         prefs.edit().putString("access_token", json.getString("access_token"))
             .putString("refresh_token", json.getString("refresh_token"))
@@ -126,7 +124,7 @@ class HealthSyncWorker(context: Context, params: WorkerParameters) : CoroutineWo
     private fun request(method: String, url: String, body: JSONObject?, bearer: String?): String {
         val connection = (URL(url).openConnection() as HttpURLConnection).apply {
             requestMethod = method; connectTimeout = 20000; readTimeout = 30000
-            setRequestProperty("apikey", key); setRequestProperty("Content-Type", "application/json")
+            setRequestProperty("apikey", JeevesSupabaseConfig.PUBLISHABLE_KEY); setRequestProperty("Content-Type", "application/json")
             setRequestProperty("Prefer", if (method == "PATCH") "return=representation" else "return=minimal")
             if (bearer != null) setRequestProperty("Authorization", "Bearer $bearer")
             if (body != null) doOutput = true
