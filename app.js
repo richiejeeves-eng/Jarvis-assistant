@@ -569,9 +569,14 @@ async function send() {
     thinking.textContent = data.reply;
     window.lastResponseSpeaker = data.speaker || (activeAdvisers.length === 1 ? activeAdvisers[0] : "jeeves");
     const savedConversationId = activeConversationId;
-    const assistantMessageId = await saveConversationMessage("assistant", data.reply);
-    thinking.dataset.messageId = assistantMessageId;
-    addFeedbackControls(thinking, assistantMessageId, savedConversationId);
+    try {
+      const assistantMessageId = await saveConversationMessage("assistant", data.reply);
+      thinking.dataset.messageId = assistantMessageId;
+      addFeedbackControls(thinking, assistantMessageId, savedConversationId);
+    } catch (saveError) {
+      console.warn("Assistant message save failed:", saveError);
+      addNote("Your reply was delivered, but could not be saved to conversation history.");
+    }
     history.push({ role: "model", text: data.reply });
     history = history.slice(-10);
     refreshConversationList(activeConversationId, false).catch(error => console.warn("Conversation list refresh failed:", error));
