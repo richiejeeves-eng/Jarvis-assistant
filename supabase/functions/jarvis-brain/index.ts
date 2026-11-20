@@ -35,6 +35,16 @@ Deno.serve(async (req) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.slice(7));
     if (authError || !user) return json({ error: "Invalid or expired session" }, 401);
 
+    const { data: allowed, error: rateLimitError } = await supabase.rpc("consume_jeeves_ai_request", {
+      p_window_seconds: 60,
+      p_max_requests: 6,
+    });
+    if (rateLimitError) {
+      console.log("AI rate limit check failed:", rateLimitError.message);
+      return json({ error: "AI service is temporarily unavailable. Please try again shortly." }, 503);
+    }
+    if (allowed !== true) return json({ error: "Request limit reached. Please wait a minute before trying again." }, 429);
+
     const apiKey = Deno.env.get("GEMINI_API_KEY");
     if (!apiKey) {
       return json({ error: "GEMINI_API_KEY secret is not set yet." }, 500);
