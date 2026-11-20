@@ -21,15 +21,39 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
+  if (req.method !== "POST") return json({ error: "POST required" }, 405);
 
   try {
+    const authHeader = req.headers.get("Authorization") ?? "";
+    if (!authHeader.startsWith("Bearer ")) return json({ error: "Sign in required" }, 401);
+
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } },
+    );
+    const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.slice(7));
+    if (authError || !user) return json({ error: "Invalid or expired session" }, 401);
+
     const apiKey = Deno.env.get("GEMINI_API_KEY");
     if (!apiKey) {
       return json({ error: "GEMINI_API_KEY secret is not set yet." }, 500);
     }
 
     const body = await req.json();
+    if (body.ping === true) return json({ ok: true });
     const message = typeof body.message === "string" ? body.message.trim() : "";
+    let imagePart: { inlineData: { mimeType: string; data: string } } | null = null;
+    if (body.image !== undefined && body.image !== null) {
+      const mime = body.image?.mime;
+      const encoded = body.image?.data;
+      if (!["image/jpeg", "image/png", "image/webp"].includes(mime) ||
+          typeof encoded !== "string" || encoded.length === 0 || encoded.length > 4_000_000 ||
+          !/^[A-Za-z0-9+/]+={0,2}$/.test(encoded)) {
+        return json({ error: "Image must be a valid JPEG, PNG or WebP under 3 MB." }, 400);
+      }
+      imagePart = { inlineData: { mimeType: mime, data: encoded } };
+    }
     const requestedAdvisers = Array.isArray(body.active_advisers) ? body.active_advisers : ["mind", "body", "soul"];
     const activeAdvisers = ["mind", "body", "soul"].filter((name) => requestedAdvisers.includes(name));
     if (!message || message.length > 2000) {
@@ -50,13 +74,6 @@ Deno.serve(async (req) => {
     while (history.length > 0 && history[0].role !== "user") {
       history.shift();
     }
-
-    const authHeader = req.headers.get("Authorization") ?? "";
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } },
-    );
 
     // Text used to find relevant memories: this message plus the previous user message
     const lastUser = [...rawHistory].reverse().find((h) => h && h.role === "user");
@@ -202,9 +219,11 @@ Return a concise assessment with: reflection, relevant principles, ethical consi
       return parts.map((p: { text?: string }) => p.text ?? "").join("");
     }
 
-    const adviserContents = [...history, { role: "user", parts: [{
+    const currentParts: any[] = [{
       text: "User's current request:\\n" + message + "\\n\\n" + sharedContext
-    }] }];
+    }];
+    if (imagePart) currentParts.push(imagePart);
+    const adviserContents = [...history, { role: "user", parts: currentParts }];
 
     console.log("calling Jeeves Council: Mind, Body and Soul; model:", MODEL);
     const adviserJobs: Promise<string>[] = [];
@@ -222,7 +241,9 @@ Return a concise assessment with: reflection, relevant principles, ethical consi
       "\\n\\nSelected Council assessments:\\n" + councilAdvice +
       "\\n\\nReturn JSON. speaker: exactly one of 'jeeves', 'mind', 'body', or 'soul'; use the sole selected adviser when exactly one is active, otherwise 'jeeves'. reply: final answer to user, in the speaker voice described above, incorporating only relevant specialist advice. memory: ONE short durable fact/preference/goal from the latest user message (under 200 characters), or empty if none/already saved/question/small talk/to-do. Never save passwords, keys, card numbers or ID numbers. task_title: only if user explicitly asks for reminder/to-do, 2-6 words; otherwise empty. task_due_at: ISO 8601 with offset only when a due time was supplied; otherwise empty. You cannot mark tasks done; direct user to Show tasks.";
 
-    const chiefRaw = await askGemini(chiefPrompt, [{ role: "user", parts: [{ text: message }] }], true);
+    const chiefParts: any[] = [{ text: message }];
+    if (imagePart) chiefParts.push(imagePart);
+    const chiefRaw = await askGemini(chiefPrompt, [{ role: "user", parts: chiefParts }], true);
     const raw = chiefRaw;
 
     let reply = raw;
