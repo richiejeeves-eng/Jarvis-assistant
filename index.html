@@ -115,7 +115,7 @@ function setAssistanceLevel(level,name){document.querySelectorAll('.level-btn').
 function openIdeaModal(){document.getElementById('idea-modal').classList.add('show');document.getElementById('idea-input').focus();}
 function closeIdeaModal(){document.getElementById('idea-modal').classList.remove('show');}
 function submitIdea(){const v=document.getElementById('idea-input').value.trim();if(!v)return;closeIdeaModal();quickPrompt('Please triage this idea. Assess value, effort, risks and the best next step. Do not create a task unless I approve.\n\nIdea: '+v);}
-function triggerQuickSearch(){const v=prompt('What would you like Jeeves to find or do?');if(v)quickPrompt(v);}
+
 
 
 </script>
