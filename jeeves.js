@@ -41,22 +41,6 @@ function applyTheme(id) {
   } catch (e) {}
 }
 
-function cycleTheme() {
-  let current = "navy";
-  try {
-    current = localStorage.getItem("jeeves-theme") || "navy";
-  } catch (e) {}
-
-  const index = THEMES.findIndex(function (t) { return t.id === current; });
-  applyTheme(THEMES[(index + 1) % THEMES.length].id);
-}
-
-let savedTheme = "navy";
-try {
-  savedTheme = localStorage.getItem("jeeves-theme") || "navy";
-} catch (e) {}
-applyTheme(savedTheme);
-
 async function useMyLocation() {
   if (!navigator.geolocation) {
     addMessage("Location is not available in this browser.", "bot");
