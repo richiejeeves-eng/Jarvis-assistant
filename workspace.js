@@ -267,6 +267,17 @@
     }
     search.addEventListener("input",load);await load();
   }
+  function mountCouncilPrefs() {
+    const toggles=Array.from(document.querySelectorAll(".council-toggle"));
+    try {
+      const saved=JSON.parse(localStorage.getItem("jeeves-council-advisers")||"null");
+      if(saved&&typeof saved==="object")toggles.forEach(input=>{if(typeof saved[input.dataset.adviser]==="boolean")input.checked=saved[input.dataset.adviser];});
+    } catch(e) {}
+    toggles.forEach(input=>input.addEventListener("change",()=>{
+      const state={};toggles.forEach(item=>state[item.dataset.adviser]=item.checked);
+      try{localStorage.setItem("jeeves-council-advisers",JSON.stringify(state));}catch(e){}
+    }));
+  }
   function mountNav() {
     const nav=document.querySelector('[aria-label="Knowledge and system tools"]');
     if(!nav)return;
@@ -287,6 +298,6 @@
     renderIdeas(ideas);
   }
   window.refreshJeevesWorkspaces=()=>mountViews();
-  document.addEventListener("DOMContentLoaded",()=>{mountNav();mountViews();});
+  document.addEventListener("DOMContentLoaded",()=>{mountNav();mountCouncilPrefs();mountViews();});
   if(typeof db!=="undefined"&&db.auth)db.auth.onAuthStateChange((event)=>{if(["SIGNED_IN","SIGNED_OUT","TOKEN_REFRESHED"].includes(event))setTimeout(mountViews,150);});
 })();
