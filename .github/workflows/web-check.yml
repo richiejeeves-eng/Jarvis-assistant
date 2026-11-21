@@ -14,6 +14,11 @@ on:
   pull_request:
     paths:
       - "*.js"
+      - "*.html"
+      - "*.css"
+      - "sw.js"
+      - "config.js"
+      - "scripts/**"
       - "supabase/functions/**"
       - ".github/workflows/web-check.yml"
 
