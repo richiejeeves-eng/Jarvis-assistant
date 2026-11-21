@@ -135,6 +135,20 @@ Deno.serve(async (req) => {
       return json({ updated: true, item: data }, 200, origin);
     }
 
+    if (action === "list_links") {
+      const itemId = typeof body.item_id === "string" ? body.item_id : "";
+      if (itemId && !uuidPattern.test(itemId)) return json({ error: "Valid item_id required" }, 400, origin);
+      let query = supabase
+        .from("knowledge_links")
+        .select("id,from_item_id,to_item_id,relation,created_at")
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (itemId) query = query.or("from_item_id.eq." + itemId + ",to_item_id.eq." + itemId);
+      const { data, error } = await query;
+      if (error) throw error;
+      return json({ links: data ?? [] }, 200, origin);
+    }
+
     if (action === "link") {
       const from = typeof body.from_item_id === "string" ? body.from_item_id : "";
       const to = typeof body.to_item_id === "string" ? body.to_item_id : "";
@@ -154,8 +168,9 @@ Deno.serve(async (req) => {
     if (action === "unlink") {
       const id = typeof body.id === "string" ? body.id : "";
       if (!uuidPattern.test(id)) return json({ error: "Valid link id required" }, 400, origin);
-      const { error } = await supabase.from("knowledge_links").delete().eq("id", id);
+      const { data, error } = await supabase.from("knowledge_links").delete().eq("id", id).select("id").maybeSingle();
       if (error) throw error;
+      if (!data) return json({ error: "Knowledge link not found" }, 404, origin);
       return json({ unlinked: true }, 200, origin);
     }
 
@@ -163,8 +178,9 @@ Deno.serve(async (req) => {
       if (body.confirm_delete !== true) return json({ error: "Explicit confirm_delete: true is required" }, 403, origin);
       const id = typeof body.id === "string" ? body.id : "";
       if (!uuidPattern.test(id)) return json({ error: "Valid item id required" }, 400, origin);
-      const { error } = await supabase.from("knowledge_items").delete().eq("id", id);
+      const { data, error } = await supabase.from("knowledge_items").delete().eq("id", id).select("id").maybeSingle();
       if (error) throw error;
+      if (!data) return json({ error: "Knowledge item not found" }, 404, origin);
       return json({ deleted: true }, 200, origin);
     }
 
