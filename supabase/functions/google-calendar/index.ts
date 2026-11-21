@@ -219,7 +219,7 @@ async function getAccessToken(userId: string) {
     }),
   });
   const data = await refreshed.json();
-  if (!refreshed.ok || !data.access_token) throw new Error("Google authorisation expired. Reconnect Google Calendar.");
+  if (!refreshed.ok || !data.access_token) throw new Error("Google authorisation expired. Reconnect this Google integration.");
   await admin.from("google_calendar_tokens").update({
     access_token_ciphertext: await encryptToken(data.access_token),
     expires_at: new Date(Date.now() + Number(data.expires_in || 3600) * 1000).toISOString(),
