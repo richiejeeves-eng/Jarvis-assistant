@@ -214,8 +214,29 @@
         const term=search.value.trim().toLowerCase();
         const filtered=(data||[]).filter(x=>!term||(x.title+" "+x.content+" "+(x.tags||[]).join(" ")).toLowerCase().includes(term));
         listHost.replaceChildren();
+        if(data.length>1){
+          const linkForm=node("form",undefined,"jw-form");
+          const from=node("label",undefined,"jw-field");from.append(node("span","Link from"));
+          const fromSelect=node("select");fromSelect.name="from_item_id";
+          const to=node("label",undefined,"jw-field");to.append(node("span","Link to"));
+          const toSelect=node("select");toSelect.name="to_item_id";
+          data.forEach(item=>{const a=node("option",item.title);a.value=item.id;fromSelect.append(a);const b=node("option",item.title);b.value=item.id;toSelect.append(b);});
+          const relation=node("label",undefined,"jw-field");relation.append(node("span","Relationship"));
+          const relInput=node("input");relInput.name="relation";relInput.value="related";relInput.required=true;relation.append(relInput);
+          const linkButton=node("button","Create link","action-primary");linkButton.type="submit";
+          linkForm.append(from, to, relation, linkButton);
+          linkForm.addEventListener("submit",async e=>{e.preventDefault();if(fromSelect.value===toSelect.value){status(content,"Choose two different knowledge items.");return;}linkButton.disabled=true;try{await insert("knowledge_links",{from_item_id:fromSelect.value,to_item_id:toSelect.value,relation:relInput.value.trim().slice(0,80)});status(content,"Knowledge link saved.");}catch(err){status(content,err.message);}finally{linkButton.disabled=false;}});
+          from.append(fromSelect);to.append(toSelect);listHost.append(linkForm);
+          try{
+            const {data:links,error:linkError}=await db.from("knowledge_links").select("id,from_item_id,to_item_id,relation").order("created_at",{ascending:false}).limit(100);
+            if(linkError)throw linkError;
+            const own=(links||[]).filter(link=>data.some(x=>x.id===link.from_item_id)&&data.some(x=>x.id===link.to_item_id));
+            own.forEach(link=>{const row=node("div",undefined,"jw-actions");row.append(node("span",data.find(x=>x.id===link.from_item_id).title+" — "+link.relation+" → "+data.find(x=>x.id===link.to_item_id).title));row.append(action("Remove link",async()=>{try{await remove("knowledge_links",link.id);await load();}catch(err){status(content,err.message);}}));listHost.append(row);});
+          }catch(err){status(content,err.message);}
+        }
         renderList(listHost,filtered,item=>{
           const el=card(item.title,item.content,item.category+" · "+(item.tags||[]).join(", "));
+          el.append(action("Edit",async()=>{const title=prompt("Knowledge title",item.title);if(title===null||!title.trim())return;const body=prompt("Knowledge content",item.content);if(body===null)return;try{await update("knowledge_items",item.id,{title:title.trim(),content:body});await load();}catch(e){status(content,e.message);}}));
           el.append(action("Archive",async()=>{try{await update("knowledge_items",item.id,{archived_at:new Date().toISOString()});await load();}catch(e){status(content,e.message);}}));
           el.append(action("Delete",async()=>{if(!confirm("Permanently delete this knowledge item?"))return;try{await remove("knowledge_items",item.id);await load();}catch(e){status(content,e.message);}}));
           return el;
