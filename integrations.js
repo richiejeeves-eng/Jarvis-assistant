@@ -2,7 +2,7 @@
   const entries = [
     { group: "CORE SERVICES", name: "Gemini AI", detail: "Jeeves reasoning via jeeves-brain", status: "Configured", kind: "ready", icon: "✧" },
     { group: "CORE SERVICES", name: "Supabase", detail: "Authentication, database and persistent conversations", status: "Configured", kind: "ready", icon: "▤" },
-    { group: "CORE SERVICES", name: "ElevenLabs", detail: "Jeeves voice generation via jeeves-voice", status: "Configured", kind: "ready", icon: "♫" },
+    { group: "CORE SERVICES", name: "Device speech", detail: "Browser-native speech synthesis; no external voice API or credits", status: "Free · on-device", kind: "ready", icon: "♫" },
     { group: "GOOGLE WORKSPACE", name: "Google Calendar", detail: "Read upcoming events and create approved events", status: "OAuth setup required", kind: "setup", icon: "◷" },
     { group: "GOOGLE WORKSPACE", name: "Google Tasks", detail: "Import Google Tasks into Jeeves and sync completion", status: "Additional permission required", kind: "setup", icon: "✓" },
     { group: "GOOGLE WORKSPACE", name: "Gmail", detail: "Optional email reading and replies · restricted-scope verification required for public release", status: "Awaiting authorisation", kind: "setup", icon: "✉" },
