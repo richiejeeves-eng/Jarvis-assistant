@@ -2,68 +2,160 @@ openapi: 3.1.0
 info:
   title: Jeeves API
   version: 1.0.0
-  description: Authenticated API gateway for Jeeves services hosted on Supabase Edge Functions.
+  description: Authenticated, user-scoped API facade for Jeeves.
 servers:
   - url: https://aelsipdtezvhjkwsshqx.supabase.co/functions/v1/jeeves-api
 security:
   - bearerAuth: []
     publishableKey: []
 paths:
-  /:
+  /v1:
+    get:
+      summary: Get API catalogue
+      responses:
+        "200":
+          description: API capabilities
+  /v1/brain:
     post:
-      summary: Invoke a Jeeves v1 service
-      operationId: invokeJeevesService
-      parameters:
-        - in: header
-          name: apikey
-          required: true
-          schema:
-            type: string
-          description: Supabase publishable key. Never use a secret/service-role key in clients.
+      summary: Send a message to Jeeves Brain
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Envelope'
-            examples:
-              status:
-                value: { version: v1, service: status, payload: {} }
-              createTask:
-                value:
-                  version: v1
-                  service: tasks
-                  payload:
-                    action: create
-                    title: Review project plan
-              askBrain:
-                value:
-                  version: v1
-                  service: brain
-                  payload:
-                    message: Help me plan my week
-                    mode: 3
+              type: object
+              required: [message]
+              properties:
+                message:
+                  type: string
+                  maxLength: 2000
+                mode:
+                  type: integer
+                timezone:
+                  type: string
+                active_advisers:
+                  type: array
+                  items:
+                    type: string
+                    enum: [mind, body, soul]
       responses:
-        '200':
-          description: Successful API or upstream response.
-        '400':
-          description: Invalid request or unsupported action.
-        '401':
-          description: Missing or invalid user session.
-        '403':
-          description: Origin or permission rejected.
-        '404':
-          description: Unknown service or user-owned resource not found.
-        '413':
-          description: Request body too large.
-        '429':
-          description: Upstream rate limit reached.
-        '500':
-          description: Internal API error.
-        '503':
-          description: API configuration or dependency unavailable.
-        '504':
-          description: Upstream timeout.
+        "200":
+          description: Jeeves response
+        "401":
+          description: Authentication required
+        "429":
+          description: Rate limit reached
+  /v1/google:
+    post:
+      summary: Call an authorised Google integration action
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action]
+              properties:
+                action:
+                  type: string
+                  enum: [authorize, status, disconnect, events, create, gmailMessages, gmailReply, driveFiles, syncTasks, createTask, deleteTask, completeTask]
+      responses:
+        "200":
+          description: Google integration result
+        "401":
+          description: Authentication required
+  /v1/health/sync:
+    post:
+      summary: Store Health Connect records
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [records]
+              properties:
+                records:
+                  type: array
+                  maxItems: 500
+                  items:
+                    type: object
+      responses:
+        "200":
+          description: Sync result
+  /v1/health/notify:
+    post:
+      summary: Send a notification for an authorised health sync request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [request_id]
+              properties:
+                request_id:
+                  type: string
+                  format: uuid
+      responses:
+        "200":
+          description: Notification result
+  /v1/voice:
+    post:
+      summary: Voice generation (disabled)
+      responses:
+        "501":
+          description: Disabled until a verified no-cost provider is configured
+  /v1/data/{table}:
+    description: Health records are read-only here; task and memory POST bodies require confirmed: true and the gateway strips user_id.
+    parameters:
+      - name: table
+        in: path
+        required: true
+        schema:
+          type: string
+          enum: [tasks, memories, conversations, conversation_messages, health_records]
+    get:
+      summary: Read user-owned records
+      parameters:
+        - name: select
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Rows permitted by Row Level Security
+    post:
+      summary: Insert user-owned records
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - type: object
+                - type: array
+                  items:
+                    type: object
+      responses:
+        "201":
+          description: Insert result
+    patch:
+      summary: Update user-owned records
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Update result
+    delete:
+      summary: Delete user-owned records
+      responses:
+        "200":
+          description: Delete result
 components:
   securitySchemes:
     bearerAuth:
@@ -74,17 +166,3 @@ components:
       type: apiKey
       in: header
       name: apikey
-  schemas:
-    Envelope:
-      type: object
-      required: [version, service, payload]
-      properties:
-        version:
-          type: string
-          const: v1
-        service:
-          type: string
-          enum: [status, brain, memories, tasks, conversations, messages, calendar, voice, health]
-        payload:
-          type: object
-          description: Service-specific request object. See docs/JEEVES_API.md.
