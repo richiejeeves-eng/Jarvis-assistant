@@ -20,6 +20,10 @@ const FUNCTION_ROUTES: Record<string, string> = {
   "/v1/health/notify": "health-sync-notify",
 };
 
+const ALLOWED_PREFER = new Set([
+  "return=minimal", "return=representation", "count=exact",
+]);
+
 const DATA_TABLES = new Set([
   "tasks",
   "memories",
@@ -183,6 +187,13 @@ async function forwardData(
   if (search.length > 4096) {
     return json({ error: "Query string is too long.", code: "QUERY_TOO_LARGE" }, 414, origin, requestId);
   }
+  if (req.method === "POST" && new URLSearchParams(search).has("on_conflict")) {
+    return json({ error: "Upserts are disabled.", code: "UPSERT_DISABLED" }, 400, origin, requestId);
+  }
+  const prefer = (req.headers.get("Prefer") || "").split(",").map((p) => p.trim()).filter(Boolean);
+  if (!prefer.every((p) => ALLOWED_PREFER.has(p))) {
+    return json({ error: "Unsupported Prefer header.", code: "PREFER_NOT_ALLOWED" }, 400, origin, requestId);
+  }
   if (req.method === "GET") {
     const params = new URLSearchParams(search);
     const requestedLimit = Number(params.get("limit"));
@@ -227,8 +238,8 @@ async function forwardData(
         if (table === "memories" && (typeof row.content !== "string" || !row.content.trim() || row.content.length > 2000)) {
           return json({ error: "Memory content must be 1 to 2000 characters.", code: "INVALID_MEMORY_CONTENT" }, 400, origin, requestId);
         }
-        if (table === "tasks" && (typeof row.title !== "string" || !row.title.trim() || row.title.length > 180)) {
-          return json({ error: "Task title must be 1 to 180 characters.", code: "INVALID_TASK_TITLE" }, 400, origin, requestId);
+        if (table === "tasks" && (typeof row.title !== "string" || !row.title.trim() || row.title.length > 300)) {
+          return json({ error: "Task title must be 1 to 300 characters.", code: "INVALID_TASK_TITLE" }, 400, origin, requestId);
         }
       }
     }
@@ -245,12 +256,14 @@ async function forwardData(
     const value = req.headers.get(name);
     if (value) headers.set(name, value);
   }
-  const requestedRange = req.headers.get("Range");
-  const rangeMatch = requestedRange?.match(/^(\d+)-(\d+)$/);
+  headers.delete("Range");
+  const rangeMatch = req.headers.get("Range")?.match(/^(\d+)-(\d+)$/);
   if (rangeMatch) {
     const rangeStart = Number(rangeMatch[1]);
     const rangeEnd = Math.min(Number(rangeMatch[2]), rangeStart + MAX_DATA_ROWS - 1);
     headers.set("Range", rangeStart + "-" + rangeEnd);
+  } else {
+    headers.delete("Range-Unit");
   }
 
   try {
