@@ -5,9 +5,6 @@ import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.permission.HealthPermission.Companion.PERMISSION_READ_HEALTH_DATA_IN_BACKGROUND
 import androidx.health.connect.client.records.*
-import androidx.health.connect.client.request.AggregateRequest
-import androidx.health.connect.client.request.ReadRecordsRequest
-import androidx.health.connect.client.time.TimeRangeFilter
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import androidx.work.CoroutineWorker
@@ -19,13 +16,9 @@ import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 
 class HealthSyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
-    private val base = "https://aelsipdtezvhjkwsshqx.supabase.co"
-    private val key = "sb_publishable_JbN0kUdtX6d5J8bWAPbz4w_syw2aG4K"
     private val prefs by lazy {
         val master = MasterKey.Builder(applicationContext).setKeyScheme(MasterKey.KeyScheme.AES256_GCM).build()
         EncryptedSharedPreferences.create(applicationContext, "jeeves_auth", master,
@@ -56,7 +49,7 @@ class HealthSyncWorker(context: Context, params: WorkerParameters) : CoroutineWo
             val staleBefore = Instant.now().minus(10, ChronoUnit.MINUTES).toString()
             request(
                 "PATCH",
-                "$base/rest/v1/health_sync_requests?status=eq.processing&started_at=lt.$staleBefore",
+                "${JeevesSupabaseConfig.URL}/rest/v1/health_sync_requests?status=eq.processing&started_at=lt.$staleBefore",
                 JSONObject().put("status", "queued").put("started_at", JSONObject.NULL).put("error", JSONObject.NULL),
                 token
             )
@@ -65,14 +58,14 @@ class HealthSyncWorker(context: Context, params: WorkerParameters) : CoroutineWo
             while (processed < 10) {
                 val queue = JSONArray(request(
                     "GET",
-                    "$base/rest/v1/health_sync_requests?select=id&status=eq.queued&order=requested_at.asc&limit=1",
+                    "${JeevesSupabaseConfig.URL}/rest/v1/health_sync_requests?select=id&status=eq.queued&order=requested_at.asc&limit=1",
                     null,
                     token
                 ))
                 if (queue.length() == 0) break
 
                 val id = queue.getJSONObject(0).getString("id")
-                val itemUrl = "$base/rest/v1/health_sync_requests?id=eq.$id"
+                val itemUrl = "${JeevesSupabaseConfig.URL}/rest/v1/health_sync_requests?id=eq.$id"
                 val claimed = JSONArray(request(
                     "PATCH",
                     "$itemUrl&status=eq.queued",
@@ -85,13 +78,13 @@ class HealthSyncWorker(context: Context, params: WorkerParameters) : CoroutineWo
                 }
 
                 try {
-                    val records = readRecords(client, granted)
+                    val records = HealthRecordReader.read(client, granted)
                     for (batchStart in 0 until records.length() step 100) {
                         val batch = JSONArray()
                         for (i in batchStart until minOf(batchStart + 100, records.length())) {
                             batch.put(records.getJSONObject(i))
                         }
-                        request("POST", "$base/functions/v1/health-sync", JSONObject().put("records", batch), token)
+                        request("POST", "${JeevesSupabaseConfig.URL}/functions/v1/health-sync", JSONObject().put("records", batch), token)
                     }
                     request(
                         "PATCH",
@@ -120,7 +113,7 @@ class HealthSyncWorker(context: Context, params: WorkerParameters) : CoroutineWo
         val current = prefs.getString("access_token", null)
         if (current != null && prefs.getLong("expires_at", 0) > System.currentTimeMillis() / 1000) return current
         val refresh = prefs.getString("refresh_token", null) ?: throw IllegalStateException("Sign in to Jeeves Health to enable background sync.")
-        val json = JSONObject(request("POST", "$base/auth/v1/token?grant_type=refresh_token",
+        val json = JSONObject(request("POST", "${JeevesSupabaseConfig.URL}/auth/v1/token?grant_type=refresh_token",
             JSONObject().put("refresh_token", refresh), null))
         prefs.edit().putString("access_token", json.getString("access_token"))
             .putString("refresh_token", json.getString("refresh_token"))
@@ -128,80 +121,10 @@ class HealthSyncWorker(context: Context, params: WorkerParameters) : CoroutineWo
         return json.getString("access_token")
     }
 
-    private suspend fun readRecords(client: HealthConnectClient, granted: Set<String>): JSONArray {
-        val out = JSONArray()
-        val now = Instant.now()
-        val since = now.minus(30, ChronoUnit.DAYS)
-        val range = TimeRangeFilter.between(since, now)
-        fun add(type: String, id: String, start: Instant, end: Instant, value: JSONObject, source: String?, device: String?) {
-            out.put(JSONObject().put("record_type", type).put("external_id", id.ifBlank { "$type-$start" })
-                .put("start_time", start.toString()).put("end_time", end.toString()).put("value", value)
-                .put("source_app", source ?: JSONObject.NULL).put("source_device", device ?: JSONObject.NULL))
-        }
-        if (HealthPermission.getReadPermission(StepsRecord::class) in granted) {
-            val today = LocalDate.now()
-            for (daysAgo in 29 downTo 0) {
-                val day = today.minusDays(daysAgo.toLong())
-                val start = day.atStartOfDay(ZoneId.systemDefault()).toInstant()
-                val end = minOf(day.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant(), now)
-                if (end <= start) continue
-                val total = client.aggregate(AggregateRequest(setOf(StepsRecord.COUNT_TOTAL), TimeRangeFilter.between(start, end)))[StepsRecord.COUNT_TOTAL] ?: 0L
-                if (total > 0) add("steps", "steps-$day", start, end, JSONObject().put("count", total), "Health Connect", null)
-            }
-        }
-        if (HealthPermission.getReadPermission(HeartRateRecord::class) in granted) {
-            readAllRecords(client, HeartRateRecord::class, range).forEach { r ->
-                val samples = JSONArray()
-                r.samples.forEach { s -> samples.put(JSONObject().put("bpm", s.beatsPerMinute).put("time", s.time.toString())) }
-                add("heart_rate", r.metadata.id, r.startTime, r.endTime, JSONObject().put("samples", samples), r.metadata.dataOrigin.packageName, r.metadata.device?.model)
-            }
-        }
-        if (HealthPermission.getReadPermission(SleepSessionRecord::class) in granted) {
-            readAllRecords(client, SleepSessionRecord::class, range).forEach { r ->
-                add("sleep", r.metadata.id, r.startTime, r.endTime, JSONObject().put("duration_minutes", ChronoUnit.MINUTES.between(r.startTime, r.endTime)).put("stage_count", r.stages.size), r.metadata.dataOrigin.packageName, r.metadata.device?.model)
-            }
-        }
-        if (HealthPermission.getReadPermission(WeightRecord::class) in granted) {
-            readAllRecords(client, WeightRecord::class, range).forEach { r ->
-                add("weight", r.metadata.id, r.time, r.time, JSONObject().put("kg", r.weight.inKilograms), r.metadata.dataOrigin.packageName, r.metadata.device?.model)
-            }
-        }
-        if (HealthPermission.getReadPermission(BodyFatRecord::class) in granted) {
-            readAllRecords(client, BodyFatRecord::class, range).forEach { r ->
-                add("body_fat", r.metadata.id, r.time, r.time, JSONObject().put("percentage", r.percentage.value), r.metadata.dataOrigin.packageName, r.metadata.device?.model)
-            }
-        }
-        if (HealthPermission.getReadPermission(BloodPressureRecord::class) in granted) {
-            readAllRecords(client, BloodPressureRecord::class, range).forEach { r ->
-                add("blood_pressure", r.metadata.id, r.time, r.time, JSONObject().put("systolic_mmhg", r.systolic.inMillimetersOfMercury)
-                    .put("diastolic_mmhg", r.diastolic.inMillimetersOfMercury).put("measurement_location", r.measurementLocation),
-                    r.metadata.dataOrigin.packageName, r.metadata.device?.model)
-            }
-        }
-        return out
-    }
-
-    private suspend fun <T : Record> readAllRecords(
-        client: HealthConnectClient,
-        recordType: kotlin.reflect.KClass<T>,
-        range: TimeRangeFilter
-    ): List<T> {
-        val records = mutableListOf<T>()
-        var pageToken: String? = null
-        do {
-            val page = client.readRecords(
-                ReadRecordsRequest(recordType, timeRangeFilter = range, pageSize = 1000, pageToken = pageToken)
-            )
-            records.addAll(page.records)
-            pageToken = page.pageToken
-        } while (pageToken != null)
-        return records
-    }
-
     private fun request(method: String, url: String, body: JSONObject?, bearer: String?): String {
         val connection = (URL(url).openConnection() as HttpURLConnection).apply {
             requestMethod = method; connectTimeout = 20000; readTimeout = 30000
-            setRequestProperty("apikey", key); setRequestProperty("Content-Type", "application/json")
+            setRequestProperty("apikey", JeevesSupabaseConfig.PUBLISHABLE_KEY); setRequestProperty("Content-Type", "application/json")
             setRequestProperty("Prefer", if (method == "PATCH") "return=representation" else "return=minimal")
             if (bearer != null) setRequestProperty("Authorization", "Bearer $bearer")
             if (body != null) doOutput = true

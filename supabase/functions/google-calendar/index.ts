@@ -1,4 +1,4 @@
-import { createClient } from "npm:@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2.119.2";
 
 const APP_URL = "https://richiejeeves-eng.github.io/Jeeves-assistant/";
 const REDIRECT_URI = Deno.env.get("SUPABASE_URL") + "/functions/v1/google-calendar";

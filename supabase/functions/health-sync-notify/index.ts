@@ -1,4 +1,4 @@
-import { createClient } from "npm:@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2.119.2";
 
 const allowedOrigins = new Set([
   "https://richiejeeves-eng.github.io",
@@ -78,7 +78,18 @@ Deno.serve(async (req: Request) => {
     const { data: { user }, error: authError } = await authClient.auth.getUser(authorization.slice(7));
     if (authError || !user) return new Response(JSON.stringify({ error: "Invalid session" }), { status: 401, headers: corsHeaders(origin) });
 
-    const body = await req.json().catch(() => ({}));
+    const rawBody = await req.text();
+    if (new TextEncoder().encode(rawBody).byteLength > 8_192) {
+      return new Response(JSON.stringify({ error: "Notification request body is too large." }), { status: 413, headers: corsHeaders(origin) });
+    }
+    let body: Record<string, unknown>;
+    try {
+      const parsed = JSON.parse(rawBody);
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("Invalid request body");
+      body = parsed as Record<string, unknown>;
+    } catch {
+      return new Response(JSON.stringify({ error: "Invalid JSON request body." }), { status: 400, headers: corsHeaders(origin) });
+    }
     const requestId = typeof body.request_id === "string" ? body.request_id : "";
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requestId)) {
       return new Response(JSON.stringify({ error: "A valid health sync request ID is required." }), { status: 400, headers: corsHeaders(origin) });

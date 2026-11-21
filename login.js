@@ -1,4 +1,4 @@
-const loginDb = window.supabase.createClient("https://aelsipdtezvhjkwsshqx.supabase.co","sb_publishable_JbN0kUdtX6d5J8bWAPbz4w_syw2aG4K");
+const loginDb = window.supabase.createClient(window.JEEVES_CONFIG.supabaseUrl,window.JEEVES_CONFIG.supabasePublishableKey);
 const loginSession = document.getElementById("login-session");
 const loginForm = document.getElementById("login-form");
 const loginCurrent = document.getElementById("login-current");

@@ -1,32 +1,7 @@
-// Jeeves Council autonomy selector — all three specialists remain active at every level.
-const JEEVES_COUNCIL_LEVELS = {
-  1: { name: "Adviser-led", label: "Level 1 · Adviser", description: "Council advises; user directs." },
-  2: { name: "Organiser-led", label: "Level 2 · Organiser", description: "Council plans and tracks with approval." },
-  3: { name: "Operations-led", label: "Level 3 · Operations", description: "Council prepares coordinated work for approval." }
-};
-window.jeevesModeLevel = Number(localStorage.getItem("jeeves-council-level") || 3);
-window.jeevesMode = JEEVES_COUNCIL_LEVELS[window.jeevesModeLevel]?.name || "Operations-led";
-function setAssistanceLevel(level) {
-  const chosen = JEEVES_COUNCIL_LEVELS[Number(level)];
-  if (!chosen) return;
-  window.jeevesModeLevel = Number(level);
-  window.jeevesMode = chosen.name;
-  localStorage.setItem("jeeves-council-level", String(level));
-  document.querySelectorAll(".level-btn").forEach(function(button) {
-    const active = Number(button.dataset.level) === Number(level);
-    button.classList.toggle("selected", active);
-    button.setAttribute("aria-pressed", active ? "true" : "false");
-  });
-  const note = document.querySelector(".autonomy p");
-  if (note) note.textContent = chosen.description + " Only selected Council advisers contribute.";
-}
-document.addEventListener("DOMContentLoaded", function() {
-  setAssistanceLevel(window.jeevesModeLevel);
-});
+window.jeevesModeLevel = 3;
 
-const SUPABASE_URL = "https://aelsipdtezvhjkwsshqx.supabase.co";
-const SUPABASE_KEY = "sb_publishable_JbN0kUdtX6d5J8bWAPbz4w_syw2aG4K";
-
+const SUPABASE_URL = window.JEEVES_CONFIG.supabaseUrl;
+const SUPABASE_KEY = window.JEEVES_CONFIG.supabasePublishableKey;
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let history = [];
@@ -129,10 +104,6 @@ function newChat() {
   document.getElementById("conversationSelect").value = "";
   renderChatLog();
   document.getElementById("chat").textContent = "";
-}
-
-function clearChat() {
-  newChat();
 }
 
 async function enableTaskNotifications() {
@@ -491,30 +462,6 @@ async function submitFeedback(controls, messageId, conversationId, feedbackType,
   controls.appendChild(confirmation);
 }
 
-function startMorningBriefing(automatic) {
-  const input = document.getElementById("command");
-  if (!input || sendingMessage || conversationBusy) return false;
-  const prompt = "Prepare my concise morning executive briefing. Use only information actually available in my saved tasks, memories and recent conversation context. Cover: (1) overdue and due-today tasks, (2) today's priorities, (3) active projects and one practical next action for each, and (4) any personal commitments I have explicitly recorded. Separate confirmed facts from suggestions. If schedule/calendar data is unavailable, say so; do not invent appointments, deadlines, progress or commitments. End with the single most valuable action to start now.";
-  input.value = prompt;
-  if (automatic) {
-    addNote("☀️ Preparing your daily JEEVES briefing…");
-  }
-  send();
-  return true;
-}
-
-function maybeRunMorningBriefing() {
-  try {
-    const hour = new Date().getHours();
-    if (hour < 6 || hour >= 11) return;
-    const key = "jeeves-morning-briefing-" + new Date().toLocaleDateString("en-CA");
-    if (localStorage.getItem(key) === "done") return;
-    if (startMorningBriefing(true)) localStorage.setItem(key, "done");
-  } catch (error) {
-    console.warn("Morning briefing could not start:", error);
-  }
-}
-
 async function send() {
   const input = document.getElementById("command");
   const message = input.value.trim();
@@ -526,7 +473,7 @@ async function send() {
   input.dispatchEvent(new Event("input", { bubbles: true }));
   const userBubble = addMessage(message, "user");
   sendingMessage = true;
-  const newChatButton = document.getElementById("newchatbtn");
+  const newChatButton = document.querySelector(".new-chat-top");
   if (newChatButton) newChatButton.disabled = true;
   document.getElementById("conversationSelect").disabled = true;
   const activeAdvisers = Array.from(document.querySelectorAll(".council-toggle:checked")).map(function (el) { return el.dataset.adviser; });

@@ -211,40 +211,6 @@ send = async function () {
 updateSpeakButtons();
 
 
-// Long-press an icon to reveal its description; a normal tap still activates it.
-(function attachLongPressDescriptions() {
-  let timer = null;
-  let activeTip = null;
-  function hideTip() {
-    if (timer) clearTimeout(timer);
-    timer = null;
-    if (activeTip) activeTip.remove();
-    activeTip = null;
-  }
-  document.querySelectorAll("#tools .tool-icon").forEach(function (button) {
-    button.addEventListener("pointerdown", function (event) {
-      if (event.pointerType === "mouse") return;
-      hideTip();
-      timer = setTimeout(function () {
-        const tip = document.createElement("span");
-        tip.className = "tool-longpress-tip";
-        tip.textContent = button.getAttribute("data-description") || button.getAttribute("aria-label") || "Setting";
-        button.appendChild(tip);
-        activeTip = tip;
-      }, 550);
-    });
-    ["pointerup", "pointercancel", "pointerleave"].forEach(function (name) {
-      button.addEventListener(name, function () {
-        if (timer) clearTimeout(timer);
-        timer = null;
-        if (activeTip) setTimeout(hideTip, 1400);
-      });
-    });
-    button.addEventListener("contextmenu", function (event) { event.preventDefault(); });
-  });
-})();
-
-
 // Delegated long-press help also covers buttons added after page load (Location and Photo).
 (function attachDynamicLongPressHelp() {
   const bar = document.getElementById("tools");
@@ -260,7 +226,7 @@ updateSpeakButtons();
     target = null;
   }
   bar.addEventListener("pointerdown", function (event) {
-    const button = event.target.closest("button.tool-icon");
+    const button = event.target.closest("button.tool-icon, button.jeeves-tool-button[data-description]");
     if (!button || event.pointerType === "mouse") return;
     clearHelp();
     target = button;
@@ -280,6 +246,6 @@ updateSpeakButtons();
     });
   });
   bar.addEventListener("contextmenu", function (event) {
-    if (event.target.closest("button.tool-icon")) event.preventDefault();
+    if (event.target.closest("button.tool-icon, button.jeeves-tool-button[data-description]")) event.preventDefault();
   });
 })();

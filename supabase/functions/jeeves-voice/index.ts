@@ -1,4 +1,4 @@
-import { createClient } from "npm:@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2.119.2";
 
 const allowedOrigins = new Set([
   "https://richiejeeves-eng.github.io",
@@ -52,7 +52,18 @@ Deno.serve(async (req: Request) => {
     const apiKey = Deno.env.get("ELEVENLABS_API_KEY");
     if (!apiKey) return json({ error: "Voice service is not configured." }, 503, origin);
 
-    const body = await req.json();
+    const rawBody = await req.text();
+    if (new TextEncoder().encode(rawBody).byteLength > 16_384) {
+      return json({ error: "Voice request body is too large." }, 413, origin);
+    }
+    let body: Record<string, unknown>;
+    try {
+      const parsed = JSON.parse(rawBody);
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("Invalid request body");
+      body = parsed as Record<string, unknown>;
+    } catch {
+      return json({ error: "Invalid JSON request body." }, 400, origin);
+    }
     const text = typeof body.text === "string" ? body.text.trim() : "";
     if (!text || text.length > 1200) return json({ error: "Text must be 1 to 1200 characters." }, 400, origin);
 

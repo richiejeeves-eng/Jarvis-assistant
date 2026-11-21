@@ -4,11 +4,21 @@ on:
   push:
     paths:
       - "*.js"
+      - "*.html"
+      - "*.css"
+      - "sw.js"
+      - "config.js"
+      - "scripts/**"
       - "supabase/functions/**"
       - ".github/workflows/web-check.yml"
   pull_request:
     paths:
       - "*.js"
+      - "*.html"
+      - "*.css"
+      - "sw.js"
+      - "config.js"
+      - "scripts/**"
       - "supabase/functions/**"
       - ".github/workflows/web-check.yml"
 
@@ -22,9 +32,11 @@ jobs:
           node-version: "22"
       - name: Check browser JavaScript syntax
         run: |
-          for file in *.js; do
+          for file in *.js scripts/*.mjs; do
             node --check "$file"
           done
+      - name: Validate local web assets and shared config
+        run: node scripts/check-web-assets.mjs
 
   validate-edge-functions:
     runs-on: ubuntu-latest

@@ -87,6 +87,7 @@ db.auth.onAuthStateChange((event, session) => {
   const account = document.getElementById("account");
 
   if (event === "PASSWORD_RECOVERY") {
+    account.hidden = false;
     account.open = true;
     const setButton = document.getElementById("setpw");
     if (setButton) setButton.style.display = "inline-block";

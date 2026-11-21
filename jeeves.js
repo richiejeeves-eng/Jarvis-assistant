@@ -30,9 +30,6 @@ function applyTheme(id) {
     document.documentElement.setAttribute("data-theme", theme.id);
   }
 
-  const button = document.getElementById("themebtn");
-  if (button) { button.textContent = "◐"; button.setAttribute("aria-label", "Change theme · current: " + theme.label); button.title = "Theme: " + theme.label; }
-
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute("content", theme.color);
 
@@ -40,22 +37,6 @@ function applyTheme(id) {
     localStorage.setItem("jeeves-theme", theme.id);
   } catch (e) {}
 }
-
-function cycleTheme() {
-  let current = "navy";
-  try {
-    current = localStorage.getItem("jeeves-theme") || "navy";
-  } catch (e) {}
-
-  const index = THEMES.findIndex(function (t) { return t.id === current; });
-  applyTheme(THEMES[(index + 1) % THEMES.length].id);
-}
-
-let savedTheme = "navy";
-try {
-  savedTheme = localStorage.getItem("jeeves-theme") || "navy";
-} catch (e) {}
-applyTheme(savedTheme);
 
 async function useMyLocation() {
   if (!navigator.geolocation) {
@@ -104,9 +85,3 @@ locationButton.setAttribute("data-description", "Save or update your location");
 locationButton.onclick = useMyLocation;
 const toolsBar = document.getElementById("tools");
 if (toolsBar) toolsBar.appendChild(locationButton);
-
-["photo.js?v=1.0.1"].forEach(function (src) {
-  const script = document.createElement("script");
-  script.src = src;
-  document.body.appendChild(script);
-});

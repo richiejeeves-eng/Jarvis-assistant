@@ -1,4 +1,4 @@
-import { createClient } from "npm:@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2.119.2";
 
 const allowedOrigins = new Set([
   "https://richiejeeves-eng.github.io",
@@ -36,7 +36,7 @@ Deno.serve(async (req: Request) => {
     if (authError || !user) return new Response(JSON.stringify({ error: "Invalid session" }), { status: 401, headers: corsHeaders(origin) });
 
     const rawBody = await req.text();
-    if (rawBody.length > 2_000_000) {
+    if (new TextEncoder().encode(rawBody).byteLength > 2_000_000) {
       return new Response(JSON.stringify({ error: "Request body exceeds 2 MB" }), { status: 413, headers: corsHeaders(origin) });
     }
     const body = JSON.parse(rawBody);

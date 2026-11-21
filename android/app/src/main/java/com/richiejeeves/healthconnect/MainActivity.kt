@@ -7,7 +7,6 @@ import android.view.Gravity
 import android.widget.*
 import androidx.activity.ComponentActivity
 import androidx.activity.result.ActivityResultLauncher
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.lifecycleScope
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
@@ -22,9 +21,6 @@ import com.google.firebase.messaging.FirebaseMessaging
 import androidx.health.connect.client.PermissionController
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.*
-import androidx.health.connect.client.request.AggregateRequest
-import androidx.health.connect.client.request.ReadRecordsRequest
-import androidx.health.connect.client.time.TimeRangeFilter
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import kotlinx.coroutines.Dispatchers
@@ -38,13 +34,8 @@ import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneId
-import java.time.temporal.ChronoUnit
 
 class MainActivity : ComponentActivity() {
-    private val supabaseUrl = "https://aelsipdtezvhjkwsshqx.supabase.co"
-    private val publishableKey = "sb_publishable_JbN0kUdtX6d5J8bWAPbz4w_syw2aG4K"
     private lateinit var emailInput: EditText
     private lateinit var passwordInput: EditText
     private lateinit var status: TextView
@@ -138,11 +129,11 @@ class MainActivity : ComponentActivity() {
         try {
             val token = validAccessToken()
             val queue = withContext(Dispatchers.IO) {
-                JSONArray(restRequest("GET", "$supabaseUrl/rest/v1/health_sync_requests?select=id&status=eq.queued&order=requested_at.asc&limit=1", null, token))
+                JSONArray(restRequest("GET", "${JeevesSupabaseConfig.URL}/rest/v1/health_sync_requests?select=id&status=eq.queued&order=requested_at.asc&limit=1", null, token))
             }
             if (queue.length() == 0) return
             val id = queue.getJSONObject(0).getString("id")
-            val itemUrl = "$supabaseUrl/rest/v1/health_sync_requests?id=eq.$id&status=eq.queued"
+            val itemUrl = "${JeevesSupabaseConfig.URL}/rest/v1/health_sync_requests?id=eq.$id&status=eq.queued"
             val claimed = withContext(Dispatchers.IO) {
                 JSONArray(restRequest("PATCH", itemUrl, JSONObject().put("status", "processing").put("started_at", Instant.now().toString()).put("error", JSONObject.NULL), token))
             }
@@ -151,10 +142,10 @@ class MainActivity : ComponentActivity() {
             try {
                 val synced = performSync()
                 if (!synced) throw IllegalStateException(status.text.toString())
-                withContext(Dispatchers.IO) { restRequest("PATCH", "$supabaseUrl/rest/v1/health_sync_requests?id=eq.$id", JSONObject().put("status", "completed").put("completed_at", Instant.now().toString()).put("error", JSONObject.NULL), token) }
+                withContext(Dispatchers.IO) { restRequest("PATCH", "${JeevesSupabaseConfig.URL}/rest/v1/health_sync_requests?id=eq.$id", JSONObject().put("status", "completed").put("completed_at", Instant.now().toString()).put("error", JSONObject.NULL), token) }
                 status.text = "Desktop health sync completed."
             } catch (e: Exception) {
-                withContext(Dispatchers.IO) { restRequest("PATCH", "$supabaseUrl/rest/v1/health_sync_requests?id=eq.$id", JSONObject().put("status", "failed").put("completed_at", Instant.now().toString()).put("error", (e.message ?: "Foreground sync failed").take(500)), token) }
+                withContext(Dispatchers.IO) { restRequest("PATCH", "${JeevesSupabaseConfig.URL}/rest/v1/health_sync_requests?id=eq.$id", JSONObject().put("status", "failed").put("completed_at", Instant.now().toString()).put("error", (e.message ?: "Foreground sync failed").take(500)), token) }
                 status.text = "Desktop health sync failed: ${e.message ?: "Unknown error"}"
             }
         } finally { processingQueueRequest = false }
@@ -175,7 +166,7 @@ class MainActivity : ComponentActivity() {
                     try {
                         val access = validAccessToken()
                         val user = withContext(Dispatchers.IO) {
-                            JSONObject(restRequest("GET", "$supabaseUrl/auth/v1/user", null, access))
+                            JSONObject(restRequest("GET", "${JeevesSupabaseConfig.URL}/auth/v1/user", null, access))
                         }
                         val payload = JSONObject()
                             .put("user_id", user.getString("id"))
@@ -183,7 +174,7 @@ class MainActivity : ComponentActivity() {
                             .put("platform", "android")
                             .put("updated_at", Instant.now().toString())
                         withContext(Dispatchers.IO) {
-                            restRequest("POST", "$supabaseUrl/rest/v1/health_device_tokens?on_conflict=token", payload, access)
+                            restRequest("POST", "${JeevesSupabaseConfig.URL}/rest/v1/health_device_tokens?on_conflict=token", payload, access)
                         }
                         firebaseStatus.text = "Firebase: device registered successfully."
                     } catch (e: Exception) {
@@ -219,7 +210,7 @@ class MainActivity : ComponentActivity() {
             requestMethod = method
             connectTimeout = 15000
             readTimeout = 20000
-            setRequestProperty("apikey", publishableKey)
+            setRequestProperty("apikey", JeevesSupabaseConfig.PUBLISHABLE_KEY)
             setRequestProperty("Authorization", "Bearer $bearer")
             setRequestProperty("Content-Type", "application/json")
             setRequestProperty("Prefer", when (method) {
@@ -345,7 +336,7 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch {
             try {
                 val result = withContext(Dispatchers.IO) {
-                    postJson("$supabaseUrl/auth/v1/token?grant_type=password",
+                    postJson("${JeevesSupabaseConfig.URL}/auth/v1/token?grant_type=password",
                         JSONObject().put("email", email).put("password", password), null)
                 }
                 saveSession(result)
@@ -374,7 +365,7 @@ class MainActivity : ComponentActivity() {
         val expires = prefs.getLong("expires_at", 0)
         if (current != null && expires > System.currentTimeMillis() / 1000) return@withContext current
         val refresh = prefs.getString("refresh_token", null) ?: throw IllegalStateException("Sign in to Jeeves first.")
-        val json = postJson("$supabaseUrl/auth/v1/token?grant_type=refresh_token",
+        val json = postJson("${JeevesSupabaseConfig.URL}/auth/v1/token?grant_type=refresh_token",
             JSONObject().put("refresh_token", refresh), null)
         saveSession(json)
         json.getString("access_token")
@@ -392,7 +383,8 @@ class MainActivity : ComponentActivity() {
         status.text = "Reading approved records…"
         return try {
             val token = validAccessToken()
-            val records = readHealthRecords()
+            val client = healthClient ?: throw IllegalStateException("Health Connect unavailable.")
+            val records = HealthRecordReader.read(client, client.permissionController.getGrantedPermissions())
             if (records.length() == 0) {
                 status.text = "No records found in the approved categories for the last 30 days."
                 true
@@ -408,7 +400,7 @@ class MainActivity : ComponentActivity() {
                     for (index in start until end) batch.put(records.getJSONObject(index))
                     status.text = "Uploading health data: batch $batchNumber of $totalBatches…"
                     val result = withContext(Dispatchers.IO) {
-                        postJson("$supabaseUrl/functions/v1/health-sync",
+                        postJson("${JeevesSupabaseConfig.URL}/functions/v1/health-sync",
                             JSONObject().put("records", batch), token)
                     }
                     syncedTotal += result.optInt("synced")
@@ -422,104 +414,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private suspend fun readHealthRecords(): JSONArray {
-        val client = healthClient ?: throw IllegalStateException("Health Connect unavailable.")
-        val granted = client.permissionController.getGrantedPermissions()
-        val since = Instant.now().minus(30, ChronoUnit.DAYS)
-        val now = Instant.now()
-        val range = TimeRangeFilter.between(since, now)
-        val output = JSONArray()
-
-        if (HealthPermission.getReadPermission(StepsRecord::class) in granted) {
-            val today = LocalDate.now()
-            for (daysAgo in 29 downTo 0) {
-                val day = today.minusDays(daysAgo.toLong())
-                val start = day.atStartOfDay(ZoneId.systemDefault()).toInstant()
-                val end = minOf(day.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant(), now)
-                if (end <= start) continue
-                val aggregate = client.aggregate(
-                    AggregateRequest(setOf(StepsRecord.COUNT_TOTAL), TimeRangeFilter.between(start, end))
-                )
-                val count = aggregate[StepsRecord.COUNT_TOTAL] ?: 0L
-                if (count > 0) addRecord(output, "steps", "steps-$day",
-                    start, end, JSONObject().put("count", count), "Health Connect", null)
-            }
-        }
-
-        if (HealthPermission.getReadPermission(HeartRateRecord::class) in granted) {
-            readAllRecords(client, HeartRateRecord::class, range).forEach { r ->
-                val samples = JSONArray()
-                r.samples.forEach { s -> samples.put(JSONObject().put("bpm", s.beatsPerMinute).put("time", s.time.toString())) }
-                addRecord(output, "heart_rate", r.metadata.id, r.startTime, r.endTime,
-                    JSONObject().put("samples", samples), r.metadata.dataOrigin.packageName, r.metadata.device?.model)
-            }
-        }
-
-        if (HealthPermission.getReadPermission(SleepSessionRecord::class) in granted) {
-            readAllRecords(client, SleepSessionRecord::class, range).forEach { r ->
-                addRecord(output, "sleep", r.metadata.id, r.startTime, r.endTime,
-                    JSONObject().put("duration_minutes", ChronoUnit.MINUTES.between(r.startTime, r.endTime))
-                        .put("stage_count", r.stages.size), r.metadata.dataOrigin.packageName, r.metadata.device?.model)
-            }
-        }
-
-        if (HealthPermission.getReadPermission(WeightRecord::class) in granted) {
-            readAllRecords(client, WeightRecord::class, range).forEach { r ->
-                addRecord(output, "weight", r.metadata.id, r.time, r.time,
-                    JSONObject().put("kg", r.weight.inKilograms), r.metadata.dataOrigin.packageName, r.metadata.device?.model)
-            }
-        }
-
-        if (HealthPermission.getReadPermission(BodyFatRecord::class) in granted) {
-            readAllRecords(client, BodyFatRecord::class, range).forEach { r ->
-                addRecord(output, "body_fat", r.metadata.id, r.time, r.time,
-                    JSONObject().put("percentage", r.percentage.value), r.metadata.dataOrigin.packageName, r.metadata.device?.model)
-            }
-        }
-
-        if (HealthPermission.getReadPermission(BloodPressureRecord::class) in granted) {
-            readAllRecords(client, BloodPressureRecord::class, range).forEach { r ->
-                addRecord(output, "blood_pressure", r.metadata.id, r.time, r.time,
-                    JSONObject().put("systolic_mmhg", r.systolic.inMillimetersOfMercury)
-                        .put("diastolic_mmhg", r.diastolic.inMillimetersOfMercury)
-                        .put("measurement_location", r.measurementLocation),
-                    r.metadata.dataOrigin.packageName, r.metadata.device?.model)
-            }
-        }
-        return output
-    }
-
-    private suspend fun <T : Record> readAllRecords(
-        client: HealthConnectClient,
-        recordType: kotlin.reflect.KClass<T>,
-        range: TimeRangeFilter
-    ): List<T> {
-        val records = mutableListOf<T>()
-        var pageToken: String? = null
-        do {
-            val page = client.readRecords(
-                ReadRecordsRequest(recordType, timeRangeFilter = range, pageSize = 1000, pageToken = pageToken)
-            )
-            records.addAll(page.records)
-            pageToken = page.pageToken
-        } while (pageToken != null)
-        return records
-    }
-
-    private fun addRecord(
-        array: JSONArray, type: String, id: String, start: Instant, end: Instant,
-        value: JSONObject, source: String?, device: String?
-    ) {
-        array.put(JSONObject()
-            .put("record_type", type)
-            .put("external_id", id.ifBlank { "${type}-${start}" })
-            .put("start_time", start.toString())
-            .put("end_time", end.toString())
-            .put("value", value)
-            .put("source_app", source ?: JSONObject.NULL)
-            .put("source_device", device ?: JSONObject.NULL))
-    }
-
     private fun postJson(url: String, body: JSONObject, bearer: String?): JSONObject {
         val connection = (URL(url).openConnection() as HttpURLConnection).apply {
             requestMethod = "POST"
@@ -527,7 +421,7 @@ class MainActivity : ComponentActivity() {
             readTimeout = 30000
             doOutput = true
             setRequestProperty("Content-Type", "application/json")
-            setRequestProperty("apikey", publishableKey)
+            setRequestProperty("apikey", JeevesSupabaseConfig.PUBLISHABLE_KEY)
             if (bearer != null) setRequestProperty("Authorization", "Bearer $bearer")
         }
         connection.outputStream.use { it.write(body.toString().toByteArray(Charsets.UTF_8)) }
