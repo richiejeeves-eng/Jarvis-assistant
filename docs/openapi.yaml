@@ -80,7 +80,7 @@ paths:
               properties:
                 records:
                   type: array
-                  maxItems: 500
+                  maxItems: 100
                   items:
                     type: object
       responses:
