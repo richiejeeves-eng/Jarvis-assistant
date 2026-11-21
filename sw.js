@@ -1,10 +1,11 @@
-const CACHE_NAME = "jeeves-shell-v3";
+const CACHE_NAME = "jeeves-shell-v4";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./login.html",
   "./manifest.json",
   "./config.js",
+  "./api.js",
   "./style.css",
   "./executive.css",
   "./council.css",
