@@ -30,7 +30,7 @@ Deno.serve(async (req: Request) => {
   if (req.method !== "POST") return json({ error: "POST required." }, 405, origin);
 
   const authorization = req.headers.get("Authorization") || "";
-  const match = authorization.match(/^Bearer\\s+(.+)$/i);
+  const match = authorization.match(/^Bearer\s+(.+)$/i);
   if (!match) return json({ error: "Sign in required." }, 401, origin);
 
   try {
