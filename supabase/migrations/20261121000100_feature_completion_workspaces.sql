@@ -88,9 +88,16 @@ alter table public.knowledge_items enable row level security;
 alter table public.knowledge_links enable row level security;
 revoke all on public.knowledge_items, public.knowledge_links from anon;
 grant select, insert, update, delete on public.knowledge_items, public.knowledge_links to authenticated;
+drop policy if exists "Users can add their own knowledge" on public.knowledge_items;
+drop policy if exists "Users can delete their own knowledge" on public.knowledge_items;
+drop policy if exists "Users can read their own knowledge" on public.knowledge_items;
+drop policy if exists "Users can update their own knowledge" on public.knowledge_items;
 drop policy if exists knowledge_items_owner_all on public.knowledge_items;
 create policy knowledge_items_owner_all on public.knowledge_items for all to authenticated
 using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
+drop policy if exists "Users can create their own knowledge links" on public.knowledge_links;
+drop policy if exists "Users can delete their own knowledge links" on public.knowledge_links;
+drop policy if exists "Users can read their own knowledge links" on public.knowledge_links;
 drop policy if exists knowledge_links_owner_all on public.knowledge_links;
 create policy knowledge_links_owner_all on public.knowledge_links for all to authenticated
 using ((select auth.uid()) = user_id) with check (
