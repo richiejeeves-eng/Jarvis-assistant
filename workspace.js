@@ -141,12 +141,24 @@
       const amount=Number(d.amount);if(!Number.isFinite(amount)||amount<=0)throw new Error("Enter a positive amount.");
       await insert("jeeves_financial_entries",{entry_type:d.entry_type,amount,currency:"GBP",category:d.category.trim()||"General",description:d.description,occurred_on:d.occurred_on||new Date().toISOString().slice(0,10)});await renderFinance(host);
     }));
+    content.append(node("h3","Budget targets"));
+    content.append(formFor([field("Budget name","name"),field("Amount (£)","amount","number"),field("Category","category"),selectField("Period","period",[["weekly","Weekly"],["monthly","Monthly"],["yearly","Yearly"]])],"Save budget",async d=>{
+      const amount=Number(d.amount);if(!Number.isFinite(amount)||amount<=0)throw new Error("Enter a positive budget amount.");
+      await insert("jeeves_budgets",{name:d.name.trim(),amount,currency:"GBP",category:d.category.trim()||"Overall",period:d.period});await renderFinance(host);
+    }));
+    try {
+      const budgets=await rows("jeeves_budgets","id,name,amount,currency,category,period");
+      renderList(content,budgets,item=>{
+        const el=card(item.name,money(item.amount,item.currency)+" · "+item.period,item.category);
+        el.append(action("Delete budget",async()=>{if(!confirm("Delete this budget target?"))return;try{await remove("jeeves_budgets",item.id);await renderFinance(host);}catch(e){status(content,e.message);}}));return el;
+      },"No budgets saved yet.");
+    } catch(e) { status(content,e.message); }
     content.append(node("h3","Recent transactions"));
     try{
       const data=await rows("jeeves_financial_entries","id,entry_type,amount,currency,category,description,occurred_on");
       const income=data.filter(x=>x.entry_type==="income").reduce((s,x)=>s+Number(x.amount),0);
       const expense=data.filter(x=>x.entry_type==="expense").reduce((s,x)=>s+Number(x.amount),0);
-      totals.append(card("Income",money(income),"Saved entries · all loaded"),card("Spending",money(expense),"Saved entries · all loaded"),card("Net",money(income-expense),"Income minus spending"));
+      totals.append(card("Income",money(income),"Recent 200 saved entries"),card("Spending",money(expense),"Recent 200 saved entries"),card("Net",money(income-expense),"Income minus spending"));
       renderList(content,data,item=>{
         const el=card((item.entry_type==="income"?"+ ":"− ")+money(item.amount,item.currency),item.description||item.category,item.category+" · "+dateText(item.occurred_on));
         el.append(action("Delete transaction",async()=>{if(!confirm("Delete this financial entry?"))return;try{await remove("jeeves_financial_entries",item.id);await renderFinance(host);}catch(e){status(content,e.message);}}));
