@@ -8,7 +8,7 @@ Jeeves API is the authenticated, path-versioned gateway for the Jeeves applicati
 - Existing browser and Android clients in this branch are wired to the gateway.
 - Uses existing Supabase Auth sessions and Row Level Security.
 - No database migration or new paid service is required.
-- Voice generation through paid external APIs is disabled; the app uses device/browser speech.
+- Voice generation through paid external APIs is disabled in source; the app uses device/browser speech. The already-deployed legacy voice endpoint remains unchanged until an approved deployment.
 - Do not enable billing, merge or deploy without the owner's explicit approval.
 
 ## Base URL
@@ -141,7 +141,7 @@ Content-Type: application/json
 
 1. Review and merge PR #4 only with explicit approval.
 2. Verify the selected AI model exists and provider terms permit intended UK use; keep billing disabled.
-3. Deploy `jeeves-brain`, `health-sync`, `health-sync-notify` and `google-calendar` as required.
+3. Deploy `jeeves-brain`, `health-sync`, `health-sync-notify`, `google-calendar` and the disabled `jeeves-voice` source as required.
 4. Deploy `jeeves-api` with JWT verification enabled.
 5. Run authenticated smoke tests for every route.
 6. Publish the updated browser/Android clients only after the gateway is live and verified.
