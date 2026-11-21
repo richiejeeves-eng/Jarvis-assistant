@@ -40,7 +40,7 @@ if (!gateway.includes("MAX_HEALTH_SYNC_BODY_BYTES = 512_000")) failures.push("He
 if (!read("supabase/functions/health-sync/index.ts").includes("body.records.length > 100")) failures.push("Health sync batches must be capped at 100 records");
 if (!gateway.includes('code: "MUTATION_ID_REQUIRED"') || !gateway.includes('params.getAll("id")')) failures.push("PATCH and DELETE must require exactly one UUID id selector");
 if (!gateway.includes("Bulk mutations are disabled")) failures.push("Bulk data mutations must remain disabled");
-if (!gateway.includes('code: "UPSERT_DISABLED"') || !gateway.includes('params.has("on_conflict")')) failures.push("POST upserts must be disabled");
+if (!gateway.includes('code: "UPSERT_DISABLED"') || !gateway.includes('new URLSearchParams(search).has("on_conflict")')) failures.push("POST upserts must be disabled");
 if (!gateway.includes("ALLOWED_PREFER") || !gateway.includes('"resolution=merge-duplicates"')) failures.push("Prefer headers must be allowlisted (and merge-duplicates rejected)");
 if (!gateway.includes('code: "PREFER_NOT_ALLOWED"')) failures.push("Unsupported Prefer headers must be rejected");
 if (!gateway.includes('headers.delete("Range")') || !gateway.includes('headers.delete("Range-Unit")')) failures.push("Malformed or open-ended Range headers must be removed");
