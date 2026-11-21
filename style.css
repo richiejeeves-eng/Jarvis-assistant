@@ -660,3 +660,11 @@ footer{border-top:0!important}
 @media(max-width:800px){.council-drawer-card{padding:14px!important}.council-drawer-card .council-menu-member{min-height:54px}}
 /* Council identity is typographic; only the separate voice interface uses an orb. */
 .active-council-orb{display:none!important}
+
+/* Accessible persistent workspace modules */
+.jw-head{margin:8px 0 22px}.jw-head h2{margin:0 0 8px}.jw-head p,.jw-disclaimer{color:var(--muted,#aaa);line-height:1.6}
+.jw-content{display:grid;gap:16px}.jw-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;padding:16px;border:1px solid var(--line,rgba(255,255,255,.12));border-radius:14px;background:rgba(255,255,255,.025)}
+.jw-field{display:grid;gap:6px;color:var(--muted,#aaa);font-size:12px}.jw-field input,.jw-field textarea,.jw-field select,.jw-content>input[type=search]{width:100%;min-width:0;box-sizing:border-box;padding:11px;border:1px solid var(--line,rgba(255,255,255,.16));border-radius:9px;background:rgba(0,0,0,.2);color:inherit;font:inherit}
+.jw-form button{align-self:end;min-height:42px}.jw-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}.jw-card{min-width:0;padding:16px;border:1px solid var(--line,rgba(255,255,255,.12));border-radius:13px;background:rgba(255,255,255,.025);overflow-wrap:anywhere}.jw-card h3{margin:0 0 8px}.jw-card p{white-space:pre-wrap;line-height:1.55}.jw-card small{display:block;color:var(--muted,#aaa);margin:8px 0}
+.jw-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.jw-action{padding:8px 11px;border:1px solid var(--line,rgba(255,255,255,.18));border-radius:8px;background:transparent;color:inherit;cursor:pointer}.jw-action:focus-visible,.jw-field input:focus-visible,.jw-field textarea:focus-visible,.jw-field select:focus-visible{outline:2px solid var(--gold,#d5b477);outline-offset:2px}
+.jw-empty,.jw-status{padding:12px;color:var(--muted,#aaa)}.jw-status{border-left:3px solid var(--gold,#d5b477)}.jw-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}.jw-extra-panel{margin-top:28px;padding-top:20px;border-top:1px solid var(--line,rgba(255,255,255,.12))}

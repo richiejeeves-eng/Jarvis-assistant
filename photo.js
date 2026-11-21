@@ -50,6 +50,16 @@
 
     addMessage("📷 " + question, "user");
     const thinking = addMessage("Jeeves is looking at your photo...", "bot");
+    // Persist the text exchange in the active conversation; the image itself is not retained.
+    let persistConversation = false;
+    try {
+      if (!activeConversationId) await createConversation(question);
+      await saveConversationMessage("user", "📷 " + question);
+      persistConversation = true;
+    } catch (saveError) {
+      thinking.textContent = "Could not save this photo question: " + saveError.message;
+      return;
+    }
 
     let imageData;
     try {
@@ -80,6 +90,19 @@
     }
 
     thinking.textContent = data.reply;
+    if (persistConversation) {
+      try {
+        const {data: saved,error:saveError}=await db.from("conversation_messages").insert({
+          conversation_id: activeConversationId, role:"assistant", content:data.reply
+        }).select("id").single();
+        if (saveError) throw saveError;
+        thinking.dataset.messageId=saved.id;
+        const {error:updateError}=await db.from("conversations").update({updated_at:new Date().toISOString()}).eq("id",activeConversationId);
+        if (updateError) throw updateError;
+      } catch(saveError) {
+        addMessage("The photo response was generated but could not be saved: "+saveError.message,"bot");
+      }
+    }
     if (typeof speak === "function") speak(data.reply);
   }
 

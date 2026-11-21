@@ -1,4 +1,4 @@
-const CACHE_NAME = "jeeves-shell-v2";
+const CACHE_NAME = "jeeves-shell-v3";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -20,6 +20,7 @@ const APP_SHELL = [
   "./integrations.js",
   "./executive.js",
   "./fitness.js",
+  "./workspace.js",
 ];
 
 self.addEventListener("install", function (event) {

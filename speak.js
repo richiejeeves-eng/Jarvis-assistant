@@ -3,14 +3,14 @@ let profileIndex = 0;
 let voiceURI = "";
 let currentAudio = null;
 let currentAudioUrl = null;
-let useElevenLabs = true;
+let useElevenLabs = false;
 const JEEVES_VOICE_ID = "JBFqnCBsd6RMkjVDRZzb"; // George — British male voice
 
 try {
   speakOn = localStorage.getItem("jeeves-speak") === "on";
   profileIndex = parseInt(localStorage.getItem("jeeves-profile") || "0", 10) || 0;
   voiceURI = localStorage.getItem("jeeves-voice") || "";
-  useElevenLabs = localStorage.getItem("jeeves-elevenlabs") !== "off";
+  useElevenLabs = localStorage.getItem("jeeves-elevenlabs") === "on";
 } catch (e) {}
 
 const PROFILES = [
@@ -40,7 +40,7 @@ function updateSpeakButtons() {
   if (voiceButton) {
     const voices = getVoices();
     const index = voices.findIndex(function (v) { return v.voiceURI === voiceURI; });
-    voiceButton.textContent = "Voice source"; voiceButton.setAttribute("aria-label", useElevenLabs ? "Voice provider: Jeeves ElevenLabs" : "Device voice " + (index + 1) + " of " + voices.length); voiceButton.title = useElevenLabs ? "Jeeves · ElevenLabs" : "Device voice " + (index + 1) + "/" + voices.length;
+    voiceButton.textContent = useElevenLabs ? "Premium voice" : "Device voice"; voiceButton.setAttribute("aria-label", useElevenLabs ? "Premium ElevenLabs voice enabled; may use paid credits" : "Free device voice enabled. Activate to opt into ElevenLabs"); voiceButton.title = useElevenLabs ? "ElevenLabs premium voice · may use paid credits" : "Free device voice";
   }
 }
 
