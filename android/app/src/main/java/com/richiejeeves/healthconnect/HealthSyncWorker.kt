@@ -84,7 +84,7 @@ class HealthSyncWorker(context: Context, params: WorkerParameters) : CoroutineWo
                         for (i in batchStart until minOf(batchStart + 100, records.length())) {
                             batch.put(records.getJSONObject(i))
                         }
-                        request("POST", "${JeevesSupabaseConfig.URL}/functions/v1/jeeves-api", JSONObject().put("action", "health.sync").put("payload", JSONObject().put("records", batch)), token)
+                        request("POST", "${JeevesSupabaseConfig.URL}/functions/v1/jeeves-api/v1/health/sync", JSONObject().put("records", batch), token)
                     }
                     request(
                         "PATCH",
