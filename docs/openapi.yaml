@@ -150,12 +150,14 @@ paths:
         "403":
           description: Explicit confirmation required or ownership violation
     patch:
-      summary: Update caller-owned rows
+      summary: Update exactly one caller-owned row
+      description: Requires exactly one id=eq.{uuid} query selector. Bulk mutations are rejected.
       responses:
         "200":
           description: Update result
     delete:
-      summary: Delete caller-owned rows
+      summary: Delete exactly one caller-owned row
+      description: Requires exactly one id=eq.{uuid} query selector. Bulk mutations are rejected.
       responses:
         "200":
           description: Delete result
