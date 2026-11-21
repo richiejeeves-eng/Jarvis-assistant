@@ -7,7 +7,12 @@ const TASKS_SCOPE = "https://www.googleapis.com/auth/tasks";
 const GMAIL_SCOPE = "https://www.googleapis.com/auth/gmail.send";
 const GMAIL_READ_SCOPE = "https://www.googleapis.com/auth/gmail.readonly";
 const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.metadata.readonly";
-const GOOGLE_SCOPES = [CALENDAR_SCOPE, TASKS_SCOPE, GMAIL_READ_SCOPE, GMAIL_SCOPE, DRIVE_SCOPE].join(" ");
+const SERVICE_SCOPES: Record<string, string[]> = {
+  calendar: [CALENDAR_SCOPE],
+  tasks: [TASKS_SCOPE],
+  gmail: [GMAIL_READ_SCOPE, GMAIL_SCOPE],
+  drive: [DRIVE_SCOPE],
+};
 const allowedOrigins = new Set([
   "https://richiejeeves-eng.github.io",
   "http://localhost:8000",
@@ -165,7 +170,7 @@ async function handleCallback(url: URL) {
   }
 
   const { data: existing } = await admin.from("google_calendar_tokens")
-    .select("refresh_token_ciphertext")
+    .select("refresh_token_ciphertext, scopes")
     .eq("user_id", payload.uid)
     .maybeSingle();
   const refreshToken = tokenData.refresh_token
@@ -178,7 +183,10 @@ async function handleCallback(url: URL) {
     access_token_ciphertext: await encryptToken(tokenData.access_token),
     refresh_token_ciphertext: refreshToken,
     expires_at: new Date(Date.now() + Number(tokenData.expires_in || 3600) * 1000).toISOString(),
-    scopes: String(tokenData.scope || GOOGLE_SCOPES).split(" "),
+    scopes: Array.from(new Set([
+      ...(existing?.scopes ?? []),
+      ...String(tokenData.scope || "").split(" ").filter(Boolean),
+    ])),
     updated_at: new Date().toISOString(),
   }, { onConflict: "user_id" });
   if (saveError) {
@@ -228,6 +236,9 @@ async function handleAction(req: Request, origin: string | null) {
   const admin = adminClient();
 
   if (action === "authorize") {
+    const service = typeof body?.service === "string" ? body.service : "calendar";
+    const scopes = SERVICE_SCOPES[service];
+    if (!scopes) return json({ error: "Choose a valid Google integration to connect." }, 400, origin);
     const clientId = requiredEnv("GOOGLE_CLIENT_ID");
     requiredEnv("GOOGLE_CLIENT_SECRET");
     requiredEnv("GOOGLE_OAUTH_STATE_SECRET");
@@ -247,7 +258,7 @@ async function handleAction(req: Request, origin: string | null) {
       client_id: clientId,
       redirect_uri: REDIRECT_URI,
       response_type: "code",
-      scope: GOOGLE_SCOPES,
+      scope: scopes.join(" "),
       access_type: "offline",
       prompt: "consent",
       include_granted_scopes: "true",
@@ -262,7 +273,15 @@ async function handleAction(req: Request, origin: string | null) {
       .eq("user_id", user.id)
       .maybeSingle();
     if (error) throw error;
-    return json({ connected: !!data, tasks_enabled: !!data?.scopes?.includes(TASKS_SCOPE), gmail_enabled: !!data?.scopes?.includes(GMAIL_SCOPE) && !!data?.scopes?.includes(GMAIL_READ_SCOPE), drive_enabled: !!data?.scopes?.includes(DRIVE_SCOPE), updated_at: data?.updated_at || null, scopes: data?.scopes || [] }, 200, origin);
+    return json({
+      connected: !!data,
+      calendar_enabled: !!data?.scopes?.includes(CALENDAR_SCOPE),
+      tasks_enabled: !!data?.scopes?.includes(TASKS_SCOPE),
+      gmail_enabled: !!data?.scopes?.includes(GMAIL_SCOPE) && !!data?.scopes?.includes(GMAIL_READ_SCOPE),
+      drive_enabled: !!data?.scopes?.includes(DRIVE_SCOPE),
+      updated_at: data?.updated_at || null,
+      scopes: data?.scopes || [],
+    }, 200, origin);
   }
 
   if (action === "disconnect") {
@@ -332,7 +351,14 @@ async function handleAction(req: Request, origin: string | null) {
     const originalMessageId = getHeader("Message-ID");
     const references = [getHeader("References"), originalMessageId].filter(Boolean).join(" ").trim();
     const clean = (value: string) => value.replace(/[\r\n]+/g, " ").trim();
-    const mime = ["To: " + clean(recipient), "Subject: " + clean(subject), ...(originalMessageId ? ["In-Reply-To: " + clean(originalMessageId)] : []), ...(references ? ["References: " + clean(references)] : []), "MIME-Version: 1.0", "Content-Type: text/plain; charset=UTF-8", "Content-Transfer-Encoding: 8bit", "", replyText.replace(/\r?\n/g, "\r\n")].join("\r\n");
+    const encodeMimeHeader = (value: string) => {
+      if (/^[\x20-\x7E]*$/.test(value)) return value;
+      const bytes = new TextEncoder().encode(value);
+      let binary = "";
+      for (const byte of bytes) binary += String.fromCharCode(byte);
+      return "=?UTF-8?B?" + btoa(binary) + "?=";
+    };
+    const mime = ["To: " + clean(recipient), "Subject: " + encodeMimeHeader(clean(subject)), ...(originalMessageId ? ["In-Reply-To: " + clean(originalMessageId)] : []), ...(references ? ["References: " + clean(references)] : []), "MIME-Version: 1.0", "Content-Type: text/plain; charset=UTF-8", "Content-Transfer-Encoding: 8bit", "", replyText.replace(/\r?\n/g, "\r\n")].join("\r\n");
     const bytes = new TextEncoder().encode(mime); let binary = ""; for (const byte of bytes) binary += String.fromCharCode(byte);
     const raw = btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
     const sendResponse = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", { method: "POST", headers: { Authorization: "Bearer " + accessToken, "Content-Type": "application/json" }, body: JSON.stringify({ raw, threadId: original.threadId }) });
