@@ -36,7 +36,7 @@
       note("Jeeves connection service is not ready. Refresh and try again.");
       return null;
     }
-    const result = await db.functions.invoke("google-calendar", { body: Object.assign({ action }, extra || {}) });
+    const result = await window.jeevesApi.call("calendar", Object.assign({ action }, extra || {}));
     if (result.error) {
       let detail = result.error.message || "Request failed.";
       try {
