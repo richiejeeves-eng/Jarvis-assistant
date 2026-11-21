@@ -487,15 +487,13 @@ async function send() {
     history.push({ role: "user", text: message });
     const modelHistory = history.slice(-11, -1).slice(-10);
 
-    const { data, error } = await db.functions.invoke("jeeves-brain", {
-      body: {
+    const { data, error } = await window.jeevesApi.call("brain", {
         message: message,
         mode: window.jeevesModeLevel || 3,
         active_advisers: activeAdvisers,
         history: modelHistory,
         now: new Date().toString(),
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
-      }
     });
 
     if (error) {
@@ -570,7 +568,7 @@ db.auth.onAuthStateChange(function (event, session) {
     if (session) {
       setTimeout(async function () {
         await refreshConversationList(null, false);
-        db.functions.invoke("jeeves-brain", { body: { ping: true } }).catch(error => console.warn("Jeeves warm-up ping failed:", error));
+        window.jeevesApi.call("brain", { ping: true }).catch(error => console.warn("Jeeves warm-up ping failed:", error));
         // Start every workspace visit with a blank chat.
         // Previous conversations remain available in the selector.
         document.getElementById("chat").textContent = "";
