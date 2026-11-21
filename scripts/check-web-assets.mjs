@@ -5,16 +5,24 @@ const root = process.cwd();
 const read = (path) => readFileSync(join(root, path), "utf8");
 const failures = [];
 
+function localPath(value) {
+  const path = value.split("?")[0];
+  return path.startsWith("./") ? path.slice(2) : path;
+}
+
 function checkPage(page, expectedEntry) {
   const html = read(page);
-  const scripts = [...html.matchAll(/<script\b[^>]*\bsrc=["']([^"']+)["']/g)].map((match) => match[1]);
-  const styles = [...html.matchAll(/<link\b[^>]*\brel=["']stylesheet["'][^>]*\bhref=["']([^"']+)["']/g)].map((match) => match[1]);
-  const localScripts = scripts.filter((src) => !/^https?:\/\//i.test(src));
-  const localStyles = styles.filter((href) => !/^https?:\/\//i.test(href));
-  const paths = localScripts.map((src) => src.split("?")[0].replace(/^\.\//, ""));
+  const scripts = [...html.matchAll(/<script[^>]*src=["']([^"']+)["']/g)].map((match) => match[1]);
+  const styles = [...html.matchAll(/<link[^>]*rel=["']stylesheet["'][^>]*href=["']([^"']+)["']/g)].map((match) => match[1]);
+  const paths = scripts
+    .filter((src) => !src.startsWith("http://") && !src.startsWith("https://"))
+    .map(localPath);
+  const localStyles = styles
+    .filter((href) => !href.startsWith("http://") && !href.startsWith("https://"))
+    .map(localPath);
 
   if (new Set(paths).size !== paths.length) failures.push(page + ": duplicate local script reference");
-  for (const path of [...paths, ...localStyles.map((href) => href.split("?")[0].replace(/^\.\//, ""))]) {
+  for (const path of [...paths, ...localStyles]) {
     if (!existsSync(join(root, path))) failures.push(page + ": missing local asset " + path);
   }
 
@@ -29,7 +37,10 @@ function checkPage(page, expectedEntry) {
 const workspace = checkPage("index.html", "app.js");
 const login = checkPage("login.html", "login.js");
 const sw = read("sw.js");
-const shell = [...sw.matchAll(/"\.\/([^"]+)"/g)].map((match) => match[1]);
+const shell = sw.split("\n")
+  .map((line) => line.trim())
+  .filter((line) => line.startsWith('"./'))
+  .map((line) => line.slice(3).replace(/",?$/, ""));
 for (const path of [...workspace.paths, ...login.paths]) {
   if (!shell.includes(path)) failures.push("sw.js: offline shell is missing " + path);
 }
