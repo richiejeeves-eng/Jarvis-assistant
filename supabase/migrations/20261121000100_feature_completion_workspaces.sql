@@ -12,6 +12,20 @@ create table if not exists public.jeeves_projects (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+create unique index if not exists jeeves_projects_id_user_unique on public.jeeves_projects(id,user_id);
+create table if not exists public.jeeves_project_milestones (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid not null,
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  title text not null check (char_length(trim(title)) between 1 and 160),
+  status text not null default 'pending' check (status in ('pending','completed')),
+  due_at timestamptz,
+  created_at timestamptz not null default now(),
+  constraint jeeves_project_milestones_owner_fkey
+    foreign key (project_id,user_id) references public.jeeves_projects(id,user_id) on delete cascade
+);
+create index if not exists jeeves_project_milestones_project_idx on public.jeeves_project_milestones(user_id,project_id,due_at);
+
 create table if not exists public.jeeves_ideas (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
@@ -67,7 +81,7 @@ create table if not exists public.jeeves_documents (
 do $$
 declare t text;
 begin
-  foreach t in array array['jeeves_projects','jeeves_ideas','jeeves_financial_entries','jeeves_budgets','jeeves_fitness_logs','jeeves_documents'] loop
+  foreach t in array array['jeeves_projects','jeeves_project_milestones','jeeves_ideas','jeeves_financial_entries','jeeves_budgets','jeeves_fitness_logs','jeeves_documents'] loop
     execute format('alter table public.%I enable row level security', t);
     execute format('revoke all on public.%I from anon', t);
     execute format('grant select, insert, update, delete on public.%I to authenticated', t);
