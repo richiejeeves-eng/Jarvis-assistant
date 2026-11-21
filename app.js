@@ -568,7 +568,7 @@ db.auth.onAuthStateChange(function (event, session) {
     if (session) {
       setTimeout(async function () {
         await refreshConversationList(null, false);
-        window.jeevesApi.call("brain", { ping: true }).catch(error => console.warn("Jeeves warm-up ping failed:", error));
+        window.jeevesApi.call("status", {}).catch(error => console.warn("Jeeves warm-up ping failed:", error));
         // Start every workspace visit with a blank chat.
         // Previous conversations remain available in the selector.
         document.getElementById("chat").textContent = "";
