@@ -4,6 +4,7 @@
 
   const ACTIONS = Object.freeze({
     brain: "ai.chat",
+    status: "system.status",
     calendar: "google.action",
     google: "google.action",
     health: "health.sync",
