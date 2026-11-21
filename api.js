@@ -47,7 +47,6 @@
           ? config.supabaseUrl.slice(0, -1)
           : config.supabaseUrl;
         response = await fetch(baseUrl + "/functions/v1/jeeves-api" + route.path, options);
-          "/functions/v1/jeeves-api" + route.path, options);
       } catch (error) {
         return { data: null, error: { message: "Jeeves API is unreachable: " + (error.message || "network error") } };
       }
