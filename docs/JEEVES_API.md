@@ -43,7 +43,7 @@ Keep platform JWT verification enabled (`verify_jwt = true`, the Supabase defaul
 
 Approved data tables: `tasks`, `memories`, `conversations`, `conversation_messages`, `health_records`.
 
-Health records are read-only through the generic data route. Use the validated health sync route to insert/update them.
+Health records are read-only through the generic data route. Use the validated health sync route to insert/update them. Google OAuth redirects continue to use the registered `google-calendar` callback URL; normal integration actions go through Jeeves API.
 
 ## Examples
 
@@ -132,7 +132,7 @@ Content-Type: application/json
 - `tasks` and `memories` inserts require `confirmed: true`; memory content is limited to 2,000 characters and task titles to 180 characters.
 - `health_records` is read-only through the generic data route.
 - Health records are not automatically attached to brain requests or forwarded to AI providers.
-- Request bodies and query strings have size limits. API responses include request IDs.
+- Request bodies and query strings have size limits. Data reads are capped at 100 rows per request. API responses include request IDs.
 - Browser CORS is restricted to the production GitHub Pages origin and local development origins. Native clients without an Origin header can use their authenticated session.
 - Brain, health sync and notification endpoints retain their existing per-user controls.
 - Server-side paid voice generation is disabled; browser/device speech has no per-call API charge.
