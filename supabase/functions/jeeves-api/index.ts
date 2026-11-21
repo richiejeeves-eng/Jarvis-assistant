@@ -1,350 +1,311 @@
 import { createClient } from "npm:@supabase/supabase-js@2.119.2";
 
-const API_VERSION = "v1";
-const MAX_BODY_BYTES = 4_500_000;
+const API_VERSION = "1.0.0";
+const MAX_FUNCTION_BODY_BYTES = 4_500_000;
+const MAX_DATA_BODY_BYTES = 1_000_000;
+const CONFIRMABLE_TABLES = new Set(["tasks", "memories"]);
+
 const ALLOWED_ORIGINS = new Set([
   "https://richiejeeves-eng.github.io",
   "http://localhost:8000",
   "http://127.0.0.1:8000",
 ]);
 
-type JsonObject = Record<string, unknown>;
+const FUNCTION_ROUTES: Record<string, string> = {
+  "/v1/brain": "jeeves-brain",
+  "/v1/google": "google-calendar",
+  "/v1/health/sync": "health-sync",
+  "/v1/health/notify": "health-sync-notify",
+};
 
-function corsHeaders(origin: string | null): Record<string, string> {
-  const headers: Record<string, string> = {
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Vary": "Origin",
+const DATA_TABLES = new Set([
+  "tasks",
+  "memories",
+  "conversations",
+  "conversation_messages",
+  "health_records",
+]);
+
+function corsHeaders(origin: string | null, requestId: string): Headers {
+  const headers = new Headers({
+    "Access-Control-Allow-Headers": "authorization, apikey, x-client-info, content-type, accept, prefer, range, range-unit, if-match, if-none-match",
+    "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
+    "Access-Control-Max-Age": "86400",
     "Cache-Control": "no-store",
-  };
-  if (origin && ALLOWED_ORIGINS.has(origin)) headers["Access-Control-Allow-Origin"] = origin;
+    "Vary": "Origin",
+    "X-Request-Id": requestId,
+  });
+  if (origin && ALLOWED_ORIGINS.has(origin)) {
+    headers.set("Access-Control-Allow-Origin", origin);
+  }
   return headers;
 }
 
-function json(body: unknown, status = 200, origin: string | null = null): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
-  });
+function json(
+  body: unknown,
+  status: number,
+  origin: string | null,
+  requestId: string,
+): Response {
+  const headers = corsHeaders(origin, requestId);
+  headers.set("Content-Type", "application/json; charset=utf-8");
+  return new Response(JSON.stringify(body), { status, headers });
 }
 
-function isObject(value: unknown): value is JsonObject {
+function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === "object" && !Array.isArray(value);
-}
-
-function boundedInt(value: unknown, fallback: number, min: number, max: number): number {
-  const parsed = Number(value);
-  return Number.isInteger(parsed) ? Math.max(min, Math.min(max, parsed)) : fallback;
-}
-
-function validUuid(value: unknown): value is string {
-  return typeof value === "string" &&
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
-}
-
-function parseDate(value: unknown): string | null | undefined {
-  if (value === null || value === "") return null;
-  if (typeof value !== "string" || value.length > 50) return undefined;
-  const date = new Date(value);
-  return Number.isFinite(date.getTime()) ? date.toISOString() : undefined;
 }
 
 function requiredEnv(name: string): string {
   const value = Deno.env.get(name);
-  if (!value) throw new Error("Server configuration is incomplete.");
+  if (!value) throw new Error("Missing server configuration: " + name);
   return value;
 }
 
-function userClient(authorization: string) {
-  return createClient(requiredEnv("SUPABASE_URL"), requiredEnv("SUPABASE_ANON_KEY"), {
-    global: { headers: { Authorization: authorization } },
+function routePath(url: URL): string {
+  const marker = "/functions/v1/jeeves-api";
+  const index = url.pathname.indexOf(marker);
+  if (index < 0) return "/";
+  return url.pathname.slice(index + marker.length) || "/";
+}
+
+async function readBody(req: Request, maxBytes: number): Promise<string> {
+  const declared = Number(req.headers.get("content-length") || "0");
+  if (Number.isFinite(declared) && declared > maxBytes) {
+    throw new Error("BODY_TOO_LARGE");
+  }
+  const body = await req.text();
+  if (new TextEncoder().encode(body).byteLength > maxBytes) {
+    throw new Error("BODY_TOO_LARGE");
+  }
+  return body;
+}
+
+async function authenticate(req: Request, origin: string | null, requestId: string) {
+  const authorization = req.headers.get("Authorization") || "";
+  const match = authorization.match(/^Bearer\s+(.+)$/i);
+  if (!match) {
+    return {
+      error: json({ error: "Sign in required.", code: "AUTH_REQUIRED" }, 401, origin, requestId),
+    };
+  }
+
+  const supabaseUrl = requiredEnv("SUPABASE_URL");
+  const publishableKey = requiredEnv("SUPABASE_ANON_KEY");
+  const client = createClient(supabaseUrl, publishableKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
+  const { data, error } = await client.auth.getUser(match[1]);
+  if (error || !data.user) {
+    return {
+      error: json({ error: "Invalid or expired session.", code: "AUTH_INVALID" }, 401, origin, requestId),
+    };
+  }
+  return { authorization, publishableKey, supabaseUrl, userId: data.user.id };
 }
 
-async function proxyFunction(
+async function forwardFunction(
+  req: Request,
   functionName: string,
-  payload: JsonObject,
-  authorization: string,
+  auth: { authorization: string; publishableKey: string; supabaseUrl: string; userId: string },
+  origin: string | null,
+  requestId: string,
 ): Promise<Response> {
-  const baseUrl = requiredEnv("SUPABASE_URL").replace(/\/$/, "");
-  const response = await fetch(baseUrl + "/functions/v1/" + functionName, {
-    method: "POST",
-    headers: {
-      "Authorization": authorization,
-      "apikey": requiredEnv("SUPABASE_ANON_KEY"),
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-    signal: AbortSignal.timeout(functionName === "jeeves-brain" ? 50_000 : 30_000),
+  if (req.method !== "POST") {
+    return json({ error: "This endpoint accepts POST only.", code: "METHOD_NOT_ALLOWED" }, 405, origin, requestId);
+  }
+
+  let body: string;
+  try {
+    body = await readBody(req, MAX_FUNCTION_BODY_BYTES);
+  } catch {
+    return json({ error: "Request body is too large.", code: "BODY_TOO_LARGE" }, 413, origin, requestId);
+  }
+
+  const target = new URL("/functions/v1/" + functionName, auth.supabaseUrl);
+  const headers = new Headers({
+    Authorization: auth.authorization,
+    apikey: auth.publishableKey,
+    "Content-Type": req.headers.get("Content-Type") || "application/json",
   });
-  const contentType = response.headers.get("Content-Type") || "application/json";
-  return new Response(response.body, {
-    status: response.status,
-    headers: {
-      "Content-Type": contentType,
-      "Cache-Control": "no-store",
-    },
-  });
+
+  try {
+    const upstream = await fetch(target, {
+      method: "POST",
+      headers,
+      body,
+      signal: AbortSignal.timeout(60_000),
+    });
+    const responseHeaders = corsHeaders(origin, requestId);
+    responseHeaders.set("Content-Type", upstream.headers.get("Content-Type") || "application/json");
+    return new Response(upstream.body, {
+      status: upstream.status,
+      headers: responseHeaders,
+    });
+  } catch (error) {
+    console.error("Jeeves API function proxy failed:", functionName, String(error));
+    return json({ error: "Upstream service is temporarily unavailable.", code: "UPSTREAM_UNAVAILABLE" }, 502, origin, requestId);
+  }
 }
 
-async function dispatch(
-  action: string,
-  payload: JsonObject,
-  client: ReturnType<typeof userClient>,
-  userId: string,
-  authorization: string,
+async function forwardData(
+  req: Request,
+  table: string,
+  auth: { authorization: string; publishableKey: string; supabaseUrl: string; userId: string },
+  origin: string | null,
+  requestId: string,
+  search: string,
 ): Promise<Response> {
-  switch (action) {
-    case "system.status":
-      return json({
-        ok: true,
-        api: API_VERSION,
-        services: {
-          ai: "jeeves-brain",
-          healthSync: "health-sync",
-          healthRecords: "managed-by-user-session",
-          tasks: "managed-by-user-session",
-          memories: "managed-by-user-session",
-          conversations: "managed-by-user-session",
-          google: "google-calendar",
-          voice: "browser-native speech; API generation disabled",
-        },
-      });
+  if (!DATA_TABLES.has(table)) {
+    return json({ error: "Data resource not found.", code: "RESOURCE_NOT_FOUND" }, 404, origin, requestId);
+  }
+  if (!["GET", "POST", "PATCH", "DELETE"].includes(req.method)) {
+    return json({ error: "Unsupported data method.", code: "METHOD_NOT_ALLOWED" }, 405, origin, requestId);
+  }
+  if (table === "health_records" && req.method !== "GET") {
+    return json({ error: "Health records are read-only through this route; use the validated health sync endpoint to write records.", code: "READ_ONLY_RESOURCE" }, 405, origin, requestId);
+  }
+  if (search.length > 4096) {
+    return json({ error: "Query string is too long.", code: "QUERY_TOO_LARGE" }, 414, origin, requestId);
+  }
 
-    case "ai.chat":
-      return await proxyFunction("jeeves-brain", payload, authorization);
-
-    case "health.sync":
-      return await proxyFunction("health-sync", payload, authorization);
-
-    case "health.notify":
-      return await proxyFunction("health-sync-notify", payload, authorization);
-
-    case "health.records.list": {
-      const limit = boundedInt(payload.limit, 50, 1, 100);
-      let query = client.from("health_records")
-        .select("id,record_type,external_id,start_time,end_time,value,source_app,source_device,recorded_at")
-        .eq("user_id", userId)
-        .order("recorded_at", { ascending: false })
-        .limit(limit);
-      if (typeof payload.record_type === "string" && payload.record_type.length <= 40) {
-        query = query.eq("record_type", payload.record_type);
+  let body: string | undefined;
+  if (req.method === "POST" || req.method === "PATCH") {
+    const contentType = req.headers.get("Content-Type") || "";
+    if (!contentType.toLowerCase().startsWith("application/json")) {
+      return json({ error: "Data writes must use application/json.", code: "UNSUPPORTED_MEDIA_TYPE" }, 415, origin, requestId);
+    }
+    try {
+      body = await readBody(req, MAX_DATA_BODY_BYTES);
+    } catch {
+      return json({ error: "Data request body is too large.", code: "BODY_TOO_LARGE" }, 413, origin, requestId);
+    }
+    let parsedBody: unknown;
+    try {
+      parsedBody = JSON.parse(body);
+    } catch {
+      return json({ error: "Data writes require valid JSON.", code: "INVALID_JSON" }, 400, origin, requestId);
+    }
+    const rows = Array.isArray(parsedBody) ? parsedBody : [parsedBody];
+    if (!rows.length || !rows.every(isRecord)) {
+      return json({ error: "Data writes must contain a JSON object or array of objects.", code: "INVALID_DATA_SHAPE" }, 400, origin, requestId);
+    }
+    for (const row of rows) {
+      if (row.user_id !== undefined && row.user_id !== auth.userId) {
+        return json({ error: "user_id cannot be changed by the client.", code: "USER_SCOPE_VIOLATION" }, 403, origin, requestId);
       }
-      const { data, error } = await query;
-      if (error) return json({ error: "Could not retrieve health records." }, 500);
-      return json({ data: data ?? [] });
-    }
-
-    case "tasks.list": {
-      const limit = boundedInt(payload.limit, 50, 1, 100);
-      const { data, error } = await client.from("tasks")
-        .select("id,title,description,status,due_at,created_at,source,group_name,google_task_id,google_tasklist_id")
-        .eq("user_id", userId)
-        .order("due_at", { ascending: true, nullsFirst: false })
-        .limit(limit);
-      if (error) return json({ error: "Could not retrieve tasks." }, 500);
-      return json({ data: data ?? [] });
-    }
-
-    case "tasks.create": {
-      const title = typeof payload.title === "string" ? payload.title.trim() : "";
-      if (payload.confirmed !== true) return json({ error: "Explicit user confirmation is required to create a task." }, 400);
-      if (!title || title.length > 200) return json({ error: "Task title must be 1 to 200 characters." }, 400);
-      const dueAt = parseDate(payload.due_at);
-      if (dueAt === undefined) return json({ error: "Invalid due_at date." }, 400);
-      const description = typeof payload.description === "string" ? payload.description.trim().slice(0, 2000) : null;
-      const { data, error } = await client.from("tasks").insert({
-        user_id: userId,
-        title,
-        description,
-        due_at: dueAt,
-        status: "pending",
-        source: "jeeves",
-      }).select("id,title,description,status,due_at,created_at").single();
-      if (error) return json({ error: "Could not create task." }, 500);
-      return json({ data }, 201);
-    }
-
-    case "tasks.update": {
-      if (!validUuid(payload.id)) return json({ error: "A valid task id is required." }, 400);
-      const update: JsonObject = {};
-      if (typeof payload.title === "string") {
-        const title = payload.title.trim();
-        if (!title || title.length > 200) return json({ error: "Task title must be 1 to 200 characters." }, 400);
-        update.title = title;
+      delete row.user_id;
+      if (req.method === "POST" && CONFIRMABLE_TABLES.has(table)) {
+        if (row.confirmed !== true) {
+          return json({ error: "Explicit confirmed: true is required to create tasks or memories.", code: "EXPLICIT_CONFIRMATION_REQUIRED" }, 403, origin, requestId);
+        }
+        delete row.confirmed;
+        if (table === "memories" && (typeof row.content !== "string" || !row.content.trim() || row.content.length > 2000)) {
+          return json({ error: "Memory content must be 1 to 2000 characters.", code: "INVALID_MEMORY_CONTENT" }, 400, origin, requestId);
+        }
+        if (table === "tasks" && (typeof row.title !== "string" || !row.title.trim() || row.title.length > 180)) {
+          return json({ error: "Task title must be 1 to 180 characters.", code: "INVALID_TASK_TITLE" }, 400, origin, requestId);
+        }
       }
-      if (typeof payload.description === "string") update.description = payload.description.trim().slice(0, 2000);
-      if (payload.status === "pending" || payload.status === "done") update.status = payload.status;
-      if ("due_at" in payload) {
-        const dueAt = parseDate(payload.due_at);
-        if (dueAt === undefined) return json({ error: "Invalid due_at date." }, 400);
-        update.due_at = dueAt;
-      }
-      if (!Object.keys(update).length) return json({ error: "No supported task changes supplied." }, 400);
-      const { data, error } = await client.from("tasks").update(update)
-        .eq("id", payload.id).eq("user_id", userId)
-        .select("id,title,description,status,due_at,created_at").maybeSingle();
-      if (error) return json({ error: "Could not update task." }, 500);
-      if (!data) return json({ error: "Task not found." }, 404);
-      return json({ data });
     }
+    body = JSON.stringify(parsedBody);
+  }
 
-    case "tasks.delete": {
-      if (!validUuid(payload.id)) return json({ error: "A valid task id is required." }, 400);
-      const { data, error } = await client.from("tasks").delete()
-        .eq("id", payload.id).eq("user_id", userId)
-        .select("id").maybeSingle();
-      if (error) return json({ error: "Could not delete task." }, 500);
-      if (!data) return json({ error: "Task not found." }, 404);
-      return json({ deleted: true, id: data.id });
+  const target = new URL("/rest/v1/" + table + search, auth.supabaseUrl);
+  const headers = new Headers({
+    Authorization: auth.authorization,
+    apikey: auth.publishableKey,
+    Accept: req.headers.get("Accept") || "application/json",
+  });
+  for (const name of ["Content-Type", "Prefer", "Range", "Range-Unit", "If-Match", "If-None-Match"]) {
+    const value = req.headers.get(name);
+    if (value) headers.set(name, value);
+  }
+
+  try {
+    const upstream = await fetch(target, {
+      method: req.method,
+      headers,
+      body,
+      signal: AbortSignal.timeout(30_000),
+    });
+    const responseHeaders = corsHeaders(origin, requestId);
+    for (const name of ["Content-Type", "Content-Range", "Preference-Applied", "Location", "ETag"]) {
+      const value = upstream.headers.get(name);
+      if (value) responseHeaders.set(name, value);
     }
-
-    case "memories.list": {
-      const limit = boundedInt(payload.limit, 50, 1, 100);
-      const { data, error } = await client.from("memories")
-        .select("id,content,category,created_at")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false })
-        .limit(limit);
-      if (error) return json({ error: "Could not retrieve memories." }, 500);
-      return json({ data: data ?? [] });
-    }
-
-    case "memories.create": {
-      const content = typeof payload.content === "string" ? payload.content.trim() : "";
-      if (payload.confirmed !== true) return json({ error: "Explicit user confirmation is required to save a memory." }, 400);
-      if (!content || content.length > 2000) return json({ error: "Memory content must be 1 to 2000 characters." }, 400);
-      const category = typeof payload.category === "string" ? payload.category.trim().slice(0, 60) : "general";
-      const { data, error } = await client.from("memories").insert({
-        user_id: userId,
-        content,
-        category: category || "general",
-      }).select("id,content,category,created_at").single();
-      if (error) return json({ error: "Could not save memory." }, 500);
-      return json({ data }, 201);
-    }
-
-    case "memories.delete": {
-      if (!validUuid(payload.id)) return json({ error: "A valid memory id is required." }, 400);
-      const { data, error } = await client.from("memories").delete()
-        .eq("id", payload.id).eq("user_id", userId)
-        .select("id").maybeSingle();
-      if (error) return json({ error: "Could not delete memory." }, 500);
-      if (!data) return json({ error: "Memory not found." }, 404);
-      return json({ deleted: true, id: data.id });
-    }
-
-    case "conversations.list": {
-      const { data, error } = await client.from("conversations")
-        .select("id,title,created_at,updated_at")
-        .eq("user_id", userId)
-        .order("updated_at", { ascending: false })
-        .limit(boundedInt(payload.limit, 30, 1, 50));
-      if (error) return json({ error: "Could not retrieve conversations." }, 500);
-      return json({ data: data ?? [] });
-    }
-
-    case "conversations.create": {
-      const title = typeof payload.title === "string" ? payload.title.trim().slice(0, 120) : "New conversation";
-      const { data, error } = await client.from("conversations").insert({
-        user_id: userId,
-        title: title || "New conversation",
-      }).select("id,title,created_at,updated_at").single();
-      if (error) return json({ error: "Could not create conversation." }, 500);
-      return json({ data }, 201);
-    }
-
-    case "conversations.messages.list": {
-      if (!validUuid(payload.conversation_id)) return json({ error: "A valid conversation_id is required." }, 400);
-      const { data, error } = await client.from("conversation_messages")
-        .select("id,conversation_id,role,content,created_at")
-        .eq("conversation_id", payload.conversation_id)
-        .eq("user_id", userId)
-        .order("created_at", { ascending: true })
-        .limit(boundedInt(payload.limit, 200, 1, 250));
-      if (error) return json({ error: "Could not retrieve conversation messages." }, 500);
-      return json({ data: data ?? [] });
-    }
-
-    case "conversations.messages.create": {
-      if (!validUuid(payload.conversation_id)) return json({ error: "A valid conversation_id is required." }, 400);
-      const role = payload.role;
-      const content = typeof payload.content === "string" ? payload.content.trim() : "";
-      if (role !== "user" && role !== "assistant" && role !== "model") {
-        return json({ error: "role must be user, assistant or model." }, 400);
-      }
-      if (!content || content.length > 20_000) return json({ error: "Message content must be 1 to 20000 characters." }, 400);
-      const { data, error } = await client.from("conversation_messages").insert({
-        user_id: userId,
-        conversation_id: payload.conversation_id,
-        role,
-        content,
-      }).select("id,conversation_id,role,content,created_at").single();
-      if (error) return json({ error: "Could not save conversation message." }, 500);
-      return json({ data }, 201);
-    }
-
-    case "google.action":
-      return await proxyFunction("google-calendar", payload, authorization);
-
-    case "voice.generate":
-      return json({ error: "Server-side voice generation is disabled to keep Jeeves free.", code: "FEATURE_DISABLED" }, 501);
-
-    default:
-      return json({ error: "Unknown action.", supported_actions: [
-        "system.status", "ai.chat", "health.sync", "health.notify", "health.records.list",
-        "tasks.list", "tasks.create", "tasks.update", "tasks.delete",
-        "memories.list", "memories.create", "memories.delete",
-        "conversations.list", "conversations.create",
-        "conversations.messages.list", "conversations.messages.create",
-        "google.action", "voice.generate",
-      ] }, 404);
+    return new Response(upstream.body, {
+      status: upstream.status,
+      headers: responseHeaders,
+    });
+  } catch (error) {
+    console.error("Jeeves API data proxy failed:", table, String(error));
+    return json({ error: "Data service is temporarily unavailable.", code: "DATA_UNAVAILABLE" }, 502, origin, requestId);
   }
 }
 
 Deno.serve(async (req: Request) => {
   const origin = req.headers.get("Origin");
-  if (req.method === "OPTIONS") {
-    if (origin && !ALLOWED_ORIGINS.has(origin)) return new Response(null, { status: 403 });
-    return new Response("ok", { headers: corsHeaders(origin) });
-  }
-  if (origin && !ALLOWED_ORIGINS.has(origin)) return json({ error: "Origin not allowed." }, 403, null);
-  if (req.method !== "POST") return json({ error: "POST required." }, 405, origin);
+  const requestId = crypto.randomUUID();
 
   try {
-    const authorization = req.headers.get("Authorization") ?? "";
-    const match = authorization.match(/^Bearer\s+(.+)$/i);
-    if (!match) return json({ error: "Sign in required." }, 401, origin);
-
-    const rawBody = await req.text();
-    if (new TextEncoder().encode(rawBody).byteLength > MAX_BODY_BYTES) {
-      return json({ error: "Request body is too large." }, 413, origin);
-    }
-    let body: JsonObject;
-    try {
-      const parsed: unknown = JSON.parse(rawBody);
-      if (!isObject(parsed)) throw new Error("Invalid request");
-      body = parsed;
-    } catch {
-      return json({ error: "Invalid JSON request body." }, 400, origin);
+    if (req.method === "OPTIONS") {
+      return new Response(null, { status: 204, headers: corsHeaders(origin, requestId) });
     }
 
-    const action = typeof body.action === "string" ? body.action : "";
-    if (!action || action.length > 80) return json({ error: "A valid action is required." }, 400, origin);
-    const payload = body.payload === undefined ? {} : body.payload;
-    if (!isObject(payload)) return json({ error: "payload must be a JSON object." }, 400, origin);
+    const url = new URL(req.url);
+    const path = routePath(url);
 
-    const client = userClient(authorization);
-    const { data: { user }, error } = await client.auth.getUser(match[1]);
-    if (error || !user) return json({ error: "Invalid or expired session." }, 401, origin);
+    if (req.method === "GET" && (path === "/v1" || path === "/v1/")) {
+      const auth = await authenticate(req, origin, requestId);
+      if ("error" in auth) return auth.error;
+      return json({
+        name: "Jeeves API",
+        version: API_VERSION,
+        authenticated: true,
+        routes: {
+          brain: "POST /v1/brain",
+          google: "POST /v1/google",
+          healthSync: "POST /v1/health/sync",
+          healthNotify: "POST /v1/health/notify",
+          data: "GET|POST|PATCH|DELETE /v1/data/{tasks|memories|conversations|conversation_messages|health_records}",
+          voice: "disabled until a verified no-cost voice provider is configured",
+        },
+        security: {
+          userJwtRequired: true,
+          rowLevelSecurity: "enforced by Supabase",
+          serviceRoleKeyExposed: false,
+        },
+      }, 200, origin, requestId);
+    }
 
-    const result = await dispatch(action, payload, client, user.id, authorization);
-    const headers = new Headers(result.headers);
-    for (const [key, value] of Object.entries(corsHeaders(origin))) headers.set(key, value);
-    return new Response(result.body, { status: result.status, headers });
+    const auth = await authenticate(req, origin, requestId);
+    if ("error" in auth) return auth.error;
+
+    if (path === "/v1/voice") {
+      return json({
+        error: "Voice is disabled on the unified API until a verified no-cost provider is configured.",
+        code: "FEATURE_DISABLED",
+      }, 501, origin, requestId);
+    }
+
+    const functionName = FUNCTION_ROUTES[path];
+    if (functionName) {
+      return await forwardFunction(req, functionName, auth, origin, requestId);
+    }
+
+    const dataMatch = path.match(/^\/v1\/data\/([a-z_]+)$/);
+    if (dataMatch) {
+      return await forwardData(req, dataMatch[1], auth, origin, requestId, url.search);
+    }
+
+    return json({ error: "API route not found.", code: "NOT_FOUND" }, 404, origin, requestId);
   } catch (error) {
-    console.error("jeeves-api error:", error instanceof Error ? error.message : "unknown error");
-    return json({ error: "Jeeves API request failed. Please try again." }, 500, origin);
+    const message = error instanceof Error ? error.message : "";
+    if (message.startsWith("Missing server configuration:")) {
+      return json({ error: "Jeeves API is not configured.", code: "CONFIGURATION_ERROR" }, 503, origin, requestId);
+    }
+    console.error("Jeeves API request failed:", String(error));
+    return json({ error: "Unexpected API error.", code: "INTERNAL_ERROR" }, 500, origin, requestId);
   }
 });
