@@ -3,6 +3,7 @@ import { createClient } from "npm:@supabase/supabase-js@2.119.2";
 const API_VERSION = "1.0.0";
 const MAX_FUNCTION_BODY_BYTES = 4_500_000;
 const MAX_DATA_BODY_BYTES = 1_000_000;
+const MAX_DATA_ROWS = 100;
 const CONFIRMABLE_TABLES = new Set(["tasks", "memories"]);
 
 const ALLOWED_ORIGINS = new Set([
@@ -168,6 +169,15 @@ async function forwardData(
   if (search.length > 4096) {
     return json({ error: "Query string is too long.", code: "QUERY_TOO_LARGE" }, 414, origin, requestId);
   }
+  if (req.method === "GET") {
+    const params = new URLSearchParams(search);
+    const requestedLimit = Number(params.get("limit"));
+    const safeLimit = Number.isFinite(requestedLimit) && requestedLimit > 0
+      ? Math.min(MAX_DATA_ROWS, Math.floor(requestedLimit))
+      : MAX_DATA_ROWS;
+    params.set("limit", String(safeLimit));
+    search = "?" + params.toString();
+  }
 
   let body: string | undefined;
   if (req.method === "POST" || req.method === "PATCH") {
@@ -220,6 +230,13 @@ async function forwardData(
   for (const name of ["Content-Type", "Prefer", "Range", "Range-Unit", "If-Match", "If-None-Match"]) {
     const value = req.headers.get(name);
     if (value) headers.set(name, value);
+  }
+  const requestedRange = req.headers.get("Range");
+  const rangeMatch = requestedRange?.match(/^(\d+)-(\d+)$/);
+  if (rangeMatch) {
+    const rangeStart = Number(rangeMatch[1]);
+    const rangeEnd = Math.min(Number(rangeMatch[2]), rangeStart + MAX_DATA_ROWS - 1);
+    headers.set("Range", rangeStart + "-" + rangeEnd);
   }
 
   try {
