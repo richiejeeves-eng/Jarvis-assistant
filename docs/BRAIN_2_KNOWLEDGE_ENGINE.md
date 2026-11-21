@@ -29,9 +29,14 @@ Source: `supabase/functions/jeeves-memory/index.ts`
 Endpoint after deployment:
 `POST /functions/v1/jeeves-memory`
 
-Actions: `search`, `list`, `remember`, `approve`, `revoke`, `archive`, `link`, `unlink`, `delete`.
+Through the authenticated Jeeves API gateway:
+`POST /functions/v1/jeeves-api/v1/memory`
+
+The gateway source is tracked at `supabase/functions/jeeves-api/index.ts`; it forwards the caller JWT to `jeeves-memory`.
+
+Actions: `search`, `list`, `remember`, `approve`, `revoke`, `archive`, `list_links`, `link`, `unlink`, `delete`.
 
 All calls require a valid signed-in user's JWT. The function uses the caller's Supabase session and does not use the service-role key.
 
 ## Important deployment boundary
-The database schema has been applied to the existing project. Function source is committed to GitHub but is not deployed. Do not deploy `jeeves-memory` or alter Brain 1 / API routing without explicit approval. Once deployed, Brain 1 can be updated separately to call `search_knowledge` and incorporate only consent-approved results.
+The database schema and timestamp-trigger correction have been applied to the existing project. `jeeves-memory`, the updated `jarvis-brain`, and the gateway memory route are source-controlled but not deployed. No authenticated end-to-end test has been run. Deployment, merge, and client publication remain separate approval gates.
