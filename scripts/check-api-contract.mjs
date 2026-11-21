@@ -41,7 +41,7 @@ if (!read("supabase/functions/health-sync/index.ts").includes("body.records.leng
 if (!gateway.includes('code: "MUTATION_ID_REQUIRED"') || !gateway.includes('params.getAll("id")')) failures.push("PATCH and DELETE must require exactly one UUID id selector");
 if (!gateway.includes("Bulk mutations are disabled")) failures.push("Bulk data mutations must remain disabled");
 if (!gateway.includes('code: "UPSERT_DISABLED"') || !gateway.includes('new URLSearchParams(search).has("on_conflict")')) failures.push("POST upserts must be disabled");
-if (!gateway.includes("ALLOWED_PREFER") || !gateway.includes('"resolution=merge-duplicates"')) failures.push("Prefer headers must be allowlisted (and merge-duplicates rejected)");
+if (!gateway.includes("ALLOWED_PREFER") || !gateway.includes('"return=minimal"') || !gateway.includes('"return=representation"') || !gateway.includes('"count=exact"') || !gateway.includes("prefer.every((p) => ALLOWED_PREFER.has(p))")) failures.push("Prefer headers must be restricted to the explicit safe allowlist");
 if (!gateway.includes('code: "PREFER_NOT_ALLOWED"')) failures.push("Unsupported Prefer headers must be rejected");
 if (!gateway.includes('headers.delete("Range")') || !gateway.includes('headers.delete("Range-Unit")')) failures.push("Malformed or open-ended Range headers must be removed");
 if (!gateway.includes("rangeStart + MAX_DATA_ROWS - 1")) failures.push("Range responses must be capped at 100 rows");
