@@ -171,12 +171,12 @@ Return a concise assessment with: reflection, relevant principles, ethical consi
     ].filter(Boolean).join("\n\n") || "No specialist advisers selected; respond using broad general knowledge.";
 
     const chiefPrompt =
-      "You are JEEVES, the Chief of Staff and principal personal assistant. You have broad general knowledge across everyday life, work, technology, research, planning and practical problem-solving. You coordinate three independent specialist advisers: MIND (intellect and strategy), BODY (health and physical wellbeing), and SOUL (spirituality, values and meaning). " +
-      "Only the advisers selected for this request have contributed. If exactly ONE adviser is selected, speak directly to the user as that specialist in her own voice and first person; do not introduce yourself as Jeeves or refer to yourself in the third person. Keep her expert domain and warm, confident female persona. If zero or multiple advisers are selected, Jeeves speaks as Chief of Staff and synthesizes relevant advice. Do not invent advice from inactive advisers or merely concatenate reports. Reply in 1-3 short sentences. Be concise, clear, discreet and action-oriented. " +
+      "You are JEEVES, the Chief of Staff and principal personal assistant. You have broad general knowledge across everyday life, work, technology, research, planning and practical problem-solving. You can reason from three specialist perspectives: MIND (intellect and strategy), BODY (general health and physical wellbeing), and SOUL (spirituality, values and meaning). " +
+      "Use only the specialist perspectives selected for this request; do not claim separate adviser reports. If exactly ONE adviser is selected, speak directly to the user as that specialist in her own voice and first person; do not introduce yourself as Jeeves or refer to yourself in the third person. Keep her expert domain and warm, confident female persona. If zero or multiple advisers are selected, Jeeves speaks as Chief of Staff and synthesizes relevant advice. Do not invent advice from inactive advisers or merely concatenate reports. Reply in 1-3 short sentences. Be concise, clear, discreet and action-oriented. " +
       "Respect the selected autonomy level (" + String(body.mode ?? 3) + "): offer advice at Level 1, structured planning/accountability at Level 2, and operational briefs/drafts at Level 3. Never claim to have taken external actions without tool confirmation; external actions require permission. " +
       sharedContext +
       "\n\nSelected Council perspectives:\n" + councilAdvice +
-      "\n\nReturn JSON. speaker: exactly one of 'jeeves', 'mind', 'body', or 'soul'; use the sole selected adviser when exactly one is active, otherwise 'jeeves'. reply: final answer to user, in the speaker voice described above, incorporating only relevant specialist advice. memory: ONE short durable fact/preference/goal from the latest user message (under 200 characters), or empty if none/already saved/question/small talk/to-do. Never save passwords, keys, card numbers or ID numbers. task_title: only if user explicitly asks for reminder/to-do, 2-6 words; otherwise empty. task_due_at: ISO 8601 with offset only when a due time was supplied; otherwise empty. You cannot mark tasks done; direct user to Show tasks.";
+      "\n\nReturn JSON. speaker: exactly one of 'jeeves', 'mind', 'body', or 'soul'; use the sole selected adviser when exactly one is active, otherwise 'jeeves'. reply: final answer to user, in the speaker voice described above, incorporating only relevant specialist advice. memory: ONE short durable fact/preference/goal from the latest user message (under 200 characters), or empty unless the user explicitly asks to remember/save it. Never save passwords, keys, card numbers or ID numbers. task_title: only if user explicitly asks for reminder/to-do, 2-6 words; otherwise empty. task_due_at: ISO 8601 with offset only when a due time was supplied; otherwise empty. You cannot mark tasks done; direct user to Show tasks.";
 
     const chiefParts: any[] = [{ text: message }];
     if (imagePart) chiefParts.push(imagePart);
@@ -200,8 +200,13 @@ Return a concise assessment with: reflection, relevant principles, ethical consi
     if (taskTitle.length > 80) {
       taskTitle = taskTitle.slice(0, 80);
     }
-    const taskIntent = /\b(?:remind me|set (?:a )?reminder|add (?:this )?(?:to-?do|task|reminder)|create (?:a )?(?:to-?do|task|reminder)|make (?:a )?(?:to-?do|task|reminder)|put (?:this )?on my (?:to-?do|task) list|don't let me forget|do not let me forget)\b/i.test(message);
-    const taskOptOut = /\b(?:don't|do not|never)\s+(?:create|add|make|set)\s+(?:a )?(?:task|to-?do|reminder)\b/i.test(message) || /\b(?:don't|do not)\s+remind me\b/i.test(message);
+    const taskIntent =
+      /^(?:please\\s+)?(?:remind me|set (?:a )?reminder|add (?:this )?(?:to-?do|task|reminder)|create (?:a )?(?:to-?do|task|reminder)|make (?:a )?(?:to-?do|task|reminder)|put (?:this )?on my (?:to-?do|task) list|don't let me forget)\\b/i.test(message) ||
+      /\\b(?:can you|could you|would you|please)\\s+(?:remind me|set (?:a )?reminder|add (?:this )?(?:to-?do|task|reminder)|create (?:a )?(?:to-?do|task|reminder)|make (?:a )?(?:to-?do|task|reminder)|put (?:this )?on my (?:to-?do|task) list)\\b/i.test(message) ||
+      /^(?:i need|i'd like|i would like)\\s+(?:a )?(?:reminder|task|to-?do)\\b/i.test(message);
+    const taskOptOut =
+      /\\b(?:don't|do not|never|no need to)\\s+(?:create|add|make|set|remind me)\\b/i.test(message) ||
+      /\\b(?:don't|do not)\\s+want\\s+(?:you to\\s+)?(?:remind me|create|add|make|set)\\b/i.test(message);
     if (!taskIntent || taskOptOut) { taskTitle = ""; taskDue = ""; }
 
     // Model output is never enough to create a durable memory: require explicit user intent.
