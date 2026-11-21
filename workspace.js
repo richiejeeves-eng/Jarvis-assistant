@@ -161,6 +161,7 @@
       totals.append(card("Income",money(income),"Recent 200 saved entries"),card("Spending",money(expense),"Recent 200 saved entries"),card("Net",money(income-expense),"Income minus spending"));
       renderList(content,data,item=>{
         const el=card((item.entry_type==="income"?"+ ":"− ")+money(item.amount,item.currency),item.description||item.category,item.category+" · "+dateText(item.occurred_on));
+        el.append(action("Edit",async()=>{const amount=prompt("Amount",String(item.amount));if(amount===null)return;const numeric=Number(amount);if(!Number.isFinite(numeric)||numeric<=0){status(content,"Enter a positive amount.");return;}const description=prompt("Description",item.description||"");if(description===null)return;try{await update("jeeves_financial_entries",item.id,{amount:numeric,description});await renderFinance(host);}catch(e){status(content,e.message);}}));
         el.append(action("Delete transaction",async()=>{if(!confirm("Delete this financial entry?"))return;try{await remove("jeeves_financial_entries",item.id);await renderFinance(host);}catch(e){status(content,e.message);}}));
         return el;
       },"No transactions recorded. Add one above to start tracking actual figures.");
@@ -179,6 +180,7 @@
       renderList(content,data,item=>{
         const detail=[item.details,item.quantity!==null&&item.quantity!==undefined?item.quantity+" "+(item.unit||""):""].filter(Boolean).join(" · ");
         const el=card(item.title,detail||"No details",item.log_type+" · "+new Date(item.logged_at).toLocaleString("en-GB"));
+        el.append(action("Edit",async()=>{const title=prompt("Log title",item.title);if(title===null||!title.trim())return;const details=prompt("Details",item.details||"");if(details===null)return;try{await update("jeeves_fitness_logs",item.id,{title:title.trim(),details});await renderFitness(host);}catch(e){status(content,e.message);}}));
         el.append(action("Delete log",async()=>{if(!confirm("Delete this fitness log?"))return;try{await remove("jeeves_fitness_logs",item.id);await renderFitness(host);}catch(e){status(content,e.message);}}));return el;
       },"No fitness logs yet. Start with a meal, workout, measurement or habit.");
     }catch(e){status(content,e.message);}
