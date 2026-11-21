@@ -1,0 +1,90 @@
+openapi: 3.1.0
+info:
+  title: Jeeves API
+  version: 1.0.0
+  description: Authenticated API gateway for Jeeves services hosted on Supabase Edge Functions.
+servers:
+  - url: https://aelsipdtezvhjkwsshqx.supabase.co/functions/v1/jeeves-api
+security:
+  - bearerAuth: []
+    publishableKey: []
+paths:
+  /:
+    post:
+      summary: Invoke a Jeeves v1 service
+      operationId: invokeJeevesService
+      parameters:
+        - in: header
+          name: apikey
+          required: true
+          schema:
+            type: string
+          description: Supabase publishable key. Never use a secret/service-role key in clients.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Envelope'
+            examples:
+              status:
+                value: { version: v1, service: status, payload: {} }
+              createTask:
+                value:
+                  version: v1
+                  service: tasks
+                  payload:
+                    action: create
+                    title: Review project plan
+              askBrain:
+                value:
+                  version: v1
+                  service: brain
+                  payload:
+                    message: Help me plan my week
+                    mode: 3
+      responses:
+        '200':
+          description: Successful API or upstream response.
+        '400':
+          description: Invalid request or unsupported action.
+        '401':
+          description: Missing or invalid user session.
+        '403':
+          description: Origin or permission rejected.
+        '404':
+          description: Unknown service or user-owned resource not found.
+        '413':
+          description: Request body too large.
+        '429':
+          description: Upstream rate limit reached.
+        '500':
+          description: Internal API error.
+        '503':
+          description: API configuration or dependency unavailable.
+        '504':
+          description: Upstream timeout.
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    publishableKey:
+      type: apiKey
+      in: header
+      name: apikey
+  schemas:
+    Envelope:
+      type: object
+      required: [version, service, payload]
+      properties:
+        version:
+          type: string
+          const: v1
+        service:
+          type: string
+          enum: [status, brain, memories, tasks, conversations, messages, calendar, voice, health]
+        payload:
+          type: object
+          description: Service-specific request object. See docs/JEEVES_API.md.
