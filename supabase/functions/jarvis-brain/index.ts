@@ -125,6 +125,22 @@ Deno.serve(async (req) => {
       .slice(0, 5)
       .map((m: { content: string }) => m.content.slice(0, 200));
 
+    // Brain 2: retrieve only consent-approved, non-archived knowledge through the user's RLS session.
+    const { data: knowledgeRows, error: knowledgeError } = await supabase.rpc("search_knowledge", {
+      search_text: searchText,
+      max_results: 5,
+    });
+    if (knowledgeError) console.log("Brain 2 knowledge retrieval error:", knowledgeError.message);
+    const knowledgeText = (knowledgeRows ?? [])
+      .slice(0, 5)
+      .map((item: { title?: string; content?: string; category?: string; confidence?: number }) =>
+        "- [" + String(item.category ?? "general").slice(0, 60) + "] " +
+        String(item.title ?? "Untitled").slice(0, 160) + ": " +
+        String(item.content ?? "").slice(0, 500) +
+        " (confidence " + String(item.confidence ?? "unknown") + ")"
+      )
+      .join("\\n");
+
     const { data: tasks } = await supabase
       .from("tasks")
       .select("title, due_at")
@@ -199,6 +215,7 @@ Deno.serve(async (req) => {
     const sharedContext =
       "Current date and time for the user: " + nowText + " (timezone " + timezone + ").\\n" +
       "Relevant saved memories:\\n" + (memoryText || "(nothing saved yet)") +
+      "\\n\\nBrain 2 approved long-term knowledge:\\n" + (knowledgeText || "(no matching approved knowledge)") +
       "\\n\\nPending tasks:\\n" + (taskText || "(no pending tasks)") +
       "\\n\\nRecent Health Connect records (only when available):\\n" + (healthText || "(no health records available)") +
       "\\n\\nUser-approved lasting preferences:\\n" + (preferenceText || "(none saved)") +
