@@ -2,58 +2,163 @@ openapi: 3.1.0
 info:
   title: Jeeves API
   version: 1.0.0
-  description: Authenticated action-based API for Jeeves services and user-owned data.
+  description: Authenticated path-versioned API for Jeeves services and user-owned data.
 servers:
   - url: https://aelsipdtezvhjkwsshqx.supabase.co/functions/v1/jeeves-api
 security:
   - bearerAuth: []
     publishableKey: []
 paths:
-  /:
+  /v1:
+    get:
+      summary: Get authenticated API catalogue
+      responses:
+        "200":
+          description: API version and available services
+        "401":
+          description: Authentication required
+  /v1/brain:
     post:
-      summary: Execute a Jeeves API action
-      description: All operations use one authenticated action envelope. Data actions are scoped to the signed-in user.
+      summary: Send a chat request to Jeeves Brain
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ApiRequest'
-            examples:
-              listTasks:
-                value:
-                  action: tasks.list
-                  payload:
-                    limit: 25
-              createTask:
-                value:
-                  action: tasks.create
-                  payload:
-                    title: Book dentist
-                    confirmed: true
-              chat:
-                value:
-                  action: ai.chat
-                  payload:
-                    message: Help me plan my week.
-                    mode: 3
+              type: object
+              required: [message]
+              properties:
+                message:
+                  type: string
+                  minLength: 1
+                  maxLength: 2000
+                mode:
+                  type: integer
+                timezone:
+                  type: string
+                active_advisers:
+                  type: array
+                  items:
+                    type: string
+                    enum: [mind, body, soul]
       responses:
         "200":
-          description: Action result
-        "201":
-          description: Resource created
-        "400":
-          description: Invalid request or missing explicit confirmation
+          description: Jeeves response
         "401":
           description: Authentication required
-        "403":
-          description: Permission denied
-        "404":
-          description: Unknown action or resource
         "429":
-          description: Rate limit reached
+          description: AI rate limit reached
+  /v1/google:
+    post:
+      summary: Call an authorised Google integration action
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action]
+              properties:
+                action:
+                  type: string
+                  enum: [authorize, status, disconnect, events, create, gmailMessages, gmailReply, driveFiles, syncTasks, createTask, deleteTask, completeTask]
+      responses:
+        "200":
+          description: Google integration result
+        "401":
+          description: Authentication required
+  /v1/health/sync:
+    post:
+      summary: Store validated Health Connect records
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [records]
+              properties:
+                records:
+                  type: array
+                  maxItems: 500
+                  items:
+                    type: object
+      responses:
+        "200":
+          description: Sync result
+        "400":
+          description: Invalid records
+  /v1/health/notify:
+    post:
+      summary: Notify an authorised Android device about a health sync request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [request_id]
+              properties:
+                request_id:
+                  type: string
+                  format: uuid
+      responses:
+        "200":
+          description: Notification result
+        "429":
+          description: Notification rate limit reached
+  /v1/voice:
+    post:
+      summary: Server-side voice generation (disabled)
+      responses:
         "501":
-          description: Feature intentionally disabled (server-side voice)
+          description: Disabled to prevent paid API usage; use browser/device speech
+  /v1/data/{table}:
+    parameters:
+      - name: table
+        in: path
+        required: true
+        schema:
+          type: string
+          enum: [tasks, memories, conversations, conversation_messages, health_records]
+    get:
+      summary: Read caller-owned rows
+      parameters:
+        - name: select
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Rows permitted by Row Level Security
+    post:
+      summary: Insert caller-owned rows
+      description: tasks and memories require confirmed=true; health_records are read-only.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - type: object
+                - type: array
+                  items:
+                    type: object
+      responses:
+        "201":
+          description: Insert result
+        "403":
+          description: Explicit confirmation required or ownership violation
+    patch:
+      summary: Update caller-owned rows
+      responses:
+        "200":
+          description: Update result
+    delete:
+      summary: Delete caller-owned rows
+      responses:
+        "200":
+          description: Delete result
 components:
   securitySchemes:
     bearerAuth:
@@ -64,33 +169,3 @@ components:
       type: apiKey
       in: header
       name: apikey
-  schemas:
-    ApiRequest:
-      type: object
-      additionalProperties: false
-      required: [action, payload]
-      properties:
-        action:
-          type: string
-          enum:
-            - system.status
-            - ai.chat
-            - health.sync
-            - health.notify
-            - health.records.list
-            - tasks.list
-            - tasks.create
-            - tasks.update
-            - tasks.delete
-            - memories.list
-            - memories.create
-            - memories.delete
-            - conversations.list
-            - conversations.create
-            - conversations.messages.list
-            - conversations.messages.create
-            - google.action
-            - voice.generate
-        payload:
-          type: object
-          description: Action-specific JSON fields. Task and memory creation require confirmed=true. Server-side voice is disabled.
