@@ -257,7 +257,7 @@ Deno.serve(async (req: Request) => {
       return await forwardFunction(req, functionName, auth, origin, requestId);
     }
 
-    const dataMatch = path.match(/^\\/v1\\/data\\/([a-z_]+)$/);
+    const dataMatch = path.match(/^\/v1\/data\/([a-z_]+)$/);
     if (dataMatch) {
       return await forwardData(req, dataMatch[1], auth, origin, requestId, url.search);
     }
