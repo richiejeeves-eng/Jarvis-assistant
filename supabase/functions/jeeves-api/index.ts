@@ -96,7 +96,7 @@ async function authenticate(req: Request, origin: string | null, requestId: stri
       error: json({ error: "Invalid or expired session.", code: "AUTH_INVALID" }, 401, origin, requestId),
     };
   }
-  return { authorization, publishableKey, supabaseUrl, userId: data.user.id };
+  return { authorization, publishableKey, supabaseUrl };
 }
 
 async function forwardFunction(
@@ -211,55 +211,64 @@ Deno.serve(async (req: Request) => {
   const origin = req.headers.get("Origin");
   const requestId = crypto.randomUUID();
 
-  if (req.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: corsHeaders(origin, requestId) });
-  }
+  try {
+    if (req.method === "OPTIONS") {
+      return new Response(null, { status: 204, headers: corsHeaders(origin, requestId) });
+    }
 
-  const url = new URL(req.url);
-  const path = routePath(url);
+    const url = new URL(req.url);
+    const path = routePath(url);
 
-  if (req.method === "GET" && (path === "/v1" || path === "/v1/")) {
+    if (req.method === "GET" && (path === "/v1" || path === "/v1/")) {
+      const auth = await authenticate(req, origin, requestId);
+      if ("error" in auth) return auth.error;
+      return json({
+        name: "Jeeves API",
+        version: API_VERSION,
+        authenticated: true,
+        routes: {
+          brain: "POST /v1/brain",
+          google: "POST /v1/google",
+          healthSync: "POST /v1/health/sync",
+          healthNotify: "POST /v1/health/notify",
+          data: "GET|POST|PATCH|DELETE /v1/data/{tasks|memories|conversations|conversation_messages|health_records}",
+          voice: "disabled until a verified no-cost voice provider is configured",
+        },
+        security: {
+          userJwtRequired: true,
+          rowLevelSecurity: "enforced by Supabase",
+          serviceRoleKeyExposed: false,
+        },
+      }, 200, origin, requestId);
+    }
+
     const auth = await authenticate(req, origin, requestId);
     if ("error" in auth) return auth.error;
-    return json({
-      name: "Jeeves API",
-      version: API_VERSION,
-      authenticated: true,
-      routes: {
-        brain: "POST /v1/brain",
-        google: "POST /v1/google",
-        healthSync: "POST /v1/health/sync",
-        healthNotify: "POST /v1/health/notify",
-        data: "GET|POST|PATCH|DELETE /v1/data/{tasks|memories|conversations|conversation_messages|health_records}",
-        voice: "disabled until a verified no-cost voice provider is configured",
-      },
-      security: {
-        userJwtRequired: true,
-        rowLevelSecurity: "enforced by Supabase",
-        serviceRoleKeyExposed: false,
-      },
-    }, 200, origin, requestId);
+
+    if (path === "/v1/voice") {
+      return json({
+        error: "Voice is disabled on the unified API until a verified no-cost provider is configured.",
+        code: "FEATURE_DISABLED",
+      }, 501, origin, requestId);
+    }
+
+    const functionName = FUNCTION_ROUTES[path];
+    if (functionName) {
+      return await forwardFunction(req, functionName, auth, origin, requestId);
+    }
+
+    const dataMatch = path.match(/^\\/v1\\/data\\/([a-z_]+)$/);
+    if (dataMatch) {
+      return await forwardData(req, dataMatch[1], auth, origin, requestId, url.search);
+    }
+
+    return json({ error: "API route not found.", code: "NOT_FOUND" }, 404, origin, requestId);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    if (message.startsWith("Missing server configuration:")) {
+      return json({ error: "Jeeves API is not configured.", code: "CONFIGURATION_ERROR" }, 503, origin, requestId);
+    }
+    console.error("Jeeves API request failed:", String(error));
+    return json({ error: "Unexpected API error.", code: "INTERNAL_ERROR" }, 500, origin, requestId);
   }
-
-  const auth = await authenticate(req, origin, requestId);
-  if ("error" in auth) return auth.error;
-
-  if (path === "/v1/voice") {
-    return json({
-      error: "Voice is disabled on the unified API until a verified no-cost provider is configured.",
-      code: "FEATURE_DISABLED",
-    }, 501, origin, requestId);
-  }
-
-  const functionName = FUNCTION_ROUTES[path];
-  if (functionName) {
-    return await forwardFunction(req, functionName, auth, origin, requestId);
-  }
-
-  const dataMatch = path.match(/^\/v1\/data\/([a-z_]+)$/);
-  if (dataMatch) {
-    return await forwardData(req, dataMatch[1], auth, origin, requestId, url.search);
-  }
-
-  return json({ error: "API route not found.", code: "NOT_FOUND" }, 404, origin, requestId);
 });
