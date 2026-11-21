@@ -5,7 +5,7 @@
     { group: "CORE SERVICES", name: "ElevenLabs", detail: "Jeeves voice generation via jeeves-voice", status: "Configured", kind: "ready", icon: "♫" },
     { group: "GOOGLE WORKSPACE", name: "Google Calendar", detail: "Read upcoming events and create approved events", status: "OAuth setup required", kind: "setup", icon: "◷" },
     { group: "GOOGLE WORKSPACE", name: "Google Tasks", detail: "Import Google Tasks into Jeeves and sync completion", status: "Additional permission required", kind: "setup", icon: "✓" },
-    { group: "GOOGLE WORKSPACE", name: "Gmail", detail: "Read emails and send replies from Jeeves", status: "Awaiting authorisation", kind: "setup", icon: "✉" },
+    { group: "GOOGLE WORKSPACE", name: "Gmail", detail: "Optional email reading and replies · restricted-scope verification required for public release", status: "Awaiting authorisation", kind: "setup", icon: "✉" },
     { group: "GOOGLE WORKSPACE", name: "Google Drive", detail: "List files and metadata (read-only)", status: "Awaiting authorisation", kind: "setup", icon: "▧" },
     { group: "HEALTH & FITNESS", name: "Health Connect", detail: "Sync source for Jeeves Fitness · steps, heart rate, sleep, weight, body fat and blood pressure", status: "Managed in Jeeves Fitness", kind: "ready", icon: "⌁" },
   ];
