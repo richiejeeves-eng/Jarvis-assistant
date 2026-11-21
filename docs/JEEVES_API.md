@@ -37,8 +37,8 @@ Keep platform JWT verification enabled (`verify_jwt = true`, the Supabase defaul
 | POST | `/v1/health/notify` | Trigger an authorised Health Connect sync notification |
 | GET | `/v1/data/{table}` | Read caller-owned rows from an approved data table |
 | POST | `/v1/data/{table}` | Insert rows into an approved data table |
-| PATCH | `/v1/data/{table}` | Update caller-owned rows |
-| DELETE | `/v1/data/{table}` | Delete caller-owned rows |
+| PATCH | `/v1/data/{table}?id=eq.{uuid}` | Update one caller-owned row; exactly one UUID selector required |
+| DELETE | `/v1/data/{table}?id=eq.{uuid}` | Delete one caller-owned row; exactly one UUID selector required |
 | POST | `/v1/voice` | Returns `501 FEATURE_DISABLED`; use device speech |
 
 Approved data tables: `tasks`, `memories`, `conversations`, `conversation_messages`, `health_records`.
@@ -134,7 +134,7 @@ Content-Type: application/json
 - Health records are not automatically attached to brain requests or forwarded to AI providers.
 - Request bodies and query strings have size limits. Data reads are capped at 100 rows per request. API responses include request IDs.
 - Browser CORS is restricted to the production GitHub Pages origin and local development origins. Native clients without an Origin header can use their authenticated session.
-- Brain, health sync and notification endpoints retain their existing per-user controls.
+- Brain and notification endpoints retain their existing per-user controls. Health sync currently has no separate per-user throttle; batch and body limits are enforced.
 - Server-side paid voice generation is disabled; browser/device speech has no per-call API charge.
 
 ## Deployment sequence (not performed)
