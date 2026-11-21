@@ -201,12 +201,12 @@ Return a concise assessment with: reflection, relevant principles, ethical consi
       taskTitle = taskTitle.slice(0, 80);
     }
     const taskIntent =
-      /^(?:please\\s+)?(?:remind me|set (?:a )?reminder|add (?:this )?(?:to-?do|task|reminder)|create (?:a )?(?:to-?do|task|reminder)|make (?:a )?(?:to-?do|task|reminder)|put (?:this )?on my (?:to-?do|task) list|don't let me forget)\\b/i.test(message) ||
-      /\\b(?:can you|could you|would you|please)\\s+(?:remind me|set (?:a )?reminder|add (?:this )?(?:to-?do|task|reminder)|create (?:a )?(?:to-?do|task|reminder)|make (?:a )?(?:to-?do|task|reminder)|put (?:this )?on my (?:to-?do|task) list)\\b/i.test(message) ||
-      /^(?:i need|i'd like|i would like)\\s+(?:a )?(?:reminder|task|to-?do)\\b/i.test(message);
+      /^(?:please\s+)?(?:remind me|set (?:a )?reminder|add (?:this )?(?:to-?do|task|reminder)|create (?:a )?(?:to-?do|task|reminder)|make (?:a )?(?:to-?do|task|reminder)|put (?:this )?on my (?:to-?do|task) list|don't let me forget)\b/i.test(message) ||
+      /\b(?:can you|could you|would you|please)\s+(?:remind me|set (?:a )?reminder|add (?:this )?(?:to-?do|task|reminder)|create (?:a )?(?:to-?do|task|reminder)|make (?:a )?(?:to-?do|task|reminder)|put (?:this )?on my (?:to-?do|task) list)\b/i.test(message) ||
+      /^(?:i need|i'd like|i would like)\s+(?:a )?(?:reminder|task|to-?do)\b/i.test(message);
     const taskOptOut =
-      /\\b(?:don't|do not|never|no need to)\\s+(?:create|add|make|set|remind me)\\b/i.test(message) ||
-      /\\b(?:don't|do not)\\s+want\\s+(?:you to\\s+)?(?:remind me|create|add|make|set)\\b/i.test(message);
+      /\b(?:don't|do not|never|no need to)\s+(?:create|add|make|set|remind me)\b/i.test(message) ||
+      /\b(?:don't|do not)\s+want\s+(?:you to\s+)?(?:remind me|create|add|make|set)\b/i.test(message);
     if (!taskIntent || taskOptOut) { taskTitle = ""; taskDue = ""; }
 
     // Model output is never enough to create a durable memory: require explicit user intent.
