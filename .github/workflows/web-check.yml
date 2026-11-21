@@ -9,6 +9,7 @@ on:
       - "sw.js"
       - "config.js"
       - "scripts/**"
+      - "docs/**"
       - "supabase/functions/**"
       - ".github/workflows/web-check.yml"
   pull_request:
@@ -37,6 +38,8 @@ jobs:
           done
       - name: Validate local web assets and shared config
         run: node scripts/check-web-assets.mjs
+      - name: Validate Jeeves API contract
+        run: node scripts/check-api-contract.mjs
 
   validate-edge-functions:
     runs-on: ubuntu-latest
