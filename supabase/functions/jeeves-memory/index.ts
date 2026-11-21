@@ -73,7 +73,7 @@ Deno.serve(async (req) => {
       if (query.length < 2) return json({ error: "Search query must be at least 2 characters" }, 400, origin);
       const { data, error } = await supabase.rpc("search_knowledge", {
         search_text: query,
-        max_results: Number.isInteger(body.limit) ? Math.max(1, Math.min(Number(body.limit), 20)) : 8,
+        max_results: typeof body.limit === "number" && Number.isInteger(body.limit) ? Math.max(1, Math.min(body.limit, 20)) : 8,
       });
       if (error) throw error;
       return json({ results: data ?? [] }, 200, origin);
