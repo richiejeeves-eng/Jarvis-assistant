@@ -36,6 +36,8 @@ for (const route of [
 if (!gateway.includes("auth.getUser")) failures.push("Gateway must validate user JWT");
 if (!gateway.includes("CONFIRMABLE_TABLES")) failures.push("Task and memory creation must require explicit confirmation");
 if (!gateway.includes("MAX_DATA_ROWS = 100")) failures.push("Generic data reads must be capped at 100 rows");
+if (!gateway.includes("MAX_HEALTH_SYNC_BODY_BYTES = 512_000")) failures.push("Health sync request size must be capped at 512 KB");
+if (!read("supabase/functions/health-sync/index.ts").includes("body.records.length > 100")) failures.push("Health sync batches must be capped at 100 records");
 if (!gateway.includes('code: "MUTATION_ID_REQUIRED"') || !gateway.includes('params.getAll("id")')) failures.push("PATCH and DELETE must require exactly one UUID id selector");
 if (!gateway.includes("Bulk mutations are disabled")) failures.push("Bulk data mutations must remain disabled");
 if (client.includes("history: modelHistory") || client.includes("const modelHistory")) failures.push("Do not send unused conversation history to the AI gateway");
