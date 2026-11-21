@@ -92,7 +92,7 @@ async function speakWithElevenLabs(text) {
       "Authorization": "Bearer " + session.access_token,
       "apikey": SUPABASE_KEY
     },
-    body: JSON.stringify({ version: "v1", service: "voice", payload: { text: text.slice(0, 1200), voice_id: JEEVES_VOICE_ID } })
+    body: JSON.stringify({ version: "v1", action: "voice.generate", payload: { text: text.slice(0, 1200), voice_id: JEEVES_VOICE_ID } })
   });
   if (!response.ok) {
     let detail = "Voice request failed";
