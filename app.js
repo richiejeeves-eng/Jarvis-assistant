@@ -485,13 +485,10 @@ async function send() {
     const userMessageId = await saveConversationMessage("user", message);
     if (userBubble) userBubble.dataset.messageId = userMessageId;
     history.push({ role: "user", text: message });
-    const modelHistory = history.slice(-11, -1).slice(-10);
-
     const { data, error } = await window.jeevesApi.call("brain", {
         message: message,
         mode: window.jeevesModeLevel || 3,
         active_advisers: activeAdvisers,
-        history: modelHistory,
         now: new Date().toString(),
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
     });
