@@ -43,7 +43,7 @@
 
       let response;
       try {
-        response = await fetch(config.supabaseUrl.replace(/\\/$/, "") +
+        response = await fetch(config.supabaseUrl.replace(/\/$/, "") +
           "/functions/v1/jeeves-api" + route.path, options);
       } catch (error) {
         return { data: null, error: { message: "Jeeves API is unreachable: " + (error.message || "network error") } };
