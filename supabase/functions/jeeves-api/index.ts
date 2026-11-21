@@ -172,7 +172,7 @@ async function forwardData(
   if (req.method === "PATCH" || req.method === "DELETE") {
     const params = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search);
     const ids = params.getAll("id");
-    if (ids.length !== 1 || !/^eq\\.[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(ids[0])) {
+    if (ids.length !== 1 || !/^eq\.[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(ids[0])) {
       return json({
         error: "Mutations require exactly one id=eq.<uuid> selector. Bulk mutations are disabled.",
         code: "MUTATION_ID_REQUIRED",
