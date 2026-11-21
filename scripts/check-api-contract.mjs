@@ -34,6 +34,7 @@ for (const route of [
 }
 if (!gateway.includes("auth.getUser")) failures.push("Gateway must validate user JWT");
 if (!gateway.includes("CONFIRMABLE_TABLES")) failures.push("Task and memory creation must require explicit confirmation");
+if (!gateway.includes("MAX_DATA_ROWS = 100")) failures.push("Generic data reads must be capped at 100 rows");
 if (!gateway.includes('code: "FEATURE_DISABLED"')) failures.push("Server voice generation must remain disabled");
 if (gateway.includes('proxyFunction("jeeves-voice"')) failures.push("Gateway must not call paid voice provider");
 if (gateway.includes("SUPABASE_SERVICE_ROLE_KEY")) failures.push("Gateway must not use service-role key");
@@ -45,6 +46,7 @@ if (integrations.includes('name: "ElevenLabs"')) failures.push("Integrations UI 
 if (!fitness.includes('jeevesApi.call("healthNotify"')) failures.push("Browser health notifications must use the Jeeves API");
 if (!android.includes("/functions/v1/jeeves-api/v1/health/sync")) failures.push("Android health sync must use the Jeeves API");
 if (!docs.includes("Source only; not deployed.")) failures.push("API docs must state that API is not deployed");
+if (!docs.includes("100 rows per request")) failures.push("API docs must state the data read limit");
 if (!spec.includes("openapi: 3.1.0")) failures.push("OpenAPI 3.1 specification missing");
 for (const path of ["/v1/brain:", "/v1/google:", "/v1/health/sync:", "/v1/health/notify:", "/v1/data/{table}:"]) {
   if (!spec.includes(path)) failures.push("OpenAPI path missing: " + path);
