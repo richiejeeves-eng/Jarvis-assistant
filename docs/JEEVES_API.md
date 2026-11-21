@@ -5,7 +5,7 @@ Jeeves API is the authenticated application gateway for Jeeves services. It is i
 ## Status
 
 - Source only; not deployed.
-- Requires the existing `jeeves-brain`, `health-sync`, `google-calendar` and `jeeves-voice` Edge Functions.
+- Requires the existing `jeeves-brain`, `health-sync`, `health-sync-notify` and `google-calendar` Edge Functions. Voice uses browser/device speech and does not call a paid voice API.
 - Uses the existing Supabase Auth session and Row Level Security policies.
 - No database migration or new paid service is required.
 - Do not enable billing or deploy without the owner's explicit approval.
@@ -41,6 +41,7 @@ The function requires a valid signed-in Supabase user. It also validates the ses
 | `system.status` | Returns API version and registered service names; not a live dependency health check |
 | `ai.chat` | Forwards request payload to `jeeves-brain` |
 | `health.sync` | Forwards health sync payload to `health-sync` |
+| `health.notify` | Forwards an authorised health sync notification to `health-sync-notify` |
 | `health.notify` | Forwards authenticated push notification requests to `health-sync-notify` |
 | `health.records.list` | Returns caller-owned health records, maximum 100 |
 | `tasks.list` | Lists caller-owned tasks, maximum 100 |
@@ -55,7 +56,7 @@ The function requires a valid signed-in Supabase user. It also validates the ses
 | `conversations.messages.list` | Lists messages for a caller-owned conversation |
 | `conversations.messages.create` | Saves a message in a caller-owned conversation |
 | `google.action` | Forwards payload to `google-calendar`; payload must include its existing `action` field |
-| `voice.generate` | Forwards text/voice payload to `jeeves-voice`; returns audio |
+| `voice.generate` | Disabled (`501 FEATURE_DISABLED`) to prevent paid API usage; use browser/device speech instead |
 
 ## Examples
 
@@ -116,7 +117,7 @@ Send a chat request:
 - Task and memory creation require an explicit `confirmed: true` flag.
 - Request bodies are limited to 4.5 MB; list responses are bounded.
 - Browser CORS is restricted to the production GitHub Pages origin and local development origins. Native clients without an Origin header can use their authenticated session.
-- AI and voice calls retain their existing per-user rate limits in their downstream functions.
+- AI and health notification calls retain their existing per-user rate limits in their downstream functions.\n- Server-side voice generation is disabled; the app uses native device speech synthesis at no API cost.
 
 ## Deployment order (not performed)
 
