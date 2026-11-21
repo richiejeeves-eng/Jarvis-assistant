@@ -255,8 +255,8 @@ async function showTasks(filter = "open") {
 
       const doneButton = makeButton("Done", async function () {
         if (task.google_task_id && task.google_tasklist_id) {
-          const remote = await db.functions.invoke("google-calendar", {
-            body: { action: "completeTask", google_task_id: task.google_task_id, google_tasklist_id: task.google_tasklist_id }
+          const remote = await window.jeevesApi.call("calendar", {
+            action: "completeTask", google_task_id: task.google_task_id, google_tasklist_id: task.google_tasklist_id
           });
           if (remote.error) {
             addMessage("Could not complete Google Task: " + remote.error.message, "bot");
@@ -278,7 +278,7 @@ async function showTasks(filter = "open") {
       const deleteButton = makeButton("Delete", async function () {
         if (!confirm("Delete this task?")) return;
         if (task.source === "google_tasks") {
-          const remote = await db.functions.invoke("google-calendar", { body: { action: "deleteTask", task_id: task.id } });
+          const remote = await window.jeevesApi.call("calendar", { action: "deleteTask", task_id: task.id });
           if (remote.error || remote.data?.error) {
             addMessage("Google Task delete failed: " + (remote.data?.error || remote.error.message), "bot");
             return;
