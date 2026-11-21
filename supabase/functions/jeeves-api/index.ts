@@ -108,7 +108,7 @@ async function dispatch(
           memories: "managed-by-user-session",
           conversations: "managed-by-user-session",
           google: "google-calendar",
-          voice: "jeeves-voice",
+          voice: "browser-native speech; API generation disabled",
         },
       });
 
@@ -117,6 +117,9 @@ async function dispatch(
 
     case "health.sync":
       return await proxyFunction("health-sync", payload, authorization);
+
+    case "health.notify":
+      return await proxyFunction("health-sync-notify", payload, authorization);
 
     case "health.records.list": {
       const limit = boundedInt(payload.limit, 50, 1, 100);
@@ -286,11 +289,11 @@ async function dispatch(
       return await proxyFunction("google-calendar", payload, authorization);
 
     case "voice.generate":
-      return await proxyFunction("jeeves-voice", payload, authorization);
+      return json({ error: "Server-side voice generation is disabled to keep Jeeves free.", code: "FEATURE_DISABLED" }, 501);
 
     default:
       return json({ error: "Unknown action.", supported_actions: [
-        "system.status", "ai.chat", "health.sync", "health.records.list",
+        "system.status", "ai.chat", "health.sync", "health.notify", "health.records.list",
         "tasks.list", "tasks.create", "tasks.update", "tasks.delete",
         "memories.list", "memories.create", "memories.delete",
         "conversations.list", "conversations.create",
