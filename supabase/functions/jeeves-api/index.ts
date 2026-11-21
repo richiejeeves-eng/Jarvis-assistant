@@ -269,7 +269,7 @@ async function dispatch(
       const role = payload.role;
       const content = typeof payload.content === "string" ? payload.content.trim() : "";
       if (role !== "user" && role !== "assistant" && role !== "model") {
-        return json({ error: "role must be user or assistant." }, 400);
+        return json({ error: "role must be user, assistant or model." }, 400);
       }
       if (!content || content.length > 20_000) return json({ error: "Message content must be 1 to 20000 characters." }, 400);
       const { data, error } = await client.from("conversation_messages").insert({
@@ -337,7 +337,6 @@ Deno.serve(async (req: Request) => {
     if (error || !user) return json({ error: "Invalid or expired session." }, 401, origin);
 
     const result = await dispatch(action, payload, client, user.id, authorization);
-    if (result.headers.get("Content-Type")?.startsWith("audio/")) return result;
     const headers = new Headers(result.headers);
     for (const [key, value] of Object.entries(corsHeaders(origin))) headers.set(key, value);
     return new Response(result.body, { status: result.status, headers });
