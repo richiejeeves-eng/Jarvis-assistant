@@ -41,6 +41,7 @@ The function requires a valid signed-in Supabase user. It also validates the ses
 | `system.status` | Returns API version and registered service names; not a live dependency health check |
 | `ai.chat` | Forwards request payload to `jeeves-brain` |
 | `health.sync` | Forwards health sync payload to `health-sync` |
+| `health.notify` | Forwards authenticated push notification requests to `health-sync-notify` |
 | `health.records.list` | Returns caller-owned health records, maximum 100 |
 | `tasks.list` | Lists caller-owned tasks, maximum 100 |
 | `tasks.create` | Creates a local Jeeves task; requires `confirmed: true` |
