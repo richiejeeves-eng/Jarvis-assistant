@@ -2,6 +2,7 @@ import { createClient } from "npm:@supabase/supabase-js@2.119.2";
 
 const API_VERSION = "1.0.0";
 const MAX_FUNCTION_BODY_BYTES = 4_500_000;
+const MAX_HEALTH_SYNC_BODY_BYTES = 512_000;
 const MAX_DATA_BODY_BYTES = 1_000_000;
 const MAX_DATA_ROWS = 100;
 const CONFIRMABLE_TABLES = new Set(["tasks", "memories"]);
@@ -118,7 +119,7 @@ async function forwardFunction(
 
   let body: string;
   try {
-    body = await readBody(req, MAX_FUNCTION_BODY_BYTES);
+    body = await readBody(req, functionName === "health-sync" ? MAX_HEALTH_SYNC_BODY_BYTES : MAX_FUNCTION_BODY_BYTES);
   } catch {
     return json({ error: "Request body is too large.", code: "BODY_TOO_LARGE" }, 413, origin, requestId);
   }
