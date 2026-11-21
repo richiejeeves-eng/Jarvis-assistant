@@ -1,11 +1,11 @@
 (function () {
   const entries = [
-    { group: "CORE SERVICES", name: "Gemini AI", detail: "Jeeves reasoning via jarvis-brain", status: "Configured", kind: "ready", icon: "✧" },
+    { group: "CORE SERVICES", name: "Gemini AI", detail: "Jeeves reasoning via jeeves-brain", status: "Configured", kind: "ready", icon: "✧" },
     { group: "CORE SERVICES", name: "Supabase", detail: "Authentication, database and persistent conversations", status: "Configured", kind: "ready", icon: "▤" },
-    { group: "CORE SERVICES", name: "ElevenLabs", detail: "Jeeves voice generation via jeeves-voice", status: "Configured", kind: "ready", icon: "♫" },
+    { group: "CORE SERVICES", name: "Device speech", detail: "Browser-native speech synthesis; no external voice API or credits", status: "Free · on-device", kind: "ready", icon: "♫" },
     { group: "GOOGLE WORKSPACE", name: "Google Calendar", detail: "Read upcoming events and create approved events", status: "OAuth setup required", kind: "setup", icon: "◷" },
     { group: "GOOGLE WORKSPACE", name: "Google Tasks", detail: "Import Google Tasks into Jeeves and sync completion", status: "Additional permission required", kind: "setup", icon: "✓" },
-    { group: "GOOGLE WORKSPACE", name: "Gmail", detail: "Read emails and send replies from Jeeves", status: "Awaiting authorisation", kind: "setup", icon: "✉" },
+    { group: "GOOGLE WORKSPACE", name: "Gmail", detail: "Optional email reading and replies · restricted-scope verification required for public release", status: "Awaiting authorisation", kind: "setup", icon: "✉" },
     { group: "GOOGLE WORKSPACE", name: "Google Drive", detail: "List files and metadata (read-only)", status: "Awaiting authorisation", kind: "setup", icon: "▧" },
     { group: "HEALTH & FITNESS", name: "Health Connect", detail: "Sync source for Jeeves Fitness · steps, heart rate, sleep, weight, body fat and blood pressure", status: "Managed in Jeeves Fitness", kind: "ready", icon: "⌁" },
   ];
@@ -36,7 +36,7 @@
       note("Jeeves connection service is not ready. Refresh and try again.");
       return null;
     }
-    const result = await db.functions.invoke("google-calendar", { body: Object.assign({ action }, extra || {}) });
+    const result = await window.jeevesApi.call("calendar", Object.assign({ action }, extra || {}));
     if (result.error) {
       let detail = result.error.message || "Request failed.";
       try {
@@ -68,7 +68,8 @@
 
   function formatEvent(event) {
     const start = event.start?.dateTime || event.start?.date || event.start;
-    const when = start ? (event.start?.date
+    const isAllDay = typeof start === "string" && /^\d{4}-\d{2}-\d{2}$/.test(start);
+    const when = start ? (isAllDay
       ? "All day"
       : new Date(start).toLocaleTimeString("en-GB", {
           timeZone: "Europe/London", hour: "2-digit", minute: "2-digit"
@@ -110,7 +111,8 @@
     button.disabled = true;
     button.textContent = "Preparing secure connection…";
     try {
-      const data = await calendarAction("authorize");
+      const serviceKey = ({ "Google Calendar": "calendar", "Google Tasks": "tasks", "Gmail": "gmail", "Google Drive": "drive" })[label] || "calendar";
+      const data = await calendarAction("authorize", { service: serviceKey });
       if (!data?.url) throw new Error("Google authorisation URL was not returned.");
       window.location.assign(data.url);
     } catch (error) {
@@ -182,13 +184,13 @@
       item.classList.toggle("eco-connected", !!connected);
       item.classList.toggle("eco-pending", !connected);
     };
-    set("Google Calendar", status?.connected ? "Connected" : "Not connected", !!status?.connected);
+    set("Google Calendar", status?.calendar_enabled ? "Connected" : "Not connected", !!status?.calendar_enabled);
     set("Google Tasks", status?.tasks_enabled ? "Connected" : (status?.connected ? "Permission needed" : "Not connected"), !!status?.tasks_enabled);
     const summary = document.getElementById("eco-summary");
     if (summary) {
       // Gemini AI is configured and Health Connect is managed by Jeeves Fitness.
       // Google Calendar and Google Tasks count only after live authorisation.
-      const count = 2 + (status?.connected ? 1 : 0) + (status?.tasks_enabled ? 1 : 0);
+      const count = 2 + (status?.calendar_enabled ? 1 : 0) + (status?.tasks_enabled ? 1 : 0);
       summary.textContent = count + " / 4 ACTIVE";
     }
     const updated = document.getElementById("eco-updated");
@@ -394,13 +396,13 @@
             tasksConnect.hidden = true;
             tasksSync.hidden = false;
           } else {
-            tasksBadge.textContent = status.connected ? "Permission needed" : "Connect Google first";
+            tasksBadge.textContent = status.connected ? "Not connected" : "Not connected";
             tasksBadge.className = "integration-status setup";
             tasksConnect.hidden = false;
             tasksSync.hidden = true;
           }
         }
-        if (status.connected) {
+        if (status.calendar_enabled) {
           badge.textContent = "Connected";
           badge.className = "integration-status ready";
           connect.hidden = true;
@@ -426,7 +428,7 @@
   const callback = new URLSearchParams(window.location.search).get("calendar");
   if (callback) {
     window.addEventListener("load", function () {
-      if (callback === "connected") note("Google Workspace connected. Calendar and Google Tasks permissions have been refreshed.");
+      if (callback === "connected") note("Google Workspace integration connected. Its requested permissions have been saved.");
       else note("Google Calendar connection was not completed: " + (new URLSearchParams(window.location.search).get("reason") || callback) + ".");
       const clean = new URL(window.location.href);
       clean.searchParams.delete("calendar");
@@ -442,7 +444,8 @@
  let month=new Date();month.setDate(1);let events=[];let selected=new Date();
  const pad=n=>String(n).padStart(2,"0");const key=d=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
  async function load(){const grid=document.getElementById("jeeves-calendar-grid"),title=document.getElementById("jeeves-cal-month"),out=document.getElementById("jeeves-calendar-events");if(!grid)return;title.textContent=month.toLocaleDateString("en-GB",{month:"long",year:"numeric"});grid.innerHTML="";out.textContent="Loading calendar…";try{const start=new Date(month.getFullYear(),month.getMonth(),1);const end=new Date(month.getFullYear(),month.getMonth()+1,1);const data=await window.jeevesCalendarAction("events",{timeMin:start.toISOString(),timeMax:end.toISOString()});events=data.events||[];draw();}catch(e){out.textContent="Calendar unavailable: "+e.message+" — check your Google Calendar connection.";}}
- function draw(){const grid=document.getElementById("jeeves-calendar-grid"),title=document.getElementById("jeeves-cal-month"),out=document.getElementById("jeeves-calendar-events");if(!grid)return;title.textContent=month.toLocaleDateString("en-GB",{month:"long",year:"numeric"});grid.innerHTML="";["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].forEach(d=>{const x=document.createElement("span");x.textContent=d;grid.append(x)});const first=new Date(month.getFullYear(),month.getMonth(),1);const offset=(first.getDay()+6)%7;for(let i=0;i<offset;i++){const x=document.createElement("span");grid.append(x)}const count=new Date(month.getFullYear(),month.getMonth()+1,0).getDate();for(let n=1;n<=count;n++){const d=new Date(month.getFullYear(),month.getMonth(),n),k=key(d);const b=document.createElement("button");b.type="button";b.textContent=n;if(k===key(new Date()))b.classList.add("today");if(k===key(selected))b.classList.add("selected");if(events.some(e=>{const v=e.start;return v&&String(v).slice(0,10)===k}))b.classList.add("has-events");b.addEventListener("click",()=>{selected=d;draw()});grid.append(b)}const dayEvents=events.filter(e=>e.start&&String(e.start).slice(0,10)===key(selected));out.innerHTML="";const heading=document.createElement("strong");heading.textContent=selected.toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"});out.append(heading);if(!dayEvents.length){const p=document.createElement("p");p.textContent="No events scheduled for this day.";out.append(p)}dayEvents.forEach(e=>{const row=document.createElement("div");row.className="calendar-day-event";const name=document.createElement("strong");name.textContent=e.summary||"Untitled event";const time=document.createElement("small");const raw=e.start;time.textContent=raw&&raw.includes("T")?new Date(raw).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit",timeZone:"Europe/London"}):"All day";row.append(name,time);out.append(row)})}
+ function eventCoversDay(event, dayKey){if(!event.start)return false;const startKey=String(event.start).slice(0,10);const endKey=String(event.end||event.start).slice(0,10);const allDay=/^\d{4}-\d{2}-\d{2}$/.test(String(event.start));return startKey===dayKey||(startKey<dayKey&&dayKey<endKey);}
+ function draw(){const grid=document.getElementById("jeeves-calendar-grid"),title=document.getElementById("jeeves-cal-month"),out=document.getElementById("jeeves-calendar-events");if(!grid)return;title.textContent=month.toLocaleDateString("en-GB",{month:"long",year:"numeric"});grid.innerHTML="";["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].forEach(d=>{const x=document.createElement("span");x.textContent=d;grid.append(x)});const first=new Date(month.getFullYear(),month.getMonth(),1);const offset=(first.getDay()+6)%7;for(let i=0;i<offset;i++){const x=document.createElement("span");grid.append(x)}const count=new Date(month.getFullYear(),month.getMonth()+1,0).getDate();for(let n=1;n<=count;n++){const d=new Date(month.getFullYear(),month.getMonth(),n),k=key(d);const b=document.createElement("button");b.type="button";b.textContent=n;if(k===key(new Date()))b.classList.add("today");if(k===key(selected))b.classList.add("selected");if(events.some(e=>eventCoversDay(e,k)))b.classList.add("has-events");b.addEventListener("click",()=>{selected=d;draw()});grid.append(b)}const selectedKey=key(selected);const dayEvents=events.filter(e=>eventCoversDay(e,selectedKey));out.innerHTML="";const heading=document.createElement("strong");heading.textContent=selected.toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"});out.append(heading);if(!dayEvents.length){const p=document.createElement("p");p.textContent="No events scheduled for this day.";out.append(p)}dayEvents.forEach(e=>{const row=document.createElement("div");row.className="calendar-day-event";const name=document.createElement("strong");name.textContent=e.summary||"Untitled event";const time=document.createElement("small");const raw=e.start;time.textContent=raw&&/^\d{4}-\d{2}-\d{2}$/.test(raw)?"All day":raw?new Date(raw).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit",timeZone:"Europe/London"}):"Time not supplied";row.append(name,time);out.append(row)})}
  document.addEventListener("click",e=>{if(e.target.id==="jeeves-cal-prev"){month.setMonth(month.getMonth()-1);selected=new Date(month.getFullYear(),month.getMonth(),1);load()}if(e.target.id==="jeeves-cal-next"){month.setMonth(month.getMonth()+1);selected=new Date(month.getFullYear(),month.getMonth(),1);load()}if(e.target.id==="jeeves-cal-refresh")load()});window.loadJeevesCalendar=load;document.addEventListener("DOMContentLoaded",()=>{const el=document.getElementById("view-schedule");if(el&&!el.hidden)load()});const oldSwitch=window.switchTab;document.addEventListener("click",()=>setTimeout(()=>{const el=document.getElementById("view-schedule");if(el&&!el.hidden&&!el.dataset.calendarLoaded){el.dataset.calendarLoaded="1";load()}},0));
 
 

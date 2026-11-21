@@ -1,16 +1,11 @@
 let speakOn = false;
 let profileIndex = 0;
 let voiceURI = "";
-let currentAudio = null;
-let currentAudioUrl = null;
-let useElevenLabs = true;
-const JEEVES_VOICE_ID = "JBFqnCBsd6RMkjVDRZzb"; // George — British male voice
 
 try {
   speakOn = localStorage.getItem("jeeves-speak") === "on";
   profileIndex = parseInt(localStorage.getItem("jeeves-profile") || "0", 10) || 0;
   voiceURI = localStorage.getItem("jeeves-voice") || "";
-  useElevenLabs = localStorage.getItem("jeeves-elevenlabs") !== "off";
 } catch (e) {}
 
 const PROFILES = [
@@ -40,7 +35,7 @@ function updateSpeakButtons() {
   if (voiceButton) {
     const voices = getVoices();
     const index = voices.findIndex(function (v) { return v.voiceURI === voiceURI; });
-    voiceButton.textContent = "Voice source"; voiceButton.setAttribute("aria-label", useElevenLabs ? "Voice provider: Jeeves ElevenLabs" : "Device voice " + (index + 1) + " of " + voices.length); voiceButton.title = useElevenLabs ? "Jeeves · ElevenLabs" : "Device voice " + (index + 1) + "/" + voices.length;
+    voiceButton.textContent = "Device voice"; voiceButton.setAttribute("aria-label", "Device voice " + (index + 1) + " of " + voices.length); voiceButton.title = "Free device voice " + (index + 1) + "/" + voices.length;
   }
 }
 
@@ -81,56 +76,13 @@ function speakWithBrowser(text, speaker) {
   });
 }
 
-async function speakWithElevenLabs(text) {
-  const { data, error } = await db.auth.getSession();
-  const session = data && data.session;
-  if (error || !session) throw new Error("Sign in required");
-  const response = await fetch(SUPABASE_URL + "/functions/v1/jeeves-voice", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer " + session.access_token,
-      "apikey": SUPABASE_KEY
-    },
-    body: JSON.stringify({ text: text.slice(0, 1200), voice_id: JEEVES_VOICE_ID })
-  });
-  if (!response.ok) {
-    let detail = "Voice request failed";
-    try { const body = await response.json(); detail = body.error || detail; } catch (e) {}
-    throw new Error(detail);
-  }
-  const blob = await response.blob();
-  if (currentAudio) {
-    currentAudio.pause();
-    currentAudio = null;
-  }
-  if (currentAudioUrl) URL.revokeObjectURL(currentAudioUrl);
-  currentAudioUrl = URL.createObjectURL(blob);
-  currentAudio = new Audio(currentAudioUrl);
-  await new Promise(async function (resolve, reject) {
-    currentAudio.onended = resolve;
-    currentAudio.onerror = reject;
-    try { await currentAudio.play(); } catch (error) { reject(error); }
-  });
-}
-
-async function speakNow(text, speaker) {
+function speakNow(text, speaker) {
   if (window.speechSynthesis) window.speechSynthesis.cancel();
-  if (currentAudio) { currentAudio.pause(); currentAudio = null; }
-  if (useElevenLabs && !SPECIALIST_VOICES[speaker]) {
-    try {
-      await speakWithElevenLabs(text);
-      return;
-    } catch (error) {
-      console.warn("JEEVES premium voice unavailable; using device voice:", error.message);
-    }
-  }
   return speakWithBrowser(text, speaker);
 }
 
 window.jeevesStopSpeaking = function () {
   if (window.speechSynthesis) window.speechSynthesis.cancel();
-  if (currentAudio) { currentAudio.pause(); currentAudio.currentTime = 0; currentAudio = null; }
 };
 
 function speak(text, speaker) {
@@ -143,7 +95,6 @@ function toggleSpeak() {
   saveSetting("jeeves-speak", speakOn ? "on" : "off");
   if (!speakOn) {
     if (window.speechSynthesis) window.speechSynthesis.cancel();
-    if (currentAudio) currentAudio.pause();
   }
   updateSpeakButtons();
 }
@@ -156,15 +107,11 @@ function cycleProfile() {
 }
 
 function cycleVoice() {
-  useElevenLabs = !useElevenLabs;
-  saveSetting("jeeves-elevenlabs", useElevenLabs ? "on" : "off");
-  if (!useElevenLabs) {
-    const voices = getVoices();
-    if (voices.length) {
-      const index = voices.findIndex(function (v) { return v.voiceURI === voiceURI; });
-      voiceURI = voices[(index + 1) % voices.length].voiceURI;
-      saveSetting("jeeves-voice", voiceURI);
-    }
+  const voices = getVoices();
+  if (voices.length) {
+    const index = voices.findIndex(function (v) { return v.voiceURI === voiceURI; });
+    voiceURI = voices[(index + 1) % voices.length].voiceURI;
+    saveSetting("jeeves-voice", voiceURI);
   }
   updateSpeakButtons();
   speakNow("Good day. At your service.");
@@ -175,8 +122,8 @@ function makeToolButton(id, handler) {
   button.id = id;
   button.onclick = handler;
   button.className = "jeeves-tool-button";
-  button.textContent = id === "stylebtn" ? "Voice style" : "Voice source";
-  button.setAttribute("aria-label", id === "stylebtn" ? "Change spoken voice style" : "Change spoken voice source");
+  button.textContent = id === "stylebtn" ? "Voice style" : "Device voice";
+  button.setAttribute("aria-label", id === "stylebtn" ? "Change spoken voice style" : "Choose a free device voice");
   document.getElementById("tools").appendChild(button);
 }
 

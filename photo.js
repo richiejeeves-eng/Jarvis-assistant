@@ -59,14 +59,12 @@
       return;
     }
 
-    const { data, error } = await db.functions.invoke("jarvis-brain", {
-      body: {
+    const { data, error } = await window.jeevesApi.call("brain", {
         message: question,
         image: { mime: "image/jpeg", data: imageData },
         history: [],
         now: new Date().toString(),
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
-      }
     });
 
     if (error) {

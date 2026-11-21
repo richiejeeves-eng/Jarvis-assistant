@@ -1,0 +1,173 @@
+openapi: 3.1.0
+info:
+  title: Jeeves API
+  version: 1.0.0
+  description: Authenticated path-versioned API for Jeeves services and user-owned data.
+servers:
+  - url: https://aelsipdtezvhjkwsshqx.supabase.co/functions/v1/jeeves-api
+security:
+  - bearerAuth: []
+    publishableKey: []
+paths:
+  /v1:
+    get:
+      summary: Get authenticated API catalogue
+      responses:
+        "200":
+          description: API version and available services
+        "401":
+          description: Authentication required
+  /v1/brain:
+    post:
+      summary: Send a chat request to Jeeves Brain
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [message]
+              properties:
+                message:
+                  type: string
+                  minLength: 1
+                  maxLength: 2000
+                mode:
+                  type: integer
+                timezone:
+                  type: string
+                active_advisers:
+                  type: array
+                  items:
+                    type: string
+                    enum: [mind, body, soul]
+      responses:
+        "200":
+          description: Jeeves response
+        "401":
+          description: Authentication required
+        "429":
+          description: AI rate limit reached
+  /v1/google:
+    post:
+      summary: Call an authorised Google integration action
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action]
+              properties:
+                action:
+                  type: string
+                  enum: [authorize, status, disconnect, events, create, gmailMessages, gmailReply, driveFiles, syncTasks, createTask, deleteTask, completeTask]
+      responses:
+        "200":
+          description: Google integration result
+        "401":
+          description: Authentication required
+  /v1/health/sync:
+    post:
+      summary: Store validated Health Connect records
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [records]
+              properties:
+                records:
+                  type: array
+                  maxItems: 100
+                  items:
+                    type: object
+      responses:
+        "200":
+          description: Sync result
+        "400":
+          description: Invalid records
+  /v1/health/notify:
+    post:
+      summary: Notify an authorised Android device about a health sync request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [request_id]
+              properties:
+                request_id:
+                  type: string
+                  format: uuid
+      responses:
+        "200":
+          description: Notification result
+        "429":
+          description: Notification rate limit reached
+  /v1/voice:
+    post:
+      summary: Server-side voice generation (disabled)
+      responses:
+        "501":
+          description: Disabled to prevent paid API usage; use browser/device speech
+  /v1/data/{table}:
+    parameters:
+      - name: table
+        in: path
+        required: true
+        schema:
+          type: string
+          enum: [tasks, memories, conversations, conversation_messages, health_records]
+    get:
+      summary: Read caller-owned rows (maximum 100 per request)
+      parameters:
+        - name: select
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Rows permitted by Row Level Security
+    post:
+      summary: Insert caller-owned rows
+      description: Rows are scoped by Supabase RLS. Reads are capped at 100 rows. tasks and memories require confirmed=true for inserts; health_records are read-only and must be written through /v1/health/sync.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - type: object
+                - type: array
+                  items:
+                    type: object
+      responses:
+        "201":
+          description: Insert result
+        "403":
+          description: Explicit confirmation required or ownership violation
+    patch:
+      summary: Update exactly one caller-owned row
+      description: Requires exactly one id=eq.{uuid} query selector. Bulk mutations are rejected.
+      responses:
+        "200":
+          description: Update result
+    delete:
+      summary: Delete exactly one caller-owned row
+      description: Requires exactly one id=eq.{uuid} query selector. Bulk mutations are rejected.
+      responses:
+        "200":
+          description: Delete result
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    publishableKey:
+      type: apiKey
+      in: header
+      name: apikey

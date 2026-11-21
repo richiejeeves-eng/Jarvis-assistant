@@ -99,10 +99,7 @@
       const requestId = queued.data.id;
       let pushMessage = "";
       try {
-        const push = await db.functions.invoke("health-sync-notify", {
-          body: { request_id: requestId },
-          headers: { Authorization: "Bearer " + data.session.access_token }
-        });
+        const push = await window.jeevesApi.call("healthNotify", { request_id: requestId });
         if (push.error) throw push.error;
         if (!push.data || Number(push.data.sent || 0) < 1) {
           pushMessage = " No registered phone notification was confirmed.";

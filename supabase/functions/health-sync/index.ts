@@ -36,12 +36,12 @@ Deno.serve(async (req: Request) => {
     if (authError || !user) return new Response(JSON.stringify({ error: "Invalid session" }), { status: 401, headers: corsHeaders(origin) });
 
     const rawBody = await req.text();
-    if (new TextEncoder().encode(rawBody).byteLength > 2_000_000) {
-      return new Response(JSON.stringify({ error: "Request body exceeds 2 MB" }), { status: 413, headers: corsHeaders(origin) });
+    if (new TextEncoder().encode(rawBody).byteLength > 512_000) {
+      return new Response(JSON.stringify({ error: "Request body exceeds 512 KB" }), { status: 413, headers: corsHeaders(origin) });
     }
     const body = JSON.parse(rawBody);
-    if (!body || !Array.isArray(body.records) || body.records.length > 500) {
-      return new Response(JSON.stringify({ error: "records must be an array of at most 500 items" }), { status: 400, headers: corsHeaders(origin) });
+    if (!body || !Array.isArray(body.records) || body.records.length > 100) {
+      return new Response(JSON.stringify({ error: "records must be an array of at most 100 items" }), { status: 400, headers: corsHeaders(origin) });
     }
     const allowed = new Set(["steps", "heart_rate", "sleep", "weight", "body_fat", "blood_pressure", "active_calories"]);
     const rows = body.records.map((r: Record<string, unknown>) => {
@@ -79,6 +79,7 @@ Deno.serve(async (req: Request) => {
     if (error) throw error;
     return new Response(JSON.stringify({ synced: rows.length }), { headers: corsHeaders(origin) });
   } catch (error) {
-    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Sync failed" }), { status: 400, headers: corsHeaders(origin) });
+    console.error("Health sync failed:", error instanceof Error ? error.message : String(error));
+    return new Response(JSON.stringify({ error: "Health sync failed. Check record format and try again." }), { status: 400, headers: corsHeaders(origin) });
   }
 });
