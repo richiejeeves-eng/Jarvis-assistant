@@ -40,6 +40,12 @@ if (!gateway.includes("MAX_HEALTH_SYNC_BODY_BYTES = 512_000")) failures.push("He
 if (!read("supabase/functions/health-sync/index.ts").includes("body.records.length > 100")) failures.push("Health sync batches must be capped at 100 records");
 if (!gateway.includes('code: "MUTATION_ID_REQUIRED"') || !gateway.includes('params.getAll("id")')) failures.push("PATCH and DELETE must require exactly one UUID id selector");
 if (!gateway.includes("Bulk mutations are disabled")) failures.push("Bulk data mutations must remain disabled");
+if (!gateway.includes('code: "UPSERT_DISABLED"') || !gateway.includes('params.has("on_conflict")')) failures.push("POST upserts must be disabled");
+if (!gateway.includes("ALLOWED_PREFER") || !gateway.includes('"resolution=merge-duplicates"')) failures.push("Prefer headers must be allowlisted (and merge-duplicates rejected)");
+if (!gateway.includes('code: "PREFER_NOT_ALLOWED"')) failures.push("Unsupported Prefer headers must be rejected");
+if (!gateway.includes('headers.delete("Range")') || !gateway.includes('headers.delete("Range-Unit")')) failures.push("Malformed or open-ended Range headers must be removed");
+if (!gateway.includes("rangeStart + MAX_DATA_ROWS - 1")) failures.push("Range responses must be capped at 100 rows");
+if (!gateway.includes("row.title.length > 300")) failures.push("Task title cap must match the database constraint");
 if (client.includes("history: modelHistory") || client.includes("const modelHistory")) failures.push("Do not send unused conversation history to the AI gateway");
 if (!docs.includes("exactly one UUID")) failures.push("API docs must describe single-row mutation selector");
 if (!gateway.includes('code: "FEATURE_DISABLED"')) failures.push("Server voice generation must remain disabled");
