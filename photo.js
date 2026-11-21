@@ -59,7 +59,7 @@
       return;
     }
 
-    const { data, error } = await db.functions.invoke("jarvis-brain", {
+    const { data, error } = await db.functions.invoke("jeeves-brain", {
       body: {
         message: question,
         image: { mime: "image/jpeg", data: imageData },
