@@ -36,6 +36,10 @@ for (const route of [
 if (!gateway.includes("auth.getUser")) failures.push("Gateway must validate user JWT");
 if (!gateway.includes("CONFIRMABLE_TABLES")) failures.push("Task and memory creation must require explicit confirmation");
 if (!gateway.includes("MAX_DATA_ROWS = 100")) failures.push("Generic data reads must be capped at 100 rows");
+if (!gateway.includes('code: "MUTATION_ID_REQUIRED"') || !gateway.includes('params.getAll("id")')) failures.push("PATCH and DELETE must require exactly one UUID id selector");
+if (!gateway.includes("Bulk mutations are disabled")) failures.push("Bulk data mutations must remain disabled");
+if (client.includes("history: modelHistory") || client.includes("const modelHistory")) failures.push("Do not send unused conversation history to the AI gateway");
+if (!docs.includes("exactly one UUID")) failures.push("API docs must describe single-row mutation selector");
 if (!gateway.includes('code: "FEATURE_DISABLED"')) failures.push("Server voice generation must remain disabled");
 if (gateway.includes('proxyFunction("jeeves-voice"')) failures.push("Gateway must not call paid voice provider");
 if (legacyVoice.includes("ELEVENLABS_API_KEY") || legacyVoice.includes("api.elevenlabs.com")) failures.push("Legacy voice function must not call paid provider");
