@@ -139,7 +139,7 @@ Deno.serve(async (req) => {
         String(item.content ?? "").slice(0, 500) +
         " (confidence " + String(item.confidence ?? "unknown") + ")"
       )
-      .join("\\n");
+      .join("\n");
 
     const { data: tasks } = await supabase
       .from("tasks")
