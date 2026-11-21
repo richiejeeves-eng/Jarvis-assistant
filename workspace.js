@@ -226,8 +226,8 @@
     if(fitness){const panel=node("section",undefined,"jw-extra-panel");panel.id="fitness-tracking-panel";fitness.append(panel);renderFitness(panel);}
     if(drafts)renderDocuments(drafts);
     const main=document.querySelector("main.main-area");
-    const brain=node("section",undefined,"view-section dedicated-page");brain.id="view-brain";brain.hidden=true;main.append(brain);
-    const ideas=node("section",undefined,"view-section dedicated-page");ideas.id="view-ideas";ideas.hidden=true;main.append(ideas);
+    let brain=$("view-brain");if(!brain){brain=node("section",undefined,"view-section dedicated-page");brain.id="view-brain";brain.hidden=true;main.append(brain);}
+    let ideas=$("view-ideas");if(!ideas){ideas=node("section",undefined,"view-section dedicated-page");ideas.id="view-ideas";ideas.hidden=true;main.append(ideas);}
     renderBrain(brain);
     renderIdeas(ideas);
   }
