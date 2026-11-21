@@ -85,14 +85,14 @@ async function speakWithElevenLabs(text) {
   const { data, error } = await db.auth.getSession();
   const session = data && data.session;
   if (error || !session) throw new Error("Sign in required");
-  const response = await fetch(SUPABASE_URL + "/functions/v1/jeeves-voice", {
+  const response = await fetch(SUPABASE_URL + "/functions/v1/jeeves-api", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       "Authorization": "Bearer " + session.access_token,
       "apikey": SUPABASE_KEY
     },
-    body: JSON.stringify({ text: text.slice(0, 1200), voice_id: JEEVES_VOICE_ID })
+    body: JSON.stringify({ version: "v1", service: "voice", payload: { text: text.slice(0, 1200), voice_id: JEEVES_VOICE_ID } })
   });
   if (!response.ok) {
     let detail = "Voice request failed";
