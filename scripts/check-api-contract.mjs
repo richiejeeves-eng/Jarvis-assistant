@@ -5,6 +5,7 @@ const gateway = read("supabase/functions/jeeves-api/index.ts");
 const client = read("api.js");
 const docs = read("docs/JEEVES_API.md");
 const speak = read("speak.js");
+const legacyVoice = read("supabase/functions/jeeves-voice/index.ts");
 const integrations = read("integrations.js");
 const fitness = read("fitness.js");
 const android = read("android/app/src/main/java/com/richiejeeves/healthconnect/HealthSyncWorker.kt");
@@ -37,6 +38,8 @@ if (!gateway.includes("CONFIRMABLE_TABLES")) failures.push("Task and memory crea
 if (!gateway.includes("MAX_DATA_ROWS = 100")) failures.push("Generic data reads must be capped at 100 rows");
 if (!gateway.includes('code: "FEATURE_DISABLED"')) failures.push("Server voice generation must remain disabled");
 if (gateway.includes('proxyFunction("jeeves-voice"')) failures.push("Gateway must not call paid voice provider");
+if (legacyVoice.includes("ELEVENLABS_API_KEY") || legacyVoice.includes("api.elevenlabs.com")) failures.push("Legacy voice function must not call paid provider");
+if (!legacyVoice.includes('code: "FEATURE_DISABLED"')) failures.push("Legacy voice function must be disabled");
 if (gateway.includes("SUPABASE_SERVICE_ROLE_KEY")) failures.push("Gateway must not use service-role key");
 if (!gateway.includes("user_id cannot be changed")) failures.push("Gateway must prevent user_id reassignment");
 if (!gateway.includes("health_records") || !gateway.includes("READ_ONLY_RESOURCE")) failures.push("Health records must be read-only through generic data route");
