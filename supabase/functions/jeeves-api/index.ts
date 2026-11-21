@@ -211,7 +211,7 @@ async function dispatch(
     case "memories.create": {
       const content = typeof payload.content === "string" ? payload.content.trim() : "";
       if (payload.confirmed !== true) return json({ error: "Explicit user confirmation is required to save a memory." }, 400);
-      if (!content || content.length > 3000) return json({ error: "Memory content must be 1 to 3000 characters." }, 400);
+      if (!content || content.length > 2000) return json({ error: "Memory content must be 1 to 2000 characters." }, 400);
       const category = typeof payload.category === "string" ? payload.category.trim().slice(0, 60) : "general";
       const { data, error } = await client.from("memories").insert({
         user_id: userId,
