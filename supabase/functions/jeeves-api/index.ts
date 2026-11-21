@@ -258,7 +258,7 @@ Deno.serve(async (req: Request) => {
 
     if (req.method === "GET" && (path === "/v1" || path === "/v1/")) {
       const auth = await authenticate(req, origin, requestId);
-      if ("error" in auth) return auth.error;
+      if ("error" in auth) return auth.error ?? json({ error: "Authentication failed.", code: "AUTH_INVALID" }, 401, origin, requestId);
       return json({
         name: "Jeeves API",
         version: API_VERSION,
@@ -280,7 +280,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const auth = await authenticate(req, origin, requestId);
-    if ("error" in auth) return auth.error;
+    if ("error" in auth) return auth.error ?? json({ error: "Authentication failed.", code: "AUTH_INVALID" }, 401, origin, requestId);
 
     if (path === "/v1/voice") {
       return json({
