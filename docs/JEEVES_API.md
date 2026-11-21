@@ -134,7 +134,7 @@ Content-Type: application/json
 - Health records are not automatically attached to brain requests or forwarded to AI providers.
 - Request bodies and query strings have size limits. Data reads are capped at 100 rows per request. API responses include request IDs.
 - Browser CORS is restricted to the production GitHub Pages origin and local development origins. Native clients without an Origin header can use their authenticated session.
-- Brain and notification endpoints retain their existing per-user controls. Health sync currently has no separate per-user throttle; batch and body limits are enforced.
+- Brain and notification endpoints retain their existing per-user controls. Health sync has no separate per-user throttle yet; requests are limited to 100 records and 512 KB.
 - Server-side paid voice generation is disabled; browser/device speech has no per-call API charge.
 
 ## Deployment sequence (not performed)
