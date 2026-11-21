@@ -400,8 +400,8 @@ class MainActivity : ComponentActivity() {
                     for (index in start until end) batch.put(records.getJSONObject(index))
                     status.text = "Uploading health data: batch $batchNumber of $totalBatches…"
                     val result = withContext(Dispatchers.IO) {
-                        postJson("${JeevesSupabaseConfig.URL}/functions/v1/jeeves-api",
-                            JSONObject().put("version", "v1").put("service", "health").put("payload", JSONObject().put("records", batch)), token)
+                        postJson("${JeevesSupabaseConfig.URL}/functions/v1/jeeves-api/v1/health/sync",
+                            JSONObject().put("records", batch), token)
                     }
                     syncedTotal += result.optInt("synced")
                 }
