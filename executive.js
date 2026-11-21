@@ -60,7 +60,7 @@
         return;
       }
       if (typeof db.functions?.invoke !== "function") throw new Error("Google Tasks connection is unavailable.");
-      const sync = await db.functions.invoke("google-calendar", { body: { action: "syncTasks" } });
+      const sync = await window.jeevesApi.call("calendar", { action: "syncTasks" });
       if (sync.error) throw sync.error;
       const {data,error}=await db.from("tasks").select("id,title,due_at,source,group_name,google_task_id,google_tasklist_id").eq("status","pending").order("due_at",{ascending:true,nullsFirst:false}).limit(200);
       if(error) throw error;
@@ -72,13 +72,13 @@
         const form=document.createElement("form");form.className="jeeves-task-add";
         const input=document.createElement("input");input.type="text";input.maxLength=500;input.placeholder="Add a Google task…";input.required=true;input.setAttribute("aria-label","New Google task");
         const add=document.createElement("button");add.type="submit";add.textContent="Add task";
-        form.append(input,add);form.addEventListener("submit",async(event)=>{event.preventDefault();const title=input.value.trim();if(!title)return;add.disabled=true;add.textContent="Adding…";try{const result=await db.functions.invoke("google-calendar",{body:{action:"createTask",title}});if(result.error)throw result.error;await openAccountView("open");}catch(error){add.disabled=false;add.textContent="Add task";alert("Could not add Google Task: "+(error.message||"Unknown error"));}});toolbar.appendChild(form);
+        form.append(input,add);form.addEventListener("submit",async(event)=>{event.preventDefault();const title=input.value.trim();if(!title)return;add.disabled=true;add.textContent="Adding…";try{const result=await window.jeevesApi.call("calendar",{action:"createTask",title});if(result.error)throw result.error;await openAccountView("open");}catch(error){add.disabled=false;add.textContent="Add task";alert("Could not add Google Task: "+(error.message||"Unknown error"));}});toolbar.appendChild(form);
       }
       const syncButton=document.createElement("button");syncButton.type="button";syncButton.className="jeeves-task-sync";syncButton.textContent="Refresh Google Tasks ↻";syncButton.addEventListener("click",async()=>{syncButton.disabled=true;try{const result=await db.functions.invoke("google-calendar",{body:{action:"syncTasks"}});if(result.error)throw result.error;await openAccountView(kind);}catch(error){alert("Google Tasks sync failed: "+(error.message||"Unknown error"));syncButton.disabled=false;}});toolbar.appendChild(syncButton);host.appendChild(toolbar);
       if(!tasks.length){const empty=document.createElement("p");empty.textContent=kind==="overdue"?"No overdue tasks.":kind==="today"?"No tasks due today.":"No open tasks in Google Tasks.";host.appendChild(empty);return;}
       tasks.forEach(task=>{const row=document.createElement("article");row.className="executive-task-row";const details=document.createElement("div");details.className="jeeves-task-details";const name=document.createElement("strong");name.textContent=task.title||"Untitled task";const due=document.createElement("span");due.textContent=dateText(task.due_at);if(task.due_at&&new Date(task.due_at)<now)due.className="is-overdue";details.append(name,due);row.appendChild(details);
         const remove=document.createElement("button");remove.type="button";remove.className="jeeves-task-delete";remove.textContent="Delete";remove.disabled=!(task.google_task_id&&task.google_tasklist_id);remove.title=remove.disabled?"Sync this task with Google Tasks before deleting":"Delete from Google Tasks";
-        remove.addEventListener("click",async()=>{if(!confirm("Delete this task from Google Tasks?"))return;remove.disabled=true;try{const result=await db.functions.invoke("google-calendar",{body:{action:"deleteTask",task_id:task.id}});if(result.error)throw result.error;await openAccountView(kind);}catch(error){alert("Could not delete task: "+(error.message||"Unknown error"));remove.disabled=false;}});
+        remove.addEventListener("click",async()=>{if(!confirm("Delete this task from Google Tasks?"))return;remove.disabled=true;try{const result=await window.jeevesApi.call("calendar",{action:"deleteTask",task_id:task.id});if(result.error)throw result.error;await openAccountView(kind);}catch(error){alert("Could not delete task: "+(error.message||"Unknown error"));remove.disabled=false;}});
         row.appendChild(remove);host.appendChild(row);});
     } catch(error) { host.textContent="Could not load account data: "+(error.message||"Unknown error"); }
   }
