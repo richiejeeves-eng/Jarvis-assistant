@@ -1,131 +1,149 @@
 # Jeeves API v1
 
-Jeeves API is the authenticated application gateway for Jeeves services. It is implemented as a Supabase Edge Function and is designed to keep service credentials on the server.
+Jeeves API is the authenticated, path-versioned gateway for the Jeeves application. It is implemented as a Supabase Edge Function.
 
 ## Status
 
 - Source only; not deployed.
-- Requires the existing `jeeves-brain`, `health-sync`, `health-sync-notify` and `google-calendar` Edge Functions. Voice uses browser/device speech and does not call a paid voice API.
-- Uses the existing Supabase Auth session and Row Level Security policies.
+- Existing browser and Android clients in this branch are wired to the gateway.
+- Uses existing Supabase Auth sessions and Row Level Security.
 - No database migration or new paid service is required.
-- Do not enable billing or deploy without the owner's explicit approval.
+- Voice generation through paid external APIs is disabled; the app uses device/browser speech.
+- Do not enable billing, merge or deploy without the owner's explicit approval.
 
-## Endpoint
-
-After deployment:
+## Base URL
 
 ```
-POST https://<project-ref>.supabase.co/functions/v1/jeeves-api
+https://<project-ref>.supabase.co/functions/v1/jeeves-api
+```
+
+Every request requires both headers:
+
+```
 Authorization: Bearer <signed-in-user-access-token>
-apikey: <Supabase publishable/anon key>
-Content-Type: application/json
+apikey: <Supabase publishable key>
 ```
 
-All requests use this envelope:
+Keep platform JWT verification enabled (`verify_jwt = true`, the Supabase default). The function also validates the user session itself.
 
-```json
-{
-  "action": "tasks.list",
-  "payload": {
-    "limit": 25
-  }
-}
-```
+## Routes
 
-The function requires a valid signed-in Supabase user. It also validates the session inside the handler. Keep platform JWT verification enabled (`verify_jwt = true`, the default).
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/v1` | Authenticated API catalogue and version |
+| POST | `/v1/brain` | Forward chat request to `jeeves-brain` |
+| POST | `/v1/google` | Forward an existing Google integration action to `google-calendar` |
+| POST | `/v1/health/sync` | Validate and store Health Connect records through `health-sync` |
+| POST | `/v1/health/notify` | Trigger an authorised Health Connect sync notification |
+| GET | `/v1/data/{table}` | Read caller-owned rows from an approved data table |
+| POST | `/v1/data/{table}` | Insert rows into an approved data table |
+| PATCH | `/v1/data/{table}` | Update caller-owned rows |
+| DELETE | `/v1/data/{table}` | Delete caller-owned rows |
+| POST | `/v1/voice` | Returns `501 FEATURE_DISABLED`; use device speech |
 
-## Actions
+Approved data tables: `tasks`, `memories`, `conversations`, `conversation_messages`, `health_records`.
 
-| Action | Purpose |
-|---|---|
-| `system.status` | Returns API version and registered service names; not a live dependency health check |
-| `ai.chat` | Forwards request payload to `jeeves-brain` |
-| `health.sync` | Forwards health sync payload to `health-sync` |
-| `health.notify` | Forwards an authorised health sync notification to `health-sync-notify` |
-| `health.notify` | Forwards authenticated push notification requests to `health-sync-notify` |
-| `health.records.list` | Returns caller-owned health records, maximum 100 |
-| `tasks.list` | Lists caller-owned tasks, maximum 100 |
-| `tasks.create` | Creates a local Jeeves task; requires `confirmed: true` |
-| `tasks.update` | Updates caller-owned task title, description, status or due date |
-| `tasks.delete` | Deletes caller-owned task |
-| `memories.list` | Lists caller-owned memories, maximum 100 |
-| `memories.create` | Saves a memory; requires `confirmed: true` |
-| `memories.delete` | Deletes caller-owned memory |
-| `conversations.list` | Lists caller-owned conversations, maximum 50 |
-| `conversations.create` | Creates a conversation |
-| `conversations.messages.list` | Lists messages for a caller-owned conversation |
-| `conversations.messages.create` | Saves a message in a caller-owned conversation |
-| `google.action` | Forwards payload to `google-calendar`; payload must include its existing `action` field |
-| `voice.generate` | Disabled (`501 FEATURE_DISABLED`) to prevent paid API usage; use browser/device speech instead |
+Health records are read-only through the generic data route. Use the validated health sync route to insert/update them.
 
 ## Examples
 
-List tasks:
+Get the API catalogue:
 
-```json
+```http
+GET /functions/v1/jeeves-api/v1
+Authorization: Bearer <access-token>
+apikey: <publishable-key>
+```
+
+Send a chat request:
+
+```http
+POST /functions/v1/jeeves-api/v1/brain
+Content-Type: application/json
+
 {
-  "action": "tasks.list",
-  "payload": { "limit": 25 }
+  "message": "Help me plan my week.",
+  "active_advisers": ["mind", "body", "soul"],
+  "mode": 3
 }
 ```
 
-Create a task only after the user has explicitly confirmed:
+Call Google Calendar:
 
-```json
+```http
+POST /functions/v1/jeeves-api/v1/google
+Content-Type: application/json
+
 {
-  "action": "tasks.create",
-  "payload": {
-    "title": "Book dentist",
-    "due_at": "2026-12-01T09:00:00Z",
-    "confirmed": true
-  }
+  "action": "status"
+}
+```
+
+List tasks:
+
+```http
+GET /functions/v1/jeeves-api/v1/data/tasks?select=id,title,due_at,status&order=due_at.asc
+```
+
+Create a task only after the user explicitly confirms:
+
+```http
+POST /functions/v1/jeeves-api/v1/data/tasks
+Content-Type: application/json
+Prefer: return=representation
+
+{
+  "title": "Book dentist",
+  "due_at": "2026-12-01T09:00:00Z",
+  "confirmed": true
 }
 ```
 
 Save a memory only after explicit confirmation:
 
-```json
+```http
+POST /functions/v1/jeeves-api/v1/data/memories
+Content-Type: application/json
+Prefer: return=representation
+
 {
-  "action": "memories.create",
-  "payload": {
-    "content": "Prefers concise weekly planning.",
-    "category": "preferences",
-    "confirmed": true
-  }
+  "content": "Prefers concise weekly planning.",
+  "category": "preferences",
+  "confirmed": true
 }
 ```
 
-Send a chat request:
+Sync health records:
 
-```json
+```http
+POST /functions/v1/jeeves-api/v1/health/sync
+Content-Type: application/json
+
 {
-  "action": "ai.chat",
-  "payload": {
-    "message": "Help me plan my week.",
-    "active_advisers": ["mind", "body", "soul"],
-    "mode": 3
-  }
+  "records": []
 }
 ```
 
 ## Security and privacy
 
-- Every action requires a valid signed-in Supabase user.
-- Direct database actions use the user's JWT-scoped Supabase client; RLS remains in force. The gateway also filters rows by the authenticated user's ID.
-- No service-role key or AI provider key is sent to the browser.
-- Health records can be retrieved only by their owner. They are not automatically attached to `ai.chat` payloads and are not forwarded by the gateway to an AI provider.
-- Task and memory creation require an explicit `confirmed: true` flag.
-- Request bodies are limited to 4.5 MB; list responses are bounded.
+- Every route requires a valid signed-in Supabase user.
+- Data requests use the caller's JWT and Supabase RLS; no service-role key is used by the gateway.
+- The generic data route allowlists table names and strips client-supplied `user_id`. RLS determines row ownership.
+- `tasks` and `memories` inserts require `confirmed: true`; memory content is limited to 2,000 characters and task titles to 180 characters.
+- `health_records` is read-only through the generic data route.
+- Health records are not automatically attached to brain requests or forwarded to AI providers.
+- Request bodies and query strings have size limits. API responses include request IDs.
 - Browser CORS is restricted to the production GitHub Pages origin and local development origins. Native clients without an Origin header can use their authenticated session.
-- AI and health notification calls retain their existing per-user rate limits in their downstream functions.\n- Server-side voice generation is disabled; the app uses native device speech synthesis at no API cost.
+- Brain, health sync and notification endpoints retain their existing per-user controls.
+- Server-side paid voice generation is disabled; browser/device speech has no per-call API charge.
 
-## Deployment order (not performed)
+## Deployment sequence (not performed)
 
-1. Review and merge the prerequisite source changes in PR #4.
-2. Verify the chosen AI model and provider terms for UK use and the free-tier privacy trade-off.
-3. Deploy `jeeves-brain` and confirm its secrets/configuration are correct.
+1. Review and merge PR #4 only with explicit approval.
+2. Verify the selected AI model exists and provider terms permit intended UK use; keep billing disabled.
+3. Deploy `jeeves-brain`, `health-sync`, `health-sync-notify` and `google-calendar` as required.
 4. Deploy `jeeves-api` with JWT verification enabled.
-5. Run authenticated smoke tests for each action.
-6. Only then switch app clients to the gateway.
+5. Run authenticated smoke tests for every route.
+6. Publish the updated browser/Android clients only after the gateway is live and verified.
 
-No deployment, secret changes, database migrations or billing changes are part of this branch.
+No gateway deployment, secret changes, database migrations or billing changes are part of this work.
