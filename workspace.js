@@ -106,8 +106,28 @@
     content.append(form);
     try {
       const data=await rows("jeeves_projects");
+      const milestoneResult=await db.from("jeeves_project_milestones").select("id,project_id,title,status,due_at").order("due_at",{ascending:true});
+      if(milestoneResult.error)throw milestoneResult.error;
+      const milestones=milestoneResult.data||[];
       renderList(content,data,item=>{
         const el=card(item.name,item.description||"No description",item.status+" · "+(item.due_at?dateText(item.due_at):"No target date"));
+        const projectMilestones=milestones.filter(m=>m.project_id===item.id);
+        const milestoneWrap=node("div",undefined,"jw-milestones");
+        milestoneWrap.append(node("strong","Milestones ("+projectMilestones.length+")"));
+        projectMilestones.forEach(m=>{
+          const row=node("div",undefined,"jw-actions");
+          const toggle=action(m.status==="completed"?"✓ "+m.title:m.title,async()=>{try{await update("jeeves_project_milestones",m.id,{status:m.status==="completed"?"pending":"completed"});await renderProjects(host);}catch(e){status(content,e.message);}});
+          row.append(toggle,node("small",m.due_at?dateText(m.due_at):"No due date"));
+          row.append(action("×",async()=>{if(!confirm("Delete this milestone?"))return;try{await remove("jeeves_project_milestones",m.id);await renderProjects(host);}catch(e){status(content,e.message);}}));
+          milestoneWrap.append(row);
+        });
+        const milestoneForm=node("form",undefined,"jw-form");
+        const milestoneInput=node("input");milestoneInput.name="title";milestoneInput.required=true;milestoneInput.placeholder="New milestone";milestoneInput.setAttribute("aria-label","New milestone title");
+        const milestoneDate=node("input");milestoneDate.type="date";milestoneDate.name="due_at";milestoneDate.setAttribute("aria-label","Milestone due date");
+        const milestoneButton=node("button","Add milestone","jw-action");milestoneButton.type="submit";
+        milestoneForm.append(milestoneInput,milestoneDate,milestoneButton);
+        milestoneForm.addEventListener("submit",async e=>{e.preventDefault();milestoneButton.disabled=true;try{await insert("jeeves_project_milestones",{project_id:item.id,title:milestoneInput.value.trim(),due_at:milestoneDate.value||null});await renderProjects(host);}catch(err){status(content,err.message);milestoneButton.disabled=false;}});
+        el.append(milestoneWrap,milestoneForm);
         const controls=node("div",undefined,"jw-actions");
         controls.append(action("Change status",async()=>{const next=prompt("Status: active, on_hold, completed or archived",item.status);if(!next||!["active","on_hold","completed","archived"].includes(next))return;try{await update("jeeves_projects",item.id,{status:next,updated_at:new Date().toISOString()});await renderProjects(host);}catch(e){status(content,e.message);}}));
         controls.append(action("Edit details",async()=>{const name=prompt("Project name",item.name);if(name===null||!name.trim())return;const description=prompt("Description",item.description||"");if(description===null)return;try{await update("jeeves_projects",item.id,{name:name.trim(),description,updated_at:new Date().toISOString()});await renderProjects(host);}catch(e){status(content,e.message);}}));
