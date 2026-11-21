@@ -231,10 +231,12 @@
     async function load(){
       try{
         await signedIn();
-        const {data,error}=await db.from("knowledge_items").select("id,title,content,category,tags,created_at").is("archived_at",null).order("updated_at",{ascending:false}).limit(200);
+        const term=search.value.trim();
+        let knowledgeQuery=db.from("knowledge_items").select("id,title,content,category,tags,created_at").is("archived_at",null).order("updated_at",{ascending:false});
+        if(term)knowledgeQuery=knowledgeQuery.textSearch("search_vector",term,{type:"websearch",config:"english"});
+        const {data,error}=await knowledgeQuery.limit(200);
         if(error)throw error;
-        const term=search.value.trim().toLowerCase();
-        const filtered=(data||[]).filter(x=>!term||(x.title+" "+x.content+" "+(x.tags||[]).join(" ")).toLowerCase().includes(term));
+        const filtered=data||[];
         listHost.replaceChildren();
         if(data.length>1){
           const linkForm=node("form",undefined,"jw-form");
